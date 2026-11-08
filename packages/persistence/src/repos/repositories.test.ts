@@ -9,6 +9,8 @@ import {
   type SandboxAccountOperation,
 } from '@moex/domain';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { REDACTED } from '../audit/redact.js';
+import { createAuditLogRepository } from '../audit/repository.js';
 import type { DbClient } from '../db/client.js';
 import { createPsqlDbClient } from '../db/psql-client.js';
 import { createOutboxRepository } from '../outbox/repository.js';
@@ -44,7 +46,7 @@ describe('BL-021 repositories (Postgres)', () => {
       return;
     }
     await db.execute(`
-      TRUNCATE outbox_events, sandbox_account_operations, broker_accounts,
+      TRUNCATE audit_log, outbox_events, sandbox_account_operations, broker_accounts,
         instrument_specs, instrument_provider_ids, instruments
       RESTART IDENTITY CASCADE
     `);
@@ -223,5 +225,27 @@ describe('BL-021 repositories (Postgres)', () => {
         payload: { operationId: OPERATION_ID },
       }),
     ).rejects.toThrow();
+  });
+
+  it('appends audit rows with redacted secrets', async () => {
+    if (!available) {
+      return;
+    }
+    const audit = createAuditLogRepository(db);
+    const written = await audit.append({
+      actorType: 'api',
+      actorId: 'admin',
+      action: 'sandbox.account.fund.enqueue',
+      targetType: 'sandbox_account',
+      targetId: ACCOUNT_ID,
+      correlationId: 'corr-audit-1',
+      result: 'accepted',
+      payload: { token: 'plaintext-secret-should-be-redacted-0001' },
+      createdAt: parseIsoDateTime('2026-11-09T05:00:00.000Z'),
+    });
+    expect(written.payload.token).toBe(REDACTED);
+    expect((await audit.listByCorrelationId('corr-audit-1'))[0]?.action).toBe(
+      'sandbox.account.fund.enqueue',
+    );
   });
 });

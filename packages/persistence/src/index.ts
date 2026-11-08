@@ -15,8 +15,25 @@
 export const packageName = '@moex/persistence' as const;
 
 /** Ordered migration ids shipped with this package. */
-export const MIGRATION_FILES = ['000_schema_migrations.sql', '001_init.sql'] as const;
+export const MIGRATION_FILES = [
+  '000_schema_migrations.sql',
+  '001_init.sql',
+  '002_audit_append_only.sql',
+] as const;
 
+export type { MemoryAuditLogStore } from './audit/memory.js';
+export { createMemoryAuditLogStore } from './audit/memory.js';
+export { REDACTED, redactAuditPayload } from './audit/redact.js';
+export type { AuditLogRepository } from './audit/repository.js';
+export { createAuditLogRepository } from './audit/repository.js';
+export type { AuditLogService } from './audit/service.js';
+export { createAuditLogService } from './audit/service.js';
+export type {
+  AuditActorType,
+  AuditEntry,
+  AuditResult,
+  NewAuditEntry,
+} from './audit/types.js';
 export type { DbClient, DbExecutor, SqlValue } from './db/client.js';
 export type { PsqlClientOptions } from './db/psql-client.js';
 export { createPsqlDbClient, runAtomicSqlScript, runPsqlRaw } from './db/psql-client.js';
