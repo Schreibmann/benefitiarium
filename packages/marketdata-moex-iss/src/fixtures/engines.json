@@ -1,0 +1,14 @@
+{
+  "engines": {
+    "metadata": [
+      { "name": "id", "type": "int32" },
+      { "name": "name", "type": "string" },
+      { "name": "title", "type": "string" }
+    ],
+    "columns": ["title", "name", "id"],
+    "data": [
+      ["Фондовый рынок и рынок депозитов", "stock", 1],
+      ["Срочный рынок", "futures", 2]
+    ]
+  }
+}

@@ -12,15 +12,22 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "migrations"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --max-warnings=0",
-    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
-    "db:generate": "node ./scripts/db-stub.mjs generate",
-    "db:migrate": "node ./scripts/db-stub.mjs migrate",
-    "db:status": "node ./scripts/db-stub.mjs status"
+    "test": "vitest run --config ../../vitest.config.ts",
+    "db:generate": "node ./scripts/migrate.mjs generate",
+    "db:migrate": "node ./scripts/migrate.mjs migrate",
+    "db:status": "node ./scripts/migrate.mjs status"
+  },
+  "dependencies": {
+    "@moex/domain": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
   }
 }

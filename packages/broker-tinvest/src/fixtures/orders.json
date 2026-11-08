@@ -1,0 +1,17 @@
+{
+  "accountId": "sandbox-account-1",
+  "orders": [
+    {
+      "orderId": "broker-order-abc",
+      "orderRequestId": "44444444-4444-4444-8444-444444444444",
+      "instrumentUid": "e6123145-9665-43e0-8413-cd61b8aa9b13",
+      "direction": "ORDER_DIRECTION_BUY",
+      "orderType": "ORDER_TYPE_LIMIT",
+      "lotsRequested": 2,
+      "lotsExecuted": 1,
+      "initialSecurityPrice": "300.00",
+      "executionReportStatus": "EXECUTION_REPORT_STATUS_PARTIALLYFILL",
+      "orderDate": "2026-11-08T10:00:00.000Z"
+    }
+  ]
+}

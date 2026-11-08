@@ -1,0 +1,15 @@
+{
+  "uid": "e6123145-9665-43e0-8413-cd61b8aa9b13",
+  "figi": "BBG004730N88",
+  "ticker": "SBER",
+  "name": "Sberbank",
+  "classCode": "TQBR",
+  "currency": "rub",
+  "lot": 10,
+  "minPriceIncrement": "0.01",
+  "apiTradeAvailableFlag": true,
+  "forQualInvestorFlag": false,
+  "first1dayCandleDate": "2018-03-07T00:00:00.000Z",
+  "first1minCandleDate": "2018-03-07T00:00:00.000Z",
+  "exchange": "MOEX"
+}

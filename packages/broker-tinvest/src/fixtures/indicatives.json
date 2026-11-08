@@ -1,0 +1,26 @@
+{
+  "indicatives": [
+    {
+      "uid": "imoex-indicative-uid-000000000001",
+      "figi": "BBG000000IMOEX",
+      "ticker": "IMOEX",
+      "name": "MOEX Russia Index",
+      "classCode": "INDX",
+      "currency": "rub",
+      "exchange": "MOEX",
+      "buyAvailableFlag": false,
+      "sellAvailableFlag": false
+    },
+    {
+      "uid": "rtsi-indicative-uid-000000000002",
+      "figi": "BBG000000RTSI",
+      "ticker": "RTSI",
+      "name": "RTS Index",
+      "classCode": "INDX",
+      "currency": "usd",
+      "exchange": "MOEX",
+      "buyAvailableFlag": false,
+      "sellAvailableFlag": false
+    }
+  ]
+}

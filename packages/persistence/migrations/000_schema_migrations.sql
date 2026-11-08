@@ -1,0 +1,5 @@
+-- Migration ledger for @moex/persistence (BL-020)
+CREATE TABLE IF NOT EXISTS schema_migrations (
+  id TEXT PRIMARY KEY,
+  applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

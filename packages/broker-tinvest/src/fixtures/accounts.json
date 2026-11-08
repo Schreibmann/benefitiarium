@@ -1,0 +1,10 @@
+{
+  "accounts": [
+    {
+      "id": "sandbox-account-1",
+      "type": "ACCOUNT_TYPE_TINKOFF",
+      "name": "Sandbox",
+      "status": "ACCOUNT_STATUS_OPEN"
+    }
+  ]
+}

@@ -6,9 +6,11 @@ Personal research and trading platform for MOEX instruments: market data, analyt
 
 ## Docs
 
-- [Technical backlog](docs/TECHNICAL_BACKLOG.md)
+- [Technical backlog](docs/TECHNICAL_BACKLOG.md) (v1.1)
 - [Roadmap](docs/ROADMAP.md)
 - [Status](docs/STATUS.md)
+- [Futures history coverage](docs/FUTURES_HISTORY_COVERAGE.md)
+- [API contracts](docs/API_CONTRACTS.md)
 - [Security](docs/SECURITY.md)
 - [ADR index](docs/ADR/)
 
@@ -36,18 +38,22 @@ pnpm build
 pnpm dev
 ```
 
-Database commands (stub until BL-020):
+Database (BL-020 SQL migrations in `packages/persistence/migrations`):
 
 ```bash
+docker compose up -d
 pnpm db:status
 pnpm db:migrate
 ```
+
+Requires `psql` on `DATABASE_URL`, or Docker Desktop with the compose Postgres service.
 
 Reset local Postgres volume:
 
 ```bash
 docker compose down -v
 docker compose up -d
+pnpm db:migrate
 ```
 
 ## Monorepo layout
@@ -59,4 +65,4 @@ docker compose up -d
 
 ## Current milestone
 
-**M0 — Foundation** (see `docs/STATUS.md`). Next after M0: EPIC E1 / BL-010 domain model.
+**M1 — Providers** + E7A sandbox foundation (see `docs/STATUS.md`). Backlog **v1.2**: Sandbox Account Management Service.
