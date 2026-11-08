@@ -74,8 +74,7 @@ export function loadEnv(source: EnvSource = process.env): AppEnv {
 
 /** Non-empty trimmed token or null. Never log the return value. */
 export function resolveTinvestToken(env: AppEnv, purpose: TinvestTokenPurpose): string | null {
-  const raw =
-    purpose === 'sandbox' ? env.TINVEST_SANDBOX_TOKEN : env.TINVEST_READ_ONLY_TOKEN;
+  const raw = purpose === 'sandbox' ? env.TINVEST_SANDBOX_TOKEN : env.TINVEST_READ_ONLY_TOKEN;
   const token = raw.trim();
   return token.length > 0 ? token : null;
 }
@@ -83,8 +82,7 @@ export function resolveTinvestToken(env: AppEnv, purpose: TinvestTokenPurpose): 
 export function requireTinvestToken(env: AppEnv, purpose: TinvestTokenPurpose): string {
   const token = resolveTinvestToken(env, purpose);
   if (token === null) {
-    const key =
-      purpose === 'sandbox' ? 'TINVEST_SANDBOX_TOKEN' : 'TINVEST_READ_ONLY_TOKEN';
+    const key = purpose === 'sandbox' ? 'TINVEST_SANDBOX_TOKEN' : 'TINVEST_READ_ONLY_TOKEN';
     throw new Error(`${key} is required for this operation`);
   }
   return token;

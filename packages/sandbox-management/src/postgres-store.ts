@@ -1,7 +1,4 @@
-import type {
-  BrokerAccountRepository,
-  SandboxOperationRepository,
-} from '@moex/persistence';
+import type { BrokerAccountRepository, SandboxOperationRepository } from '@moex/persistence';
 import type { SandboxAccountStore } from './account-store.js';
 import type { OperationJournal } from './operation-journal.js';
 

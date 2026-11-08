@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { TinvestReadApi } from './read-api.js';
 import type {
   TinvestAccountRaw,
   TinvestCandleRaw,
@@ -12,6 +11,7 @@ import type {
   TinvestPositionRaw,
   TinvestShareRaw,
 } from './raw.js';
+import type { TinvestReadApi } from './read-api.js';
 
 function loadJson(name: string): unknown {
   const here = dirname(fileURLToPath(import.meta.url));

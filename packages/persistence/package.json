@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "biome check ./src",
     "test": "vitest run --config ../../vitest.config.ts",
     "db:generate": "node ./scripts/migrate.mjs generate",
     "db:migrate": "node ./scripts/migrate.mjs migrate",

@@ -64,7 +64,7 @@ function mergeEnvFile(path: string): void {
       continue;
     }
     const key = line.slice(0, eq).trim();
-    if (key.length === 0 || Object.prototype.hasOwnProperty.call(process.env, key)) {
+    if (key.length === 0 || Object.hasOwn(process.env, key)) {
       continue;
     }
     let value = line.slice(eq + 1).trim();

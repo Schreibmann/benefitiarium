@@ -1,5 +1,5 @@
+import { type DecimalString, parseDecimalString } from '@moex/domain';
 import { Decimal as DecimalJs } from 'decimal.js';
-import { parseDecimalString, type DecimalString } from '@moex/domain';
 
 DecimalJs.set({
   precision: 40,

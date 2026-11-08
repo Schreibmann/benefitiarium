@@ -1,5 +1,5 @@
 import { createLogger, type Logger } from '@moex/observability';
-import { mapIssBlockRows, type MoexIssRow } from './map-columns.js';
+import { type MoexIssRow, mapIssBlockRows } from './map-columns.js';
 import type { MoexIssClientOptions, MoexIssResponse } from './types.js';
 
 const DEFAULT_TIMEOUT_MS = 15_000;

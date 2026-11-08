@@ -1,5 +1,5 @@
-import { parseDecimalString, parseInstrumentId, parseIsoDateTime } from '@moex/domain';
 import type { InstrumentSpec } from '@moex/domain';
+import { parseDecimalString, parseInstrumentId, parseIsoDateTime } from '@moex/domain';
 import { describe, expect, it } from 'vitest';
 import {
   appendInstrumentSpecVersion,

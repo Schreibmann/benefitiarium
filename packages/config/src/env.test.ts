@@ -61,8 +61,8 @@ describe('loadEnv', () => {
       TINVEST_ACCOUNT_ID: 'legacy',
     });
     expect(resolveTinvestSandboxAccountId(env)).toBe('sandbox-primary');
-    expect(resolveTinvestSandboxAccountId(loadEnv({ ...baseEnv, TINVEST_ACCOUNT_ID: 'legacy' }))).toBe(
-      'legacy',
-    );
+    expect(
+      resolveTinvestSandboxAccountId(loadEnv({ ...baseEnv, TINVEST_ACCOUNT_ID: 'legacy' })),
+    ).toBe('legacy');
   });
 });

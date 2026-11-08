@@ -1,7 +1,9 @@
+import { createHash, randomUUID } from 'node:crypto';
 import type {
   EnqueueSandboxCommandInput,
   EnqueueSandboxCommandResult,
   SandboxAccountProvider,
+  SandboxProviderAccountRow,
 } from '@moex/contracts';
 import {
   parseIsoDateTime,
@@ -9,7 +11,6 @@ import {
   type SandboxAccount,
   type SandboxAccountOperation,
 } from '@moex/domain';
-import { createHash, randomUUID } from 'node:crypto';
 import type { SandboxAccountStore } from './account-store.js';
 import { validateSandboxFundAmount } from './funding.js';
 import { createQueuedOperation, type OperationJournal } from './operation-journal.js';
@@ -95,12 +96,10 @@ export function createSandboxAccountService(
         if (name.length === 0) {
           throw new Error('account name is required');
         }
-        return enqueueOrReuse(
-          input,
-          requestHash({ type: 'create', name }),
-          null,
-          { type: 'create', name },
-        );
+        return enqueueOrReuse(input, requestHash({ type: 'create', name }), null, {
+          type: 'create',
+          name,
+        });
       }
 
       const account = await options.accounts.getById(input.accountId);
@@ -268,7 +267,7 @@ async function reconcileAccounts(
   options: SandboxAccountServiceOptions,
   now: () => Date,
 ): Promise<SandboxAccount[]> {
-  let providerRows;
+  let providerRows: SandboxProviderAccountRow[];
   try {
     providerRows = await options.provider.listAccounts();
   } catch {

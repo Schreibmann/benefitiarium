@@ -6,8 +6,8 @@ import type {
   PlaceOrderCommand,
   ReplaceOrderCommand,
 } from '@moex/contracts';
-import type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 import { mapTinvestAccount, mapTinvestOrder, mapTinvestPosition } from './mappers/broker.js';
+import type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 
 export type TinvestBrokerGatewayOptions = {
   api: TinvestReadApi;

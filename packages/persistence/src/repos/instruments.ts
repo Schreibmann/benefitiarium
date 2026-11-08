@@ -20,9 +20,7 @@ export type InstrumentRepository = {
     provider: CatalogProvider,
     providerInstrumentId: string,
   ) => Promise<Instrument | null>;
-  linkProviderId: (
-    link: InstrumentProviderId & { raw?: Record<string, unknown> },
-  ) => Promise<void>;
+  linkProviderId: (link: InstrumentProviderId & { raw?: Record<string, unknown> }) => Promise<void>;
 };
 
 const INSTRUMENT_SELECT = `
@@ -40,10 +38,7 @@ const INSTRUMENT_SELECT = `
 export function createInstrumentRepository(db: DbExecutor): InstrumentRepository {
   return {
     getById: async (id) => {
-      const rows = await db.queryJson(
-        jsonAggSql(`${INSTRUMENT_SELECT} WHERE id = $1::uuid`),
-        [id],
-      );
+      const rows = await db.queryJson(jsonAggSql(`${INSTRUMENT_SELECT} WHERE id = $1::uuid`), [id]);
       const first = rows[0];
       return first === undefined ? null : mapInstrumentRow(first);
     },
@@ -52,9 +47,7 @@ export function createInstrumentRepository(db: DbExecutor): InstrumentRepository
       const sql =
         assetType === undefined
           ? jsonAggSql(`${INSTRUMENT_SELECT} WHERE ticker = $1 ORDER BY asset_type, name`)
-          : jsonAggSql(
-              `${INSTRUMENT_SELECT} WHERE ticker = $1 AND asset_type = $2 ORDER BY name`,
-            );
+          : jsonAggSql(`${INSTRUMENT_SELECT} WHERE ticker = $1 AND asset_type = $2 ORDER BY name`);
       const params = assetType === undefined ? [ticker] : [ticker, assetType];
       const rows = await db.queryJson(sql, params);
       return rows.map(mapInstrumentRow);

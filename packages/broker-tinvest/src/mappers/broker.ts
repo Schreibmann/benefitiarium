@@ -1,12 +1,12 @@
 import type { BrokerAccount, BrokerOrder, BrokerPosition } from '@moex/contracts';
 import {
+  type OrderSide,
+  type OrderStatus,
+  type OrderType,
   parseDecimalString,
   parseInstrumentId,
   parseIsoDateTime,
   tryParseUuid,
-  type OrderSide,
-  type OrderStatus,
-  type OrderType,
 } from '@moex/domain';
 import type { TinvestAccountRaw, TinvestOrderRaw, TinvestPositionRaw } from '../raw.js';
 

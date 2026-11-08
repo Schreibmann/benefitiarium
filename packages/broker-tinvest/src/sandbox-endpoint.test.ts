@@ -8,8 +8,6 @@ describe('sandbox endpoint allowlist', () => {
   });
 
   it('rejects production host', () => {
-    expect(() => assertSandboxUrl('https://invest-public-api.tbank.ru:443')).toThrow(
-      /allowlisted/,
-    );
+    expect(() => assertSandboxUrl('https://invest-public-api.tbank.ru:443')).toThrow(/allowlisted/);
   });
 });

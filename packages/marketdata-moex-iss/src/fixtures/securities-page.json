@@ -1,9 +1,6 @@
 {
   "securities": {
     "columns": ["SECID", "BOARDID", "SHORTNAME", "LOTSIZE"],
-    "data": [
-      ["SBER", "TQBR", "Сбербанк", 10],
-      ["GAZP", "TQBR", "ГАзпром", 10]
-    ]
+    "data": [["SBER", "TQBR", "Сбербанк", 10], ["GAZP", "TQBR", "ГАзпром", 10]]
   }
 }

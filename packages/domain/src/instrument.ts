@@ -1,21 +1,21 @@
 import { z } from 'zod';
 import {
-  decimalStringSchema,
-  instrumentIdSchema,
-  isoDateTimeSchema,
   type DecimalString,
+  decimalStringSchema,
   type InstrumentId,
   type IsoDateTime,
+  instrumentIdSchema,
+  isoDateTimeSchema,
 } from './brands.js';
 import {
-  assetTypeSchema,
-  dataProviderSchema,
-  priceTypeSchema,
-  underlyingAssetTypeSchema,
   type AssetType,
+  assetTypeSchema,
   type DataProvider,
+  dataProviderSchema,
   type PriceType,
+  priceTypeSchema,
   type UnderlyingAssetType,
+  underlyingAssetTypeSchema,
 } from './enums.js';
 
 export const instrumentSchema = z.object({

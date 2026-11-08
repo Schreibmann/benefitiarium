@@ -39,8 +39,7 @@ export function runPsqlRaw(sql: string, options: PsqlClientOptions = {}): PsqlRe
       maxBuffer: 20 * 1024 * 1024,
     });
     const err = result.error;
-    const missingPsql =
-      err !== undefined && 'code' in err && err.code === 'ENOENT';
+    const missingPsql = err !== undefined && 'code' in err && err.code === 'ENOENT';
     if (!missingPsql) {
       return {
         status: result.status,

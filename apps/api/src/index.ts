@@ -1,6 +1,6 @@
-import Fastify from 'fastify';
 import { loadEnv } from '@moex/config';
 import { createLogger } from '@moex/observability';
+import Fastify from 'fastify';
 
 const env = loadEnv(process.env);
 const logger = createLogger({ service: '@moex/api', level: env.LOG_LEVEL });

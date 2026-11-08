@@ -1,4 +1,4 @@
-import { InvestNodeSDK } from '@ttech-pub/invest-sdk-node';
+import type { InvestNodeSDK } from '@ttech-pub/invest-sdk-node';
 import { createTinvestSdk } from './create-sdk.js';
 import { assertSandboxUrl, TINVEST_SANDBOX_URL } from './sandbox-endpoint.js';
 

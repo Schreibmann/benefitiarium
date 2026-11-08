@@ -171,9 +171,9 @@ describe('SandboxAccountService', () => {
     };
     await accounts.upsert(orphan);
     const reconciled = await service.reconcileWithProvider();
-    expect(reconciled.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus).toBe(
-      'missing',
-    );
+    expect(
+      reconciled.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus,
+    ).toBe('missing');
     expect(reconciled.find((row) => row.id === account.id)?.localStatus).toBe('active');
 
     const closeOp = await service.enqueue({

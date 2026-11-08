@@ -7,9 +7,7 @@ export type SandboxAccountStore = {
   upsert: (account: SandboxAccount) => Promise<SandboxAccount>;
 };
 
-export function createMemorySandboxAccountStore(
-  seed: SandboxAccount[] = [],
-): SandboxAccountStore {
+export function createMemorySandboxAccountStore(seed: SandboxAccount[] = []): SandboxAccountStore {
   const byId = new Map<string, SandboxAccount>();
   const byProvider = new Map<string, string>();
   for (const account of seed) {

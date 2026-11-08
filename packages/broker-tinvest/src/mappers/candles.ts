@@ -1,10 +1,10 @@
 import type { CandleInterval } from '@moex/domain';
 import {
+  type Candle,
+  type InstrumentId,
   parseDecimalString,
   parseInstrumentId,
   parseIsoDateTime,
-  type Candle,
-  type InstrumentId,
 } from '@moex/domain';
 import type { TinvestCandleRaw } from '../raw.js';
 

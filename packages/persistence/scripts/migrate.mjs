@@ -7,7 +7,7 @@
  * Usage: node ./scripts/migrate.mjs [status|migrate]
  */
 import { spawnSync } from 'node:child_process';
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -81,9 +81,7 @@ function assertOk(result, label) {
 }
 
 function appliedIds() {
-  const result = runPsql(
-    "SELECT id FROM schema_migrations ORDER BY id;",
-  );
+  const result = runPsql('SELECT id FROM schema_migrations ORDER BY id;');
   if (result.status !== 0) {
     // Table may not exist yet.
     return new Set();
@@ -91,7 +89,12 @@ function appliedIds() {
   const ids = new Set();
   for (const line of (result.stdout ?? '').split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (trimmed.length === 0 || trimmed === 'id' || trimmed.startsWith('-') || trimmed.startsWith('(')) {
+    if (
+      trimmed.length === 0 ||
+      trimmed === 'id' ||
+      trimmed.startsWith('-') ||
+      trimmed.startsWith('(')
+    ) {
       continue;
     }
     ids.add(trimmed);
@@ -147,7 +150,9 @@ if (action === 'status') {
   status();
 } else if (action === 'migrate' || action === 'generate') {
   if (action === 'generate') {
-    console.log('db:generate is a no-op until Drizzle is introduced; SQL files live in migrations/.');
+    console.log(
+      'db:generate is a no-op until Drizzle is introduced; SQL files live in migrations/.',
+    );
   }
   migrate();
 } else {

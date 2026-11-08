@@ -27,9 +27,7 @@ const SANDBOX_SELECT = `
 export function createBrokerAccountRepository(db: DbExecutor): BrokerAccountRepository {
   return {
     listSandbox: async () => {
-      const rows = await db.queryJson(
-        jsonAggSql(`${SANDBOX_SELECT} ORDER BY updated_at DESC`),
-      );
+      const rows = await db.queryJson(jsonAggSql(`${SANDBOX_SELECT} ORDER BY updated_at DESC`));
       return rows.map(mapSandboxAccountRow);
     },
 

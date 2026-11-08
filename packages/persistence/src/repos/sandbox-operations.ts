@@ -49,10 +49,7 @@ export function createSandboxOperationRepository(db: DbExecutor): SandboxOperati
     },
 
     findByIdempotencyKey: async (key) => {
-      const rows = await db.queryJson(
-        jsonAggSql(`${OP_SELECT} AND idempotency_key = $1`),
-        [key],
-      );
+      const rows = await db.queryJson(jsonAggSql(`${OP_SELECT} AND idempotency_key = $1`), [key]);
       const first = rows[0];
       return first === undefined ? null : mapSandboxOperationRow(first);
     },
@@ -63,10 +60,9 @@ export function createSandboxOperationRepository(db: DbExecutor): SandboxOperati
     },
 
     append: async (operation) => {
-      const existing = await db.queryJson(
-        jsonAggSql(`${OP_SELECT} AND idempotency_key = $1`),
-        [operation.idempotencyKey],
-      );
+      const existing = await db.queryJson(jsonAggSql(`${OP_SELECT} AND idempotency_key = $1`), [
+        operation.idempotencyKey,
+      ]);
       if (existing[0] !== undefined) {
         throw new Error(`Duplicate idempotency key: ${operation.idempotencyKey}`);
       }

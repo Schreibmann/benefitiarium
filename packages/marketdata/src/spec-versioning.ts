@@ -27,10 +27,7 @@ export function selectInstrumentSpecAt(
 }
 
 /** Fields that force a new historical row per BL-017. */
-export function hasMaterialSpecChange(
-  current: InstrumentSpec,
-  next: InstrumentSpec,
-): boolean {
+export function hasMaterialSpecChange(current: InstrumentSpec, next: InstrumentSpec): boolean {
   return (
     current.lotSize !== next.lotSize ||
     current.minPriceIncrement !== next.minPriceIncrement ||

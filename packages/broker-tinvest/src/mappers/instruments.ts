@@ -110,9 +110,7 @@ export function mapFutureToInstrumentSpecInput(future: TinvestFutureRaw): Instru
     priceType: 'points',
     contractMultiplier: null,
     expirationAt: future.expirationDate ? parseIsoDateTime(future.expirationDate) : null,
-    marginInitial: future.initialMarginOnBuy
-      ? parseDecimalString(future.initialMarginOnBuy)
-      : null,
+    marginInitial: future.initialMarginOnBuy ? parseDecimalString(future.initialMarginOnBuy) : null,
     underlyingProviderPositionUid: future.basicAssetPositionUid,
     underlyingAssetType,
     underlyingAssetName: future.basicAsset,

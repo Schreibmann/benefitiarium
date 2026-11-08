@@ -1,6 +1,6 @@
-import type { ProviderInstrument } from '@moex/contracts';
-import { parseInstrumentId, type Instrument, type InstrumentProviderId } from '@moex/domain';
 import { randomUUID } from 'node:crypto';
+import type { ProviderInstrument } from '@moex/contracts';
+import { type Instrument, type InstrumentProviderId, parseInstrumentId } from '@moex/domain';
 import type { MoexIssInstrumentRef } from './moex-ref.js';
 
 export type MappedInstrument = {

@@ -1,5 +1,5 @@
 import { compare } from '@moex/decimal';
-import { parseDecimalString, type DecimalString } from '@moex/domain';
+import { type DecimalString, parseDecimalString } from '@moex/domain';
 
 /** Documented T-Invest SandboxPayIn upper bound. */
 export const SANDBOX_PAYIN_MAX_RUB = parseDecimalString('30000000');

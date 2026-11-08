@@ -6,7 +6,6 @@ import type {
   MarketDataProvider,
   ProviderInstrument,
 } from '@moex/contracts';
-import type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 import { mapTinvestCandleToDomain } from './mappers/candles.js';
 import {
   mapFutureToInstrumentSpecInput,
@@ -17,6 +16,7 @@ import {
   mapShareToProviderInstrument,
 } from './mappers/instruments.js';
 import { mapTinvestLastPriceToDomain } from './mappers/market.js';
+import type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 
 export type TinvestMarketDataProviderOptions = {
   api: TinvestReadApi;

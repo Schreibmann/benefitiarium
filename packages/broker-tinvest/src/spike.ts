@@ -115,14 +115,10 @@ function mapFutureSample(raw: unknown): FutureSample | null {
   };
 }
 
-function pickFutureByAssetType(
-  futures: FutureSample[],
-  wanted: string,
-): FutureSample | null {
+function pickFutureByAssetType(futures: FutureSample[], wanted: string): FutureSample | null {
   const normalizedWanted = wanted.toLowerCase();
   return (
-    futures.find((item) => (item.assetType ?? '').toLowerCase().includes(normalizedWanted)) ??
-    null
+    futures.find((item) => (item.assetType ?? '').toLowerCase().includes(normalizedWanted)) ?? null
   );
 }
 
@@ -146,9 +142,7 @@ async function probeWithSdk(input: {
   }
 
   const futuresResponse = await sdk.send(new GetFuturesCommand({}));
-  const instruments = Array.isArray(futuresResponse.instruments)
-    ? futuresResponse.instruments
-    : [];
+  const instruments = Array.isArray(futuresResponse.instruments) ? futuresResponse.instruments : [];
   const samples = instruments
     .map(mapFutureSample)
     .filter((item): item is FutureSample => item !== null);

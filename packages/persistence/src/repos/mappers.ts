@@ -1,4 +1,6 @@
 import {
+  type Instrument,
+  type InstrumentSpec,
   parseInstrument,
   parseInstrumentId,
   parseInstrumentSpec,
@@ -6,8 +8,6 @@ import {
   parseSandboxAccount,
   parseSandboxAccountOperation,
   parseUuid,
-  type Instrument,
-  type InstrumentSpec,
   type SandboxAccount,
   type SandboxAccountOperation,
 } from '@moex/domain';

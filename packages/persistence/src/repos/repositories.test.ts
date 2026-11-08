@@ -1,10 +1,10 @@
 import {
+  type Instrument,
+  type InstrumentSpec,
   parseDecimalString,
   parseInstrumentId,
   parseIsoDateTime,
   parseUuid,
-  type Instrument,
-  type InstrumentSpec,
   type SandboxAccount,
   type SandboxAccountOperation,
 } from '@moex/domain';

@@ -31,11 +31,12 @@ docker compose up -d
 ## Scripts
 
 ```bash
-pnpm lint
+pnpm lint          # Biome
 pnpm typecheck
 pnpm test
 pnpm build
 pnpm dev
+pnpm precommit     # Biome --staged + typecheck (also runs via git pre-commit hook)
 ```
 
 Database (BL-020 SQL migrations in `packages/persistence/migrations`):
