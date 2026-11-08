@@ -11,6 +11,7 @@ import {
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { DbClient } from '../db/client.js';
 import { createPsqlDbClient } from '../db/psql-client.js';
+import { createOutboxRepository } from '../outbox/repository.js';
 import { createBrokerAccountRepository } from './broker-accounts.js';
 import { createInstrumentSpecRepository } from './instrument-specs.js';
 import { createInstrumentRepository } from './instruments.js';
@@ -43,7 +44,7 @@ describe('BL-021 repositories (Postgres)', () => {
       return;
     }
     await db.execute(`
-      TRUNCATE sandbox_account_operations, broker_accounts,
+      TRUNCATE outbox_events, sandbox_account_operations, broker_accounts,
         instrument_specs, instrument_provider_ids, instruments
       RESTART IDENTITY CASCADE
     `);
@@ -190,5 +191,37 @@ describe('BL-021 repositories (Postgres)', () => {
     });
     expect(updated.status).toBe('succeeded');
     expect((await operations.list()).length).toBe(1);
+  });
+
+  it('enqueues and publishes outbox events by eventId', async () => {
+    if (!available) {
+      return;
+    }
+    const outbox = createOutboxRepository(db);
+    const eventId = parseUuid('33333333-3333-4333-8333-333333333333');
+    await outbox.enqueue({
+      id: eventId,
+      aggregateType: 'sandbox_account_operation',
+      aggregateId: OPERATION_ID,
+      eventType: 'sandbox.operation.queued',
+      payload: { operationId: OPERATION_ID },
+      createdAt: parseIsoDateTime('2026-11-09T03:00:00.000Z'),
+    });
+    expect((await outbox.listPending())[0]?.id).toBe(eventId);
+    const published = await outbox.markPublished(
+      eventId,
+      parseIsoDateTime('2026-11-09T03:05:00.000Z'),
+    );
+    expect(published.publishedAt).toBe('2026-11-09T03:05:00.000Z');
+    expect(await outbox.listPending()).toHaveLength(0);
+    await expect(
+      outbox.enqueue({
+        id: eventId,
+        aggregateType: 'sandbox_account_operation',
+        aggregateId: OPERATION_ID,
+        eventType: 'sandbox.operation.queued',
+        payload: { operationId: OPERATION_ID },
+      }),
+    ).rejects.toThrow();
   });
 });

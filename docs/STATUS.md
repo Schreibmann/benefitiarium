@@ -3,24 +3,24 @@
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** BL-087 safe fund/close (branch `cursor/bl-087-fund-close`)  
-**Next task:** BL-022 transaction outbox (separate branch)
+**Active task:** BL-022 transaction outbox (branch `cursor/bl-022-outbox`)  
+**Next task:** BL-023 audit log service (separate branch)
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone
 
-| Milestone            | Status      | Notes                                  |
-| -------------------- | ----------- | -------------------------------------- |
-| M0 — Foundation      | DONE        | EPIC E0 verified locally               |
-| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done        |
-| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031      |
-| M3 — Realtime        | TODO        |                                        |
-| M4 — Signals         | TODO        |                                        |
-| M5 — Backtesting     | TODO        |                                        |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A: BL-078/079 done; BL-087 on branch |
-| M7 — Paper           | TODO        |                                        |
-| M8 — Guarded Live    | TODO        |                                        |
+| Milestone            | Status      | Notes                                 |
+| -------------------- | ----------- | ------------------------------------- |
+| M0 — Foundation      | DONE        | EPIC E0 verified locally              |
+| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done       |
+| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031     |
+| M3 — Realtime        | TODO        |                                       |
+| M4 — Signals         | TODO        |                                       |
+| M5 — Backtesting     | TODO        |                                       |
+| M6 — Manual Sandbox  | IN_PROGRESS | E7A: BL-078/079/087 done; BL-022 next |
+| M7 — Paper           | TODO        |                                       |
+| M8 — Guarded Live    | TODO        |                                       |
 
 ## EPIC E1 task board
 
@@ -38,12 +38,12 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## EPIC E2
 
-| ID     | Status | Notes                                       |
-| ------ | ------ | ------------------------------------------- |
-| BL-020 | DONE   | Migrations applied on local Docker Postgres |
-| BL-021 | DONE   | Repositories + psql/docker `DbClient`       |
-| BL-022 | TODO   | transaction outbox                          |
-| BL-023 | TODO   | audit log service                           |
+| ID     | Status | Notes                                                                                     |
+| ------ | ------ | ----------------------------------------------------------------------------------------- |
+| BL-020 | DONE   | Migrations applied on local Docker Postgres                                               |
+| BL-021 | DONE   | Repositories + psql/docker `DbClient`                                                     |
+| BL-022 | DONE   | Outbox repository + publisher + eventId consumer idempotency (`@moex/persistence` outbox) |
+| BL-023 | TODO   | audit log service                                                                         |
 
 ## EPIC E7A (v1.2)
 
@@ -57,12 +57,11 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## Notes
 
-- Sync helpers: `reconcileSandboxAccounts`, `listMissingAccountRecoveries` in `@moex/sandbox-management`
-- Close preview: `previewClose` / `buildClosePreview` (TTL 15m); enqueue close requires matching previewId
+- Outbox: `createOutboxRepository` / `createOutboxPublisher` / `createIdempotentOutboxHandler`
+- Close preview: `previewClose` / `buildClosePreview` (TTL 15m)
 - Quality: Biome + `pnpm precommit`
 
 ## Next
 
-1. **BL-022** — transaction outbox (new branch)
-2. BL-023 audit log service
-3. BL-088 Admin API → BL-089 UI
+1. **BL-023** — audit log service (new branch)
+2. BL-088 Admin API → BL-089 UI

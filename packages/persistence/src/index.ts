@@ -21,6 +21,22 @@ export type { DbClient, DbExecutor, SqlValue } from './db/client.js';
 export type { PsqlClientOptions } from './db/psql-client.js';
 export { createPsqlDbClient, runAtomicSqlScript, runPsqlRaw } from './db/psql-client.js';
 export { bindSql, jsonAggSql, toSqlLiteral } from './db/sql.js';
+export type { MemoryOutboxStore } from './outbox/memory.js';
+export { createMemoryOutboxStore } from './outbox/memory.js';
+export type {
+  OutboxDelivery,
+  OutboxPublisher,
+  OutboxPublisherOptions,
+  SeenEventStore,
+} from './outbox/publisher.js';
+export {
+  createIdempotentOutboxHandler,
+  createMemorySeenEventStore,
+  createOutboxPublisher,
+} from './outbox/publisher.js';
+export type { OutboxRepository } from './outbox/repository.js';
+export { createOutboxRepository } from './outbox/repository.js';
+export type { NewOutboxEvent, OutboxEvent } from './outbox/types.js';
 export type { BrokerAccountRepository } from './repos/broker-accounts.js';
 export { createBrokerAccountRepository } from './repos/broker-accounts.js';
 export type { InstrumentSpecRepository } from './repos/instrument-specs.js';
