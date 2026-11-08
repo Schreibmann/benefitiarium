@@ -229,15 +229,137 @@ describe('SandboxAccountService', () => {
     expect(reconciled.missingProviderAccountIds).toContain('gone-provider-id');
     expect(reconciled.providerUnavailable).toBe(false);
 
+    const preview = await service.previewClose(account.id);
+    expect(preview.openOrders).toHaveLength(0);
+    expect(service.fundPolicyNotes().some((note) => /withdraw/i.test(note))).toBe(true);
+
     const closeOp = await service.enqueue({
       type: 'close',
       accountId: account.id,
+      previewId: preview.previewId,
       confirmation: 'research-bot',
+      acknowledgeOpenPositionsAndOrders: false,
       idempotencyKey: 'op-close',
       correlationId: 'c-close',
     });
     expect((await service.executeOperation(closeOp.operation.id)).status).toBe('succeeded');
     expect((await service.getAccount(account.id))?.localStatus).toBe('closed');
+  });
+
+  it('requires close preview and open-risk ack before enqueue', async () => {
+    const base = createTestProvider([
+      {
+        providerAccountId: 'acc-risk',
+        displayName: 'risk-bot',
+        providerStatus: 'open',
+        openedAt: '2026-11-01T00:00:00.000Z',
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const provider: SandboxAccountProvider = {
+      ...base,
+      getOrders: async (providerAccountId) => [
+        {
+          providerAccountId,
+          brokerOrderId: 'ord-1',
+          providerInstrumentId: 'BBG000',
+          direction: 'BUY',
+          orderType: 'LIMIT',
+          lotsRequested: 1,
+          lotsExecuted: 0,
+          status: 'NEW',
+          orderDate: parseIsoDateTime('2026-11-08T18:00:00.000Z'),
+        },
+      ],
+    };
+    const accountId = parseUuid('55555555-5555-4555-8555-555555555555');
+    const service = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore([
+        {
+          id: accountId,
+          providerAccountId: 'acc-risk',
+          environment: 'sandbox',
+          displayName: 'risk-bot',
+          providerStatus: 'open',
+          localStatus: 'active',
+          openedAt: parseIsoDateTime('2026-11-01T00:00:00.000Z'),
+          closedAt: null,
+          lastVerifiedAt: null,
+        },
+      ]),
+      journal: createMemoryOperationJournal(),
+      now: () => new Date('2026-11-08T20:00:00.000Z'),
+    });
+
+    await expect(
+      service.enqueue({
+        type: 'close',
+        accountId,
+        previewId: parseUuid('66666666-6666-4666-8666-666666666666'),
+        confirmation: 'risk-bot',
+        acknowledgeOpenPositionsAndOrders: true,
+        idempotencyKey: 'no-preview',
+        correlationId: 'c',
+      }),
+    ).rejects.toThrow(/preview/i);
+
+    const preview = await service.previewClose(accountId);
+    await expect(
+      service.enqueue({
+        type: 'close',
+        accountId,
+        previewId: preview.previewId,
+        confirmation: 'risk-bot',
+        acknowledgeOpenPositionsAndOrders: false,
+        idempotencyKey: 'no-ack',
+        correlationId: 'c',
+      }),
+    ).rejects.toThrow(/acknowledgeOpenPositionsAndOrders/);
+
+    const accepted = await service.enqueue({
+      type: 'close',
+      accountId,
+      previewId: preview.previewId,
+      confirmation: 'risk-bot',
+      acknowledgeOpenPositionsAndOrders: true,
+      idempotencyKey: 'with-ack',
+      correlationId: 'c',
+    });
+    expect(accepted.operation.status).toBe('queued');
+  });
+
+  it('marks write ops unknown on timeout and refuses blind retry', async () => {
+    const base = createTestProvider();
+    const provider: SandboxAccountProvider = {
+      ...base,
+      openAccount: async () => {
+        throw new Error('gateway timeout while opening sandbox account');
+      },
+    };
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore(),
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'create',
+      name: 'timeout-bot',
+      idempotencyKey: 'create-timeout',
+      correlationId: 'c-timeout',
+    });
+    const worker = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore(),
+      journal,
+      allowProviderWrites: true,
+    });
+    const unknown = await worker.executeOperation(enqueued.operation.id);
+    expect(unknown.status).toBe('unknown');
+    await expect(worker.executeOperation(unknown.id)).rejects.toThrow(/reconciliation/i);
   });
 
   it('rejects fund above limit and refuses non-sandbox host', async () => {

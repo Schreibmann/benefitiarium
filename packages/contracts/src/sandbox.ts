@@ -93,7 +93,11 @@ export type EnqueueSandboxCommandInput =
   | {
       type: 'close';
       accountId: UUID;
+      /** Issued by SandboxAccountService.previewClose (BL-087). */
+      previewId: UUID;
       confirmation: string;
+      /** Required when preview reports open orders or positions. */
+      acknowledgeOpenPositionsAndOrders: boolean;
       idempotencyKey: string;
       correlationId: string;
     };
