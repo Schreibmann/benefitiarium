@@ -121,6 +121,57 @@ describe('SandboxAccountService', () => {
     expect(await service.listOperations()).toHaveLength(1);
   });
 
+  it('rejects idempotency key reuse with a different payload hash', async () => {
+    const service = createSandboxAccountService({
+      provider: createTestProvider(),
+      accounts: createMemorySandboxAccountStore(),
+      journal: createMemoryOperationJournal(),
+    });
+    await service.enqueue({
+      type: 'create',
+      name: 'bot-a',
+      idempotencyKey: 'same-key',
+      correlationId: 'c1',
+    });
+    await expect(
+      service.enqueue({
+        type: 'create',
+        name: 'bot-b',
+        idempotencyKey: 'same-key',
+        correlationId: 'c2',
+      }),
+    ).rejects.toThrow(/different request hash/);
+  });
+
+  it('executes from durable journal payload after service restart', async () => {
+    const provider = createTestProvider();
+    const accounts = createMemorySandboxAccountStore();
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'create',
+      name: 'durable-bot',
+      idempotencyKey: 'durable-create',
+      correlationId: 'c-durable',
+    });
+
+    const worker = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: true,
+      now: () => new Date('2026-11-08T21:00:00.000Z'),
+    });
+    const executed = await worker.executeOperation(enqueued.operation.id);
+    expect(executed.status).toBe('succeeded');
+    expect((await worker.listLocalAccounts())[0]?.displayName).toBe('durable-bot');
+  });
+
   it('worker path creates, funds, marks missing, and closes accounts', async () => {
     const provider = createTestProvider();
     const accounts = createMemorySandboxAccountStore();

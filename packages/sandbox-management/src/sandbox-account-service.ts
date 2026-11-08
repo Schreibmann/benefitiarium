@@ -12,6 +12,7 @@ import {
   type SandboxAccountOperation,
 } from '@moex/domain';
 import type { SandboxAccountStore } from './account-store.js';
+import type { SandboxCommandRequest } from './command-request.js';
 import { validateSandboxFundAmount } from './funding.js';
 import { createQueuedOperation, type OperationJournal } from './operation-journal.js';
 
@@ -26,13 +27,6 @@ export type SandboxAccountServiceOptions = {
    */
   allowProviderWrites?: boolean;
 };
-
-/** In-memory payload until durable request bodies are persisted beside the journal. */
-type PendingPayload =
-  | { type: 'create'; name: string }
-  | { type: 'fund'; amount: string }
-  | { type: 'close' }
-  | { type: 'sync'; accountId: string | null };
 
 export type SandboxAccountService = {
   listLocalAccounts: () => Promise<SandboxAccount[]>;
@@ -59,16 +53,20 @@ export function createSandboxAccountService(
 
   const now = options.now ?? (() => new Date());
   const allowWrites = options.allowProviderWrites ?? false;
-  const payloads = new Map<string, PendingPayload>();
 
   async function enqueueOrReuse(
     input: EnqueueSandboxCommandInput,
     hash: string,
     accountId: SandboxAccount['id'] | null,
-    payload: PendingPayload,
+    request: SandboxCommandRequest,
   ): Promise<EnqueueSandboxCommandResult> {
     const existing = await options.journal.findByIdempotencyKey(input.idempotencyKey);
     if (existing !== null) {
+      if ((existing.requestHash ?? null) !== hash) {
+        throw new Error(
+          `Idempotency key reuse with different request hash: ${input.idempotencyKey}`,
+        );
+      }
       return { operation: existing, accepted: true };
     }
     const operation = await options.journal.append(
@@ -80,8 +78,8 @@ export function createSandboxAccountService(
         requestHash: hash,
         now,
       }),
+      request,
     );
-    payloads.set(operation.id, payload);
     return { operation, accepted: true };
   }
 
@@ -124,7 +122,7 @@ export function createSandboxAccountService(
             currency: 'RUB',
           }),
           account.id,
-          { type: 'fund', amount: validated.amount },
+          { type: 'fund', amount: validated.amount, currency: 'RUB' },
         );
       }
 
@@ -172,8 +170,8 @@ export function createSandboxAccountService(
         throw new Error('UNKNOWN operation requires reconciliation before retry');
       }
 
-      const payload = payloads.get(operation.id);
-      if (payload === undefined) {
+      const payload = await options.journal.getRequest(operation.id);
+      if (payload === null) {
         throw new Error(`Missing durable payload for operation ${operation.id}`);
       }
 

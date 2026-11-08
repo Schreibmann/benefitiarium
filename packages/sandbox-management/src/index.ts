@@ -1,5 +1,7 @@
 export type { SandboxAccountStore } from './account-store.js';
 export { createMemorySandboxAccountStore } from './account-store.js';
+export type { SandboxCommandRequest } from './command-request.js';
+export { parseSandboxCommandRequest } from './command-request.js';
 export type { FundValidationResult } from './funding.js';
 export { SANDBOX_PAYIN_MAX_RUB, validateSandboxFundAmount } from './funding.js';
 export type { OperationJournal } from './operation-journal.js';

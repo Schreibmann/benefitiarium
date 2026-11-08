@@ -2,13 +2,22 @@ import type { SandboxAccountOperation, UUID } from '@moex/domain';
 import type { DbExecutor } from '../db/client.js';
 import { jsonAggSql } from '../db/sql.js';
 import { mapSandboxOperationRow } from './mappers.js';
+import {
+  type PersistedSandboxCommandRequest,
+  parsePersistedSandboxCommandRequest,
+  requestEnvelopeJson,
+} from './sandbox-command-request.js';
 
 export type SandboxOperationRepository = {
   getById: (id: UUID) => Promise<SandboxAccountOperation | null>;
   findByIdempotencyKey: (key: string) => Promise<SandboxAccountOperation | null>;
   list: () => Promise<SandboxAccountOperation[]>;
-  append: (operation: SandboxAccountOperation) => Promise<SandboxAccountOperation>;
+  append: (
+    operation: SandboxAccountOperation,
+    request: PersistedSandboxCommandRequest,
+  ) => Promise<SandboxAccountOperation>;
   update: (operation: SandboxAccountOperation) => Promise<SandboxAccountOperation>;
+  getRequest: (operationId: UUID) => Promise<PersistedSandboxCommandRequest | null>;
 };
 
 const OP_SELECT = `
@@ -40,6 +49,16 @@ const OP_JSON = `
   request_hash AS "requestHash"
 `;
 
+function fundColumns(request: PersistedSandboxCommandRequest): {
+  amount: string | null;
+  currency: string | null;
+} {
+  if (request.type === 'fund') {
+    return { amount: request.amount, currency: request.currency };
+  }
+  return { amount: null, currency: null };
+}
+
 export function createSandboxOperationRepository(db: DbExecutor): SandboxOperationRepository {
   return {
     getById: async (id) => {
@@ -59,24 +78,27 @@ export function createSandboxOperationRepository(db: DbExecutor): SandboxOperati
       return rows.map(mapSandboxOperationRow);
     },
 
-    append: async (operation) => {
+    append: async (operation, request) => {
       const existing = await db.queryJson(jsonAggSql(`${OP_SELECT} AND idempotency_key = $1`), [
         operation.idempotencyKey,
       ]);
       if (existing[0] !== undefined) {
         throw new Error(`Duplicate idempotency key: ${operation.idempotencyKey}`);
       }
+      const fund = fundColumns(request);
       const row = await db.queryJsonValue(
         `
         WITH inserted AS (
           INSERT INTO sandbox_account_operations (
             id, provider, account_id, operation_type, status,
             idempotency_key, request_hash, correlation_id,
+            amount, currency, result,
             error_message, created_at, updated_at, completed_at
           ) VALUES (
             $1::uuid, 't-invest', $2::uuid, $3, $4,
             $5, $6, $7,
-            $8, $9::timestamptz, now(), $10::timestamptz
+            $8::numeric, $9, $10::jsonb,
+            $11, $12::timestamptz, now(), $13::timestamptz
           )
           RETURNING ${OP_JSON}
         )
@@ -90,6 +112,9 @@ export function createSandboxOperationRepository(db: DbExecutor): SandboxOperati
           operation.idempotencyKey,
           operation.requestHash ?? '',
           operation.correlationId,
+          fund.amount,
+          fund.currency,
+          requestEnvelopeJson(request),
           operation.errorMessage ?? null,
           operation.createdAt,
           operation.completedAt,
@@ -124,6 +149,25 @@ export function createSandboxOperationRepository(db: DbExecutor): SandboxOperati
         ],
       );
       return mapSandboxOperationRow(row);
+    },
+
+    getRequest: async (operationId) => {
+      const rows = await db.queryJson(
+        jsonAggSql(`
+          SELECT result->'request' AS request
+          FROM sandbox_account_operations
+          WHERE id = $1::uuid AND provider = 't-invest'
+        `),
+        [operationId],
+      );
+      const first = rows[0];
+      if (first === undefined || typeof first !== 'object' || first === null) {
+        return null;
+      }
+      if (!('request' in first) || first.request === null || first.request === undefined) {
+        return null;
+      }
+      return parsePersistedSandboxCommandRequest(first.request);
     },
   };
 }

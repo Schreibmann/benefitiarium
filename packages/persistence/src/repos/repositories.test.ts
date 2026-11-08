@@ -167,10 +167,21 @@ describe('BL-021 repositories (Postgres)', () => {
       errorMessage: null,
       requestHash: 'abc',
     };
-    await operations.append(operation);
+    await operations.append(operation, {
+      type: 'fund',
+      amount: '1000',
+      currency: 'RUB',
+    });
     expect((await operations.findByIdempotencyKey('idem-1'))?.status).toBe('queued');
+    expect(await operations.getRequest(OPERATION_ID)).toEqual({
+      type: 'fund',
+      amount: '1000',
+      currency: 'RUB',
+    });
 
-    await expect(operations.append(operation)).rejects.toThrow(/Duplicate idempotency key/);
+    await expect(
+      operations.append(operation, { type: 'fund', amount: '1000', currency: 'RUB' }),
+    ).rejects.toThrow(/Duplicate idempotency key/);
 
     const updated = await operations.update({
       ...operation,

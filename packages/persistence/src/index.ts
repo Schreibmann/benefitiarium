@@ -27,5 +27,7 @@ export type { InstrumentSpecRepository } from './repos/instrument-specs.js';
 export { createInstrumentSpecRepository } from './repos/instrument-specs.js';
 export type { CatalogProvider, InstrumentRepository } from './repos/instruments.js';
 export { createInstrumentRepository } from './repos/instruments.js';
+export type { PersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
+export { parsePersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
 export type { SandboxOperationRepository } from './repos/sandbox-operations.js';
 export { createSandboxOperationRepository } from './repos/sandbox-operations.js';
