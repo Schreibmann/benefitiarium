@@ -7,7 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --max-warnings=0",
+    "lint": "biome check ./src",
     "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
     "start": "node dist/index.js"
   },

@@ -1,0 +1,13 @@
+{
+  "accountId": "sandbox-account-1",
+  "positions": [
+    {
+      "instrumentUid": "e6123145-9665-43e0-8413-cd61b8aa9b13",
+      "figi": "BBG004730N88",
+      "quantity": "20",
+      "averagePositionPrice": "295.40",
+      "currentPrice": "302.55",
+      "currency": "rub"
+    }
+  ]
+}

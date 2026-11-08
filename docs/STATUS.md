@@ -1,52 +1,67 @@
 # Project Status
 
 **Updated:** 2026-11-08  
-**Current milestone:** M0 — Foundation (**DONE**)  
-**Active task:** none (next: BL-010)  
-**Next task:** BL-010 — domain value objects (EPIC E1)
+**Backlog version:** TECHNICAL_BACKLOG **v1.2**  
+**Current milestone:** M1 — Providers (wrapping E1) / E2 repositories  
+**Active task:** none  
+**Next task:** Wire durable command payloads (finish BL-078) → BL-079 sandbox sync
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone
 
-| Milestone            | Status | Notes                    |
-| -------------------- | ------ | ------------------------ |
-| M0 — Foundation      | DONE   | EPIC E0 verified locally |
-| M1 — Providers       | TODO   | after M0 gate            |
-| M2 — Historical Data | TODO   |                          |
-| M3 — Realtime        | TODO   |                          |
-| M4 — Signals         | TODO   |                          |
-| M5 — Backtesting     | TODO   |                          |
-| M6 — Manual Sandbox  | TODO   |                          |
-| M7 — Paper           | TODO   |                          |
-| M8 — Guarded Live    | TODO   |                          |
+| Milestone            | Status      | Notes                                                     |
+| -------------------- | ----------- | --------------------------------------------------------- |
+| M0 — Foundation      | DONE        | EPIC E0 verified locally                                  |
+| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done                           |
+| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031                         |
+| M3 — Realtime        | TODO        |                                                           |
+| M4 — Signals         | TODO        |                                                           |
+| M5 — Backtesting     | TODO        |                                                           |
+| M6 — Manual Sandbox  | TODO        | E7A BL-078 partial; Postgres store/journal adapters ready |
+| M7 — Paper           | TODO        |                                                           |
+| M8 — Guarded Live    | TODO        |                                                           |
 
-## EPIC E0 task board
+## EPIC E1 task board
 
-| ID     | Status | Notes                                                        |
-| ------ | ------ | ------------------------------------------------------------ |
-| BL-001 | DONE   | pnpm + Turborepo + lockfile                                  |
-| BL-002 | DONE   | TS strict + ESLint + Prettier + Vitest                       |
-| BL-003 | DONE   | apps/\* and packages/\* skeletons                            |
-| BL-004 | DONE   | `@moex/config` Zod schema + `.env.example`                   |
-| BL-005 | DONE   | `docker-compose.yml` Postgres 16 + healthcheck (files ready) |
-| BL-006 | DONE   | GitHub Actions CI                                            |
-| BL-007 | DONE   | ADR-001…009 + STATUS + SECURITY                              |
+| ID     | Status  | Notes                                                                                            |
+| ------ | ------- | ------------------------------------------------------------------------------------------------ |
+| BL-010 | DONE    | Domain VO + sandbox types                                                                        |
+| BL-011 | DONE    | `@moex/decimal`                                                                                  |
+| BL-012 | DONE    | MarketDataProvider + BrokerGateway + SandboxAccountProvider                                      |
+| BL-013 | PARTIAL | Live sandbox probe OK; READ_ONLY token empty                                                     |
+| BL-014 | DONE    | T-Invest adapters + sandbox-only client                                                          |
+| BL-015 | DONE    | MOEX ISS + AlgoPack path                                                                         |
+| BL-016 | DONE    | Cross-provider mapping                                                                           |
+| BL-017 | DONE    | Spec versioning: half-open `valid_from/valid_to`, material change → new row (`@moex/marketdata`) |
+| BL-018 | TODO    | trading schedule adapter                                                                         |
 
-## Verification (M0 gate)
+## EPIC E2
 
-Locally verified:
+| ID     | Status | Notes                                                                                                                                                                                                                |
+| ------ | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BL-020 | DONE   | Migrations applied on local Docker Postgres: `000_schema_migrations` + `001_init` (incl. `broker_accounts.environment`, `sandbox_account_operations`)                                                                |
+| BL-021 | DONE   | Repositories + psql/docker `DbClient` in `@moex/persistence`; instruments/specs/broker_accounts/sandbox ops; transaction boundary documented (single-statement/CTE atomic; `runAtomicSqlScript` for multi-statement) |
 
-- `pnpm install`
-- `pnpm lint`
-- `pnpm typecheck`
-- `pnpm test`
-- `pnpm build`
-- `pnpm format:check`
-- `pnpm db:migrate` (explicit no-op stub until BL-020)
+## EPIC E7A (v1.2)
 
-Environment note: Docker Desktop engine was not running on the implementer machine at verification time (`dockerDesktopLinuxEngine` pipe missing). Compose file and healthcheck are in repo; start Postgres with `docker compose up -d` when Docker is available.
+| ID     | Status  | Notes                                                                                                                                             |
+| ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BL-078 | PARTIAL | Postgres `SandboxAccountStore` / `OperationJournal` adapters exist; in-memory command payloads still used until durable request body is persisted |
+| BL-079 | TODO    |                                                                                                                                                   |
+| BL-087 | TODO    | funding validators present                                                                                                                        |
+| BL-088 | TODO    | Admin API                                                                                                                                         |
+| BL-089 | TODO    | Admin UI                                                                                                                                          |
 
-## Next after M0
+## Notes
 
-BL-010 — domain value objects (start of EPIC E1).
+- Spec helpers: `selectInstrumentSpecAt`, `appendInstrumentSpecVersion` in `@moex/marketdata`
+- Migrations: `packages/persistence/migrations/`
+- Repositories: `packages/persistence/src/repos/`
+- Spike: `pnpm --filter @moex/broker-tinvest spike`
+
+## Next
+
+1. Persist sandbox command payloads beside the journal (complete BL-078)
+2. BL-079 sandbox account discovery/sync
+3. BL-018 trading schedule (optional P1) / BL-039 live coverage with READ_ONLY token

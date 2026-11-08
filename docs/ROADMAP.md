@@ -280,14 +280,18 @@ T‑Банк рекомендует использовать `uid`; FIGI отм�
 
 Для фьючерсного контракта дополнительно хранить:
 
-- уникальный UID конкретного контракта и код серии;
-- базовый актив (`basic_asset_position_uid` в модели T‑Банка);
+- уникальный UID конкретного контракта и код серии (`ticker + class_code`, для T‑Invest class_code обычно `SPBFUT`);
+- базовый актив (`basic_asset` / `basic_asset_position_uid` в модели T‑Банка);
+- категорию базового актива: `commodity` | `equity_index` | `currency` | `share` | `other`;
 - дату экспирации и дату последнего обращения;
+- границы доступной истории (`first_1min_candle_date`, `first_1day_candle_date`);
 - цену в пунктах или валюте расчёта (`priceType`);
-- стоимость пункта / контрактный мультипликатор;
+- стоимость пункта / контрактный мультипликатор (`minPriceIncrementAmount`);
 - размер лота и требования по гарантийному обеспечению, если они предоставляются;
 - открытый интерес, если он доступен в потоке;
 - правила перехода на следующий контракт (roll schedule).
+
+`Indicatives` (например индекс IMOEX) — отдельные неисполняемые ряды базового актива. Их свечи нельзя подменять историей фьючерсного контракта. Историю commodity/index futures загружать по `instrument_uid` конкретного контракта; покрытие фиксировать в coverage matrix (BL-039). Дополнительный источник свечей FORTS — MOEX AlgoPack (`boards/rfud/.../candles.json`), не блокер T‑Invest ingestion.
 
 Не объединять разные серии фьючерсов в один временной ряд без явной roll-логики. Непрерывный back-adjusted ряд годится для отдельных видов анализа, но не является исполнимым инструментом. В заявке указывать конкретный контракт.
 
@@ -1106,7 +1110,7 @@ ML добавлять после того, как собраны качеств�
 - [ ] Поднять PostgreSQL и миграции. _(Compose ready in M0; Drizzle migrations = BL-020)_
 - [x] Описать env schema для T‑Invest production/sandbox и MOEX ISS.
 - [x] Добавить секреты в локальный `.env`, исключить его из Git. _(`.env.example` + gitignore; local `.env` is operator-owned)_
-- [ ] Реализовать `Decimal` helpers и unit tests. _(package stub in M0; implementation = BL-011)_
+- [x] Реализовать `Decimal` helpers и unit tests. _(BL-011)_
 
 ### Providers
 

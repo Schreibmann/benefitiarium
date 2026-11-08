@@ -1,0 +1,16 @@
+---
+description: Run Biome lint and TypeScript typecheck before every commit
+alwaysApply: true
+---
+
+# Pre-commit quality gate
+
+Before creating any git commit in this repo:
+
+1. Run `pnpm lint` (Biome) and fix all reported issues.
+2. Run `pnpm typecheck` and fix all reported issues.
+3. Only then stage and commit.
+
+Do not skip these steps with `--no-verify`, `--no-hooks`, or by amending around a failed hook unless the user explicitly asks.
+
+The git `pre-commit` hook runs `pnpm precommit` (`biome check --staged` + `pnpm typecheck`). Treat a hook failure as a hard stop: fix, then commit again.

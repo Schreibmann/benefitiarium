@@ -17,7 +17,24 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --max-warnings=0",
-    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests"
+    "lint": "biome check ./src",
+    "test": "vitest run --config ../../vitest.config.ts",
+    "spike": "tsx src/spike.ts"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "2.10.0",
+    "@moex/config": "workspace:*",
+    "@moex/contracts": "workspace:*",
+    "@moex/decimal": "workspace:*",
+    "@moex/domain": "workspace:*",
+    "@moex/observability": "workspace:*",
+    "@ttech-pub/grpc-node-client": "1.61.0",
+    "@ttech-pub/invest-core": "1.61.0",
+    "@ttech-pub/invest-sdk-node": "1.61.0",
+    "nice-grpc": "2.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.20.6"
   }
 }

@@ -34,13 +34,17 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/moex
       TINVEST_ENV: sandbox
       TINVEST_BASE_URL: https://sandbox-invest-public-api.tbank.ru:443
-      TINVEST_TOKEN: ''
-      TINVEST_ACCOUNT_ID: ''
+      TINVEST_SANDBOX_TOKEN: ""
+      TINVEST_READ_ONLY_TOKEN: ""
+      TINVEST_FULL_ACCESS_TOKEN: ""
+      TINVEST_SANDBOX_ACCOUNT_ID: ""
+      TINVEST_ACCOUNT_ID: ""
       MOEX_ISS_BASE_URL: https://iss.moex.com/iss
       MOEX_ISS_AUTH_MODE: anonymous
+      MOEX_ISS_TOKEN: ""
       TRADING_MODE: research
-      LIVE_TRADING_ENABLED: 'false'
-      GLOBAL_KILL_SWITCH: 'true'
+      LIVE_TRADING_ENABLED: "false"
+      GLOBAL_KILL_SWITCH: "true"
       LOG_LEVEL: info
       APP_TIMEZONE: Europe/Moscow
 
@@ -77,6 +81,5 @@ jobs:
       - name: Format check
         run: pnpm format:check
 
-      - name: DB migrate stub (until BL-020)
+      - name: DB migrate
         run: pnpm db:migrate
-        # Real migrations land in BL-020; service postgres healthcheck already gates readiness.
