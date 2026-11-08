@@ -12,6 +12,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@moex/broker-tinvest": "workspace:*",
     "@moex/config": "workspace:*",
     "@moex/contracts": "workspace:*",
     "@moex/domain": "workspace:*",

@@ -3,8 +3,8 @@
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** BL-089 Sandbox Admin UI (branch `cursor/bl-089-admin-ui`)  
-**Next task:** Wire API composition root + Playwright E2E (when installs allowed)
+**Active task:** API sandbox admin composition wiring (branch `cursor/bl-088-api-wiring`)  
+**Next task:** Playwright E2E (when installs allowed) + Postgres-backed admin stores
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
@@ -44,10 +44,11 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 ## Notes
 
 - Admin UI lives under `apps/web/src/features/admin/sandbox`
+- API composition: `composeSandboxAdminDeps` (fixture or live sandbox SDK; memory stores)
 - Playwright E2E blocked by `never install` rule — unit tests cover routing/fund validation
 - Quality: Biome + `pnpm precommit`
 
 ## Next
 
-1. Wire `@moex/api` composition root to Postgres + sandbox provider
+1. Promote Admin stores to Postgres repositories
 2. Add Playwright E2E when dependency installs are allowed
