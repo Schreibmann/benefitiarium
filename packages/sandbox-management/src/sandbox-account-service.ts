@@ -3,7 +3,6 @@ import type {
   EnqueueSandboxCommandInput,
   EnqueueSandboxCommandResult,
   SandboxAccountProvider,
-  SandboxProviderAccountRow,
 } from '@moex/contracts';
 import {
   parseIsoDateTime,
@@ -15,6 +14,12 @@ import type { SandboxAccountStore } from './account-store.js';
 import type { SandboxCommandRequest } from './command-request.js';
 import { validateSandboxFundAmount } from './funding.js';
 import { createQueuedOperation, type OperationJournal } from './operation-journal.js';
+import {
+  listMissingAccountRecoveries,
+  type MissingAccountRecovery,
+  reconcileSandboxAccounts,
+  type SandboxSyncSummary,
+} from './sync.js';
 
 export type SandboxAccountServiceOptions = {
   provider: SandboxAccountProvider;
@@ -31,10 +36,11 @@ export type SandboxAccountServiceOptions = {
 export type SandboxAccountService = {
   listLocalAccounts: () => Promise<SandboxAccount[]>;
   getAccount: (accountId: string) => Promise<SandboxAccount | null>;
+  listMissingRecoveries: () => Promise<MissingAccountRecovery[]>;
   enqueue: (input: EnqueueSandboxCommandInput) => Promise<EnqueueSandboxCommandResult>;
   listOperations: () => Promise<SandboxAccountOperation[]>;
   executeOperation: (operationId: string) => Promise<SandboxAccountOperation>;
-  reconcileWithProvider: () => Promise<SandboxAccount[]>;
+  reconcileWithProvider: () => Promise<SandboxSyncSummary>;
 };
 
 function requestHash(parts: Record<string, string>): string {
@@ -83,10 +89,20 @@ export function createSandboxAccountService(
     return { operation, accepted: true };
   }
 
+  async function runReconcile(): Promise<SandboxSyncSummary> {
+    return reconcileSandboxAccounts({
+      accounts: options.accounts,
+      listProviderAccounts: () => options.provider.listAccounts(),
+      now,
+    });
+  }
+
   return {
     listLocalAccounts: () => options.accounts.list(),
 
     getAccount: async (accountId) => options.accounts.getById(parseUuid(accountId)),
+
+    listMissingRecoveries: () => listMissingAccountRecoveries(options.accounts),
 
     enqueue: async (input) => {
       if (input.type === 'create') {
@@ -98,6 +114,25 @@ export function createSandboxAccountService(
           type: 'create',
           name,
         });
+      }
+
+      if (input.type === 'sync') {
+        if (input.accountId === null) {
+          return enqueueOrReuse(input, requestHash({ type: 'sync', accountId: '' }), null, {
+            type: 'sync',
+            accountId: null,
+          });
+        }
+        const account = await options.accounts.getById(input.accountId);
+        if (account === null) {
+          throw new Error(`Local sandbox account not found: ${input.accountId}`);
+        }
+        return enqueueOrReuse(
+          input,
+          requestHash({ type: 'sync', accountId: account.id }),
+          account.id,
+          { type: 'sync', accountId: account.id },
+        );
       }
 
       const account = await options.accounts.getById(input.accountId);
@@ -126,33 +161,24 @@ export function createSandboxAccountService(
         );
       }
 
-      if (input.type === 'close') {
-        if (input.confirmation.trim().length === 0) {
-          throw new Error('close confirmation is required');
-        }
-        const expected = account.displayName ?? account.providerAccountId;
-        if (input.confirmation.trim() !== expected && input.confirmation.trim() !== account.id) {
-          throw new Error('close confirmation does not match account name or id');
-        }
-        return enqueueOrReuse(
-          input,
-          requestHash({ type: 'close', accountId: account.id }),
-          account.id,
-          { type: 'close' },
-        );
+      if (input.confirmation.trim().length === 0) {
+        throw new Error('close confirmation is required');
       }
-
+      const expected = account.displayName ?? account.providerAccountId;
+      if (input.confirmation.trim() !== expected && input.confirmation.trim() !== account.id) {
+        throw new Error('close confirmation does not match account name or id');
+      }
       return enqueueOrReuse(
         input,
-        requestHash({ type: 'sync', accountId: account.id }),
+        requestHash({ type: 'close', accountId: account.id }),
         account.id,
-        { type: 'sync', accountId: account.id },
+        { type: 'close' },
       );
     },
 
     listOperations: () => options.journal.list(),
 
-    reconcileWithProvider: () => reconcileAccounts(options, now),
+    reconcileWithProvider: () => runReconcile(),
 
     executeOperation: async (operationId) => {
       if (!allowWrites) {
@@ -199,7 +225,7 @@ export function createSandboxAccountService(
         }
 
         if (payload.type === 'sync') {
-          await reconcileAccounts(options, now);
+          await runReconcile();
           return markSucceeded(options.journal, running, now);
         }
 
@@ -259,60 +285,4 @@ async function markSucceeded(
     completedAt: parseIsoDateTime(now().toISOString()),
     errorMessage: null,
   });
-}
-
-async function reconcileAccounts(
-  options: SandboxAccountServiceOptions,
-  now: () => Date,
-): Promise<SandboxAccount[]> {
-  let providerRows: SandboxProviderAccountRow[];
-  try {
-    providerRows = await options.provider.listAccounts();
-  } catch {
-    // Transient provider errors must not mark all locals missing.
-    return options.accounts.list();
-  }
-
-  const providerIds = new Set(providerRows.map((row) => row.providerAccountId));
-  const local = await options.accounts.list();
-  const verifiedAt = parseIsoDateTime(now().toISOString());
-
-  for (const row of providerRows) {
-    const existing = await options.accounts.getByProviderAccountId(row.providerAccountId);
-    if (existing !== null) {
-      await options.accounts.upsert({
-        ...existing,
-        displayName: row.displayName ?? existing.displayName,
-        providerStatus: row.providerStatus,
-        localStatus: row.providerStatus === 'closed' ? 'closed' : 'active',
-        openedAt: row.openedAt ?? existing.openedAt,
-        closedAt: row.closedAt,
-        lastVerifiedAt: verifiedAt,
-      });
-      continue;
-    }
-    await options.accounts.upsert({
-      id: parseUuid(randomUUID()),
-      providerAccountId: row.providerAccountId,
-      environment: 'sandbox',
-      displayName: row.displayName,
-      providerStatus: row.providerStatus,
-      localStatus: row.providerStatus === 'closed' ? 'closed' : 'active',
-      openedAt: row.openedAt,
-      closedAt: row.closedAt,
-      lastVerifiedAt: verifiedAt,
-    });
-  }
-
-  for (const account of local) {
-    if (!providerIds.has(account.providerAccountId) && account.localStatus !== 'closed') {
-      await options.accounts.upsert({
-        ...account,
-        localStatus: 'missing',
-        lastVerifiedAt: verifiedAt,
-      });
-    }
-  }
-
-  return options.accounts.list();
 }

@@ -223,9 +223,11 @@ describe('SandboxAccountService', () => {
     await accounts.upsert(orphan);
     const reconciled = await service.reconcileWithProvider();
     expect(
-      reconciled.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus,
+      reconciled.accounts.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus,
     ).toBe('missing');
-    expect(reconciled.find((row) => row.id === account.id)?.localStatus).toBe('active');
+    expect(reconciled.accounts.find((row) => row.id === account.id)?.localStatus).toBe('active');
+    expect(reconciled.missingProviderAccountIds).toContain('gone-provider-id');
+    expect(reconciled.providerUnavailable).toBe(false);
 
     const closeOp = await service.enqueue({
       type: 'close',
@@ -313,6 +315,101 @@ describe('SandboxAccountService', () => {
       allowProviderWrites: true,
     });
     const listed = await service.reconcileWithProvider();
-    expect(listed[0]?.localStatus).toBe('active');
+    expect(listed.providerUnavailable).toBe(true);
+    expect(listed.accounts[0]?.localStatus).toBe('active');
+    expect(listed.missingProviderAccountIds).toHaveLength(0);
+  });
+
+  it('enqueues global discovery sync without accountId and recovers missing on reappear', async () => {
+    const provider = createTestProvider([
+      {
+        providerAccountId: 'acc-live',
+        displayName: 'live',
+        providerStatus: 'open',
+        openedAt: '2026-11-01T00:00:00.000Z',
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const accounts = createMemorySandboxAccountStore([
+      {
+        id: parseUuid('33333333-3333-4333-8333-333333333333'),
+        providerAccountId: 'acc-live',
+        environment: 'sandbox',
+        displayName: 'live',
+        providerStatus: 'open',
+        localStatus: 'missing',
+        openedAt: parseIsoDateTime('2026-11-01T00:00:00.000Z'),
+        closedAt: null,
+        lastVerifiedAt: null,
+      },
+    ]);
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'sync',
+      accountId: null,
+      idempotencyKey: 'global-sync-1',
+      correlationId: 'c-sync',
+    });
+    expect(enqueued.operation.accountId).toBeNull();
+
+    const worker = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: true,
+      now: () => new Date('2026-11-08T22:00:00.000Z'),
+    });
+    expect((await worker.executeOperation(enqueued.operation.id)).status).toBe('succeeded');
+    const recovered = await worker.getAccount('33333333-3333-4333-8333-333333333333');
+    expect(recovered?.localStatus).toBe('active');
+    expect(recovered?.providerAccountId).toBe('acc-live');
+    expect(await worker.listMissingRecoveries()).toHaveLength(0);
+  });
+
+  it('maps provider NEW to local new and keeps history for missing accounts', async () => {
+    const provider = createTestProvider([
+      {
+        providerAccountId: 'acc-new',
+        displayName: 'new-one',
+        providerStatus: 'new',
+        openedAt: null,
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const service = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore([
+        {
+          id: parseUuid('44444444-4444-4444-8444-444444444444'),
+          providerAccountId: 'gone',
+          environment: 'sandbox',
+          displayName: 'old',
+          providerStatus: 'open',
+          localStatus: 'active',
+          openedAt: parseIsoDateTime('2026-10-01T00:00:00.000Z'),
+          closedAt: null,
+          lastVerifiedAt: null,
+        },
+      ]),
+      journal: createMemoryOperationJournal(),
+      allowProviderWrites: true,
+    });
+    const summary = await service.reconcileWithProvider();
+    expect(summary.discoveredProviderAccountIds).toContain('acc-new');
+    expect(summary.accounts.find((row) => row.providerAccountId === 'acc-new')?.localStatus).toBe(
+      'new',
+    );
+    const missing = summary.accounts.find((row) => row.providerAccountId === 'gone');
+    expect(missing?.localStatus).toBe('missing');
+    expect(missing?.id).toBe('44444444-4444-4444-8444-444444444444');
+    expect((await service.listMissingRecoveries())[0]?.action).toBe('create_new_account');
   });
 });

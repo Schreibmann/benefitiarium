@@ -1,26 +1,26 @@
 # Project Status
 
-**Updated:** 2026-11-08  
+**Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** BL-078 durable payloads (branch `cursor/bl-078-durable-payloads`)  
-**Next task:** BL-079 sandbox account discovery/sync (separate branch)
+**Active task:** BL-079 sandbox sync (branch `cursor/bl-079-sandbox-sync`)  
+**Next task:** BL-087 safe fund/close workflows (separate branch)
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone
 
-| Milestone            | Status      | Notes                                             |
-| -------------------- | ----------- | ------------------------------------------------- |
-| M0 — Foundation      | DONE        | EPIC E0 verified locally                          |
-| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done                   |
-| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031                 |
-| M3 — Realtime        | TODO        |                                                   |
-| M4 — Signals         | TODO        |                                                   |
-| M5 — Backtesting     | TODO        |                                                   |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A: BL-078 durable request bodies on this branch |
-| M7 — Paper           | TODO        |                                                   |
-| M8 — Guarded Live    | TODO        |                                                   |
+| Milestone            | Status      | Notes                                   |
+| -------------------- | ----------- | --------------------------------------- |
+| M0 — Foundation      | DONE        | EPIC E0 verified locally                |
+| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done         |
+| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031       |
+| M3 — Realtime        | TODO        |                                         |
+| M4 — Signals         | TODO        |                                         |
+| M5 — Backtesting     | TODO        |                                         |
+| M6 — Manual Sandbox  | IN_PROGRESS | E7A: BL-078 done; BL-079 on this branch |
+| M7 — Paper           | TODO        |                                         |
+| M8 — Guarded Live    | TODO        |                                         |
 
 ## EPIC E1 task board
 
@@ -38,31 +38,29 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## EPIC E2
 
-| ID     | Status | Notes                                                                             |
-| ------ | ------ | --------------------------------------------------------------------------------- |
-| BL-020 | DONE   | Migrations applied on local Docker Postgres: `000_schema_migrations` + `001_init` |
-| BL-021 | DONE   | Repositories + psql/docker `DbClient` in `@moex/persistence`                      |
+| ID     | Status | Notes                                       |
+| ------ | ------ | ------------------------------------------- |
+| BL-020 | DONE   | Migrations applied on local Docker Postgres |
+| BL-021 | DONE   | Repositories + psql/docker `DbClient`       |
 
 ## EPIC E7A (v1.2)
 
-| ID     | Status | Notes                                                                                                                                                                                 |
-| ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| BL-078 | DONE   | Durable command request in journal (`result.request` + fund amount/currency); in-memory Map removed; idempotency hash conflict rejected; worker can execute after API-process restart |
-| BL-079 | TODO   | next branch                                                                                                                                                                           |
-| BL-087 | TODO   | funding validators present                                                                                                                                                            |
-| BL-088 | TODO   | Admin API                                                                                                                                                                             |
-| BL-089 | TODO   | Admin UI                                                                                                                                                                              |
+| ID     | Status | Notes                                                                                                                                                                  |
+| ------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BL-078 | DONE   | Durable command request bodies; hash conflict rejection                                                                                                                |
+| BL-079 | DONE   | Global durable sync; ACCOUNT_STATUS_ALL listing; provider vs local status; missing recovery hint (create new, keep history); transient list errors do not mark missing |
+| BL-087 | TODO   | funding validators present                                                                                                                                             |
+| BL-088 | TODO   | Admin API                                                                                                                                                              |
+| BL-089 | TODO   | Admin UI                                                                                                                                                               |
 
 ## Notes
 
-- Spec helpers: `selectInstrumentSpecAt`, `appendInstrumentSpecVersion` in `@moex/marketdata`
-- Migrations: `packages/persistence/migrations/`
-- Repositories: `packages/persistence/src/repos/`
-- Spike: `pnpm --filter @moex/broker-tinvest spike`
-- Quality: Biome + `pnpm precommit` (lint staged + typecheck)
+- Sync helpers: `reconcileSandboxAccounts`, `listMissingAccountRecoveries` in `@moex/sandbox-management`
+- SDK provider: `createSdkSandboxAccountProvider` requests `ACCOUNT_STATUS_ALL`
+- Quality: Biome + `pnpm precommit`
 
 ## Next
 
-1. **BL-079** — sandbox account discovery/sync/recovery (new branch off main)
+1. **BL-087** — safe fund/close workflows (new branch)
 2. BL-022 outbox / BL-023 audit (needed before BL-088)
-3. BL-087 fund/close workflows → BL-088 Admin API → BL-089 UI
+3. BL-088 Admin API → BL-089 UI

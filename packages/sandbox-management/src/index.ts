@@ -15,5 +15,14 @@ export type {
   SandboxAccountServiceOptions,
 } from './sandbox-account-service.js';
 export { createSandboxAccountService } from './sandbox-account-service.js';
+export type {
+  MissingAccountRecovery,
+  SandboxSyncSummary,
+} from './sync.js';
+export {
+  listMissingAccountRecoveries,
+  localStatusFromProvider,
+  reconcileSandboxAccounts,
+} from './sync.js';
 
 export const packageName = '@moex/sandbox-management' as const;

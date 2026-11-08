@@ -77,7 +77,8 @@ export type EnqueueSandboxCommandInput =
     }
   | {
       type: 'sync';
-      accountId: UUID;
+      /** Null = full discovery sync of all sandbox accounts (BL-079). */
+      accountId: UUID | null;
       idempotencyKey: string;
       correlationId: string;
     }
