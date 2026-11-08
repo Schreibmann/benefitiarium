@@ -3,8 +3,8 @@
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** BL-023 audit log service (branch `cursor/bl-023-audit`)  
-**Next task:** BL-088 Sandbox Admin API (separate branch)
+**Active task:** BL-088 Sandbox Admin API (branch `cursor/bl-088-admin-api`)  
+**Next task:** BL-089 Admin UI (separate branch)
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
@@ -18,7 +18,7 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 | M3 — Realtime        | TODO        |                                      |
 | M4 — Signals         | TODO        |                                      |
 | M5 — Backtesting     | TODO        |                                      |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A ready for Admin API after BL-023 |
+| M6 — Manual Sandbox  | IN_PROGRESS | E7A: Admin API routes on this branch |
 | M7 — Paper           | TODO        |                                      |
 | M8 — Guarded Live    | TODO        |                                      |
 
@@ -52,16 +52,16 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 | BL-078 | DONE   | Durable command request bodies; hash conflict rejection                                                                                                                |
 | BL-079 | DONE   | Global durable sync; ACCOUNT_STATUS_ALL listing; provider vs local status; missing recovery hint (create new, keep history); transient list errors do not mark missing |
 | BL-087 | DONE   | Close preview + open-risk ack; fund no-withdraw policy notes; timeout → `unknown` (no blind retry); ambiguous create needs reconciliation                              |
-| BL-088 | TODO   | Admin API                                                                                                                                                              |
+| BL-088 | DONE   | Admin sandbox routes + bearer auth; POST → 202 + audit/outbox; refuses production base URL; no token leakage in responses                                              |
 | BL-089 | TODO   | Admin UI                                                                                                                                                               |
 
 ## Notes
 
-- Audit: `createAuditLogService` / `redactAuditPayload` (append-only; no update/delete API)
-- Outbox: `createOutboxRepository` / `createOutboxPublisher` / `createIdempotentOutboxHandler`
+- Admin API: `registerSandboxAdminRoutes` / `ADMIN_API_TOKEN` (empty token → 503)
+- Composition root still needs live provider/DB wiring for production process start
 - Quality: Biome + `pnpm precommit`
 
 ## Next
 
-1. **BL-088** — Sandbox Admin API (new branch)
-2. BL-089 Admin UI
+1. Wire API composition root to Postgres + sandbox provider
+2. **BL-089** — Admin UI

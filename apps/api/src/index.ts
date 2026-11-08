@@ -1,23 +1,16 @@
 import { loadEnv } from '@moex/config';
 import { createLogger } from '@moex/observability';
-import Fastify from 'fastify';
+import { createApp } from './create-app.js';
 
 const env = loadEnv(process.env);
 const logger = createLogger({ service: '@moex/api', level: env.LOG_LEVEL });
 
-const app = Fastify({ logger: false });
-
-app.get('/api/v1/health', async () => {
-  return {
-    status: 'ok',
-    tradingMode: env.TRADING_MODE,
-    liveTradingEnabled: env.LIVE_TRADING_ENABLED,
-  };
-});
-
 const port = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 async function main(): Promise<void> {
+  // Sandbox Admin routes are registered by the composition root when provider/stores are wired.
+  // Until persistence wiring lands in this process, health remains available; Admin requires deps.
+  const app = await createApp({ env });
   await app.listen({ port, host: '0.0.0.0' });
   logger.info('api listening', { port });
 }

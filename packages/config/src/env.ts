@@ -53,6 +53,11 @@ export const envSchema = z.object({
   LIVE_TRADING_ENABLED: booleanFromString.default(false),
   GLOBAL_KILL_SWITCH: booleanFromString.default(true),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+  /**
+   * Single-operator Admin API bearer token (BL-088).
+   * Empty disables admin routes (anonymous access remains impossible).
+   */
+  ADMIN_API_TOKEN: z.string().default(''),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
