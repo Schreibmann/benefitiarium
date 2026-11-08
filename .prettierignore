@@ -1,0 +1,10 @@
+pnpm-lock.yaml
+node_modules
+dist
+build
+coverage
+.turbo
+apps/web/dist
+*.tsbuildinfo
+docs/TECHNICAL_BACKLOG.md
+docs/ROADMAP.md

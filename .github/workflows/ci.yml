@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: moex
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d moex"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/moex
+      TINVEST_ENV: sandbox
+      TINVEST_BASE_URL: https://sandbox-invest-public-api.tbank.ru:443
+      TINVEST_TOKEN: ''
+      TINVEST_ACCOUNT_ID: ''
+      MOEX_ISS_BASE_URL: https://iss.moex.com/iss
+      MOEX_ISS_AUTH_MODE: anonymous
+      TRADING_MODE: research
+      LIVE_TRADING_ENABLED: 'false'
+      GLOBAL_KILL_SWITCH: 'true'
+      LOG_LEVEL: info
+      APP_TIMEZONE: Europe/Moscow
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Format check
+        run: pnpm format:check
+
+      - name: DB migrate stub (until BL-020)
+        run: pnpm db:migrate
+        # Real migrations land in BL-020; service postgres healthcheck already gates readiness.

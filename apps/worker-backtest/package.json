@@ -1,0 +1,21 @@
+{
+  "name": "@moex/worker-backtest",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --max-warnings=0",
+    "test": "vitest run --config ../../vitest.config.ts --passWithNoTests",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@moex/config": "workspace:*",
+    "@moex/observability": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  }
+}
