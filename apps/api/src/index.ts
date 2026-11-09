@@ -1,5 +1,6 @@
 import { applyLocalEnvFile, loadEnv } from '@moex/config';
 import { createLogger } from '@moex/observability';
+import { composeMarketDataDeps } from './compose-market-data.js';
 import { composeSandboxAdminDeps } from './compose-sandbox-admin.js';
 import { createApp } from './create-app.js';
 
@@ -11,21 +12,26 @@ const port = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 async function main(): Promise<void> {
   const adminConfigured = env.ADMIN_API_TOKEN.trim().length > 0;
-  if (!adminConfigured) {
-    const app = await createApp({ env });
-    await app.listen({ port, host: '0.0.0.0' });
-    logger.info('api listening', { port, sandboxAdminEnabled: false });
-    return;
-  }
+  const sandboxAdmin = adminConfigured
+    ? await composeSandboxAdminDeps(env).then(({ storeMode, ...deps }) => ({
+        deps,
+        storeMode,
+      }))
+    : null;
 
-  const composed = await composeSandboxAdminDeps(env);
-  const { storeMode, ...sandboxAdmin } = composed;
-  const app = await createApp({ env, sandboxAdmin });
+  const marketData = await composeMarketDataDeps(env);
+
+  const app = await createApp({
+    env,
+    ...(sandboxAdmin !== null ? { sandboxAdmin: sandboxAdmin.deps } : {}),
+    ...(marketData !== null ? { marketData } : {}),
+  });
   await app.listen({ port, host: '0.0.0.0' });
   logger.info('api listening', {
     port,
-    sandboxAdminEnabled: true,
-    sandboxAdminStore: storeMode,
+    sandboxAdminEnabled: sandboxAdmin !== null,
+    sandboxAdminStore: sandboxAdmin?.storeMode ?? null,
+    marketDataEnabled: marketData !== null,
   });
 }
 

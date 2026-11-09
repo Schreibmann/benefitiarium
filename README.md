@@ -11,11 +11,30 @@ A TypeScript monorepo that separates four product contours:
 | Contour                | Goal                                                       | Status today                                    |
 | ---------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
 | **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial (E1 providers mostly done)              |
-| **Research**           | Indicators, strategy versions, exploration UI              | Scaffold only                                   |
+| **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots chart UI (5m/1h)               |
 | **Signals & backtest** | Reproducible signals + event-driven simulation             | Packages exist as stubs                         |
 | **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** |
 
 The architectural rule is firm: **exchange data source ≠ broker execution channel**. Strategies talk to ports (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), not to SDK DTOs.
+
+## What works now (chart + Fibonacci pivots)
+
+UI slice for **Fibonacci Pivot Points** (not retracement). Spec: [docs/ADR/fibonacci-pivot-points-implementation-spec.md](docs/ADR/fibonacci-pivot-points-implementation-spec.md).
+
+1. Set `TINVEST_READ_ONLY_TOKEN` (or sandbox token) in `.env`.
+2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`).
+3. Open `http://127.0.0.1:5173/charts/NG-12.26`.
+4. Switch **5m** (daily reference) / **1h** (weekly reference); levels `P/R1–R3/S1–S3` overlay candles.
+
+API:
+
+| Method | Path                                                                              | Notes                |
+| ------ | --------------------------------------------------------------------------------- | -------------------- |
+| GET    | `/api/v1/instruments/by-ticker/:ticker`                                           | Resolve T-Invest UID |
+| GET    | `/api/v1/instruments/:uid/candles?interval=5m\|1h&from=&to=`                      | Chart candles        |
+| GET    | `/api/v1/instruments/:uid/indicators/fibonacci-pivots?timeframe=5m\|1h&from=&to=` | Pivot segments       |
+
+Pivots are computed **on read** (no persist/workers yet). Signals are not implemented.
 
 ## What works now (E7A Sandbox Admin)
 

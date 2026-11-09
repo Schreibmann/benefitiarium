@@ -2,9 +2,9 @@
 
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
-**Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** E7A locally verified; next is PR / merge to main  
-**Next task:** Open PR / merge E7A stack to main; then worker outbox drain
+**Current milestone:** M6 — Manual Sandbox (E7A) + Fibonacci pivots chart UI slice  
+**Active task:** Fibonacci Pivot Points chart UI (`cursor/bl-fib-pivots-chart-ui`)  
+**Next task:** Persist/workers for pivots; merge E7A + chart branches; sandbox worker outbox drain
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
@@ -32,15 +32,27 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 | BL-088 | DONE   | Admin API + Postgres durable stores (auto/memory fallback)          |
 | BL-089 | DONE   | Admin UI + Playwright e2e (auth gate, create queued, no optimistic) |
 
+## Fibonacci Pivot Points (UI slice)
+
+| Piece                                | Status   | Notes                                                   |
+| ------------------------------------ | -------- | ------------------------------------------------------- |
+| Pure calculator `@moex/indicators`   | DONE     | ADR formula; 5m→1D / 1h→1W                              |
+| On-read API candles + pivots         | DONE     | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token |
+| TanStack Charts UI `/charts/:ticker` | DONE     | Candles + period-bounded pivot `link`s                  |
+| Signals                              | DEFERRED | Out of scope for this slice                             |
+| Persist table / workers              | DEFERRED | Next stage after UI                                     |
+
 ## Notes
 
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
-- Local verify 2026-11-09: `docker compose` Postgres healthy; migrations 000–002 applied; `pnpm lint` (warnings only), `typecheck`, `test`, `build`, Playwright e2e 3/3; API health smoke OK (`ADMIN_API_TOKEN` empty → admin routes off)
+- Chart: `http://127.0.0.1:5173/charts/NG-12.26` (Vite proxies `/api` → `:3000`)
+- Spec: `docs/ADR/fibonacci-pivot-points-implementation-spec.md`
 
 ## Next
 
-1. Set `ADMIN_API_TOKEN` in `.env` for full Admin UI loop
+1. Set `ADMIN_API_TOKEN` / T-Invest read token in `.env` for full local loops
 2. Merge stage branches / open PR to main
 3. Worker outbox drain for sandbox commands
+4. Pivot persistence + calendar-alignment gate (ADR §3.5 / §6–7)

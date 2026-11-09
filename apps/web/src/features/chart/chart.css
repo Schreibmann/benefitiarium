@@ -1,0 +1,92 @@
+.price-chart {
+  --chart-bg: light-dark(#f7f4ee, #1b1f2a);
+  --chart-ink: light-dark(#1c2416, #e8ecf4);
+  --chart-line: light-dark(#cfc6b4, #3a4254);
+  --chart-up: #2f7d4a;
+  --chart-down: #b42318;
+  --chart-wick: light-dark(#5c614f, #9aa3b5);
+  --chart-pivot-p: light-dark(#1d4f91, #7db1ff);
+  --chart-pivot-r: light-dark(#8a4b12, #f0b27a);
+  --chart-pivot-s: light-dark(#2f5d3a, #8fd0a0);
+
+  min-height: 100vh;
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 1.25rem 1.5rem 2rem;
+  color: var(--chart-ink);
+  background:
+    radial-gradient(circle at top right, light-dark(#fff8e8, #242b3a), transparent 45%),
+    linear-gradient(180deg, light-dark(#faf7f1, #171b24), var(--chart-bg));
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.price-chart h1 {
+  margin: 0 0 0.35rem;
+  font-family: "IBM Plex Serif", Georgia, serif;
+  text-wrap: balance;
+}
+
+.price-chart__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--chart-line);
+}
+
+.price-chart__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.price-chart label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.price-chart input,
+.price-chart select,
+.price-chart button {
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--chart-line);
+  background: light-dark(#fffdf8, #222836);
+  color: inherit;
+}
+
+.price-chart button {
+  cursor: pointer;
+  border-color: var(--chart-pivot-p);
+}
+
+.price-chart button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.price-chart__meta {
+  margin: 0.35rem 0 0.85rem;
+  color: light-dark(#5c614f, #a7b0c2);
+  font-size: 0.9rem;
+}
+
+.price-chart__error {
+  color: var(--chart-down);
+  margin: 0.5rem 0;
+}
+
+.price-chart__canvas {
+  border: 1px solid var(--chart-line);
+  background: light-dark(#fffdf8, #12161f);
+  padding: 0.5rem;
+  min-height: 480px;
+}
+
+.price-chart a {
+  color: var(--chart-pivot-p);
+}

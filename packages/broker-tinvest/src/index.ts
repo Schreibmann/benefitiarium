@@ -8,6 +8,10 @@ export type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 export { mapTinvestAccountStatus, TINVEST_ACCOUNT_STATUS } from './sandbox-account-status.js';
 export { assertSandboxUrl, TINVEST_SANDBOX_HOST, TINVEST_SANDBOX_URL } from './sandbox-endpoint.js';
 export { FUTURE_BY_LOOKUP_NOTE, REQUIRED_SDK_COMMANDS, TINVEST_SDK_META } from './sdk-meta.js';
+export {
+  createIdentityInstrumentUidResolver,
+  createSdkTinvestReadApi,
+} from './sdk-read-api.js';
 export type { SandboxSdkSender } from './sdk-sandbox-account-provider.js';
 export { createSdkSandboxAccountProvider } from './sdk-sandbox-account-provider.js';
 export type { TinvestBrokerGatewayOptions } from './tinvest-broker-gateway.js';
