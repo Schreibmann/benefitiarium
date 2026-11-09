@@ -58,6 +58,11 @@ export const envSchema = z.object({
    * Empty disables admin routes (anonymous access remains impossible).
    */
   ADMIN_API_TOKEN: z.string().default(''),
+  /**
+   * Admin durable store selection (BL-088 wiring).
+   * `auto` uses Postgres when reachable, otherwise in-memory.
+   */
+  SANDBOX_ADMIN_STORE: z.enum(['auto', 'memory', 'postgres']).default('auto'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

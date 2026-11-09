@@ -3,8 +3,8 @@
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** API sandbox admin composition wiring (branch `cursor/bl-088-api-wiring`)  
-**Next task:** Playwright E2E (when installs allowed) + Postgres-backed admin stores
+**Active task:** Postgres-backed Admin stores (branch `cursor/bl-088-postgres-admin-stores`)  
+**Next task:** Playwright E2E for Sandbox Admin UI
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
@@ -33,22 +33,21 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## EPIC E7A (v1.2)
 
-| ID     | Status  | Notes                                                                                                                               |
-| ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| BL-078 | DONE    | Durable command request bodies; hash conflict rejection                                                                             |
-| BL-079 | DONE    | Global durable sync; ACCOUNT_STATUS_ALL; missing recovery hint                                                                      |
-| BL-087 | DONE    | Close preview + open-risk ack; fund no-withdraw; timeout → unknown                                                                  |
-| BL-088 | DONE    | Admin sandbox routes + bearer auth; POST → 202 + audit/outbox                                                                       |
-| BL-089 | PARTIAL | `/admin/sandbox` UI: overview/accounts/detail/ops, fund/close confirms, no optimistic success; Playwright E2E deferred (no install) |
+| ID     | Status  | Notes                                                                                 |
+| ------ | ------- | ------------------------------------------------------------------------------------- |
+| BL-078 | DONE    | Durable command request bodies; hash conflict rejection                               |
+| BL-079 | DONE    | Global durable sync; ACCOUNT_STATUS_ALL; missing recovery hint                        |
+| BL-087 | DONE    | Close preview + open-risk ack; fund no-withdraw; timeout → unknown                    |
+| BL-088 | DONE    | Admin routes + auth; composition uses Postgres when reachable (`SANDBOX_ADMIN_STORE`) |
+| BL-089 | PARTIAL | Admin UI scaffold; Playwright E2E next                                                |
 
 ## Notes
 
-- Admin UI lives under `apps/web/src/features/admin/sandbox`
-- API composition: `composeSandboxAdminDeps` (fixture or live sandbox SDK; memory stores)
-- Playwright E2E blocked by `never install` rule — unit tests cover routing/fund validation
+- `composeSandboxAdminDeps`: `auto` → Postgres durable stores, else memory
+- Admin UI: `apps/web/src/features/admin/sandbox`
 - Quality: Biome + `pnpm precommit`
 
 ## Next
 
-1. Promote Admin stores to Postgres repositories
-2. Add Playwright E2E when dependency installs are allowed
+1. Playwright E2E for `/admin/sandbox` workflows
+2. Promote Admin UI polish / worker execution drain of outbox

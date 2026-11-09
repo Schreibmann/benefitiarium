@@ -10,15 +10,21 @@ const port = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 async function main(): Promise<void> {
   const adminConfigured = env.ADMIN_API_TOKEN.trim().length > 0;
-  const sandboxAdmin = adminConfigured ? await composeSandboxAdminDeps(env) : undefined;
-  const app = await createApp({
-    env,
-    ...(sandboxAdmin !== undefined ? { sandboxAdmin } : {}),
-  });
+  if (!adminConfigured) {
+    const app = await createApp({ env });
+    await app.listen({ port, host: '0.0.0.0' });
+    logger.info('api listening', { port, sandboxAdminEnabled: false });
+    return;
+  }
+
+  const composed = await composeSandboxAdminDeps(env);
+  const { storeMode, ...sandboxAdmin } = composed;
+  const app = await createApp({ env, sandboxAdmin });
   await app.listen({ port, host: '0.0.0.0' });
   logger.info('api listening', {
     port,
-    sandboxAdminEnabled: adminConfigured,
+    sandboxAdminEnabled: true,
+    sandboxAdminStore: storeMode,
   });
 }
 
