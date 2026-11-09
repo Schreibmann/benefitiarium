@@ -1,8 +1,9 @@
-import { loadEnv } from '@moex/config';
+import { applyLocalEnvFile, loadEnv } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import { composeSandboxAdminDeps } from './compose-sandbox-admin.js';
 import { createApp } from './create-app.js';
 
+applyLocalEnvFile();
 const env = loadEnv(process.env);
 const logger = createLogger({ service: '@moex/api', level: env.LOG_LEVEL });
 

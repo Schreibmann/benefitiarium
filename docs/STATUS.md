@@ -3,8 +3,8 @@
 **Updated:** 2026-11-09  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** BL-089 Playwright E2E (branch `cursor/bl-089-playwright-e2e`)  
-**Next task:** Open PR / merge E7A stack to main
+**Active task:** E7A locally verified; next is PR / merge to main  
+**Next task:** Open PR / merge E7A stack to main; then worker outbox drain
 
 Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
@@ -37,8 +37,10 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
+- Local verify 2026-11-09: `docker compose` Postgres healthy; migrations 000–002 applied; `pnpm lint` (warnings only), `typecheck`, `test`, `build`, Playwright e2e 3/3; API health smoke OK (`ADMIN_API_TOKEN` empty → admin routes off)
 
 ## Next
 
-1. Merge stage branches / open PR to main
-2. Worker outbox drain for sandbox commands
+1. Set `ADMIN_API_TOKEN` in `.env` for full Admin UI loop
+2. Merge stage branches / open PR to main
+3. Worker outbox drain for sandbox commands
