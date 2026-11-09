@@ -1,3 +1,4 @@
+import { type SessionCandleRow, sessionIndexRange } from './session-scale.js';
 import type { FibonacciPivotApiResponse, PivotLevelName, PivotSegment } from './types.js';
 
 const LEVELS: Array<{
@@ -13,12 +14,19 @@ const LEVELS: Array<{
   { level: 'S3', key: 's3' },
 ];
 
-export function toPivotSegments(response: FibonacciPivotApiResponse): PivotSegment[] {
+export function toPivotSegments(
+  response: FibonacciPivotApiResponse,
+  candles: readonly SessionCandleRow[],
+): PivotSegment[] {
   const segments: PivotSegment[] = [];
   for (const period of response.periods) {
-    const x1 = new Date(period.validPeriod.start);
-    const x2 = new Date(period.validPeriod.end);
-    if (Number.isNaN(x1.getTime()) || Number.isNaN(x2.getTime())) {
+    const startMs = Date.parse(period.validPeriod.start);
+    const endMs = Date.parse(period.validPeriod.end);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+      continue;
+    }
+    const range = sessionIndexRange(candles, startMs, endMs);
+    if (range === null) {
       continue;
     }
     for (const { level, key } of LEVELS) {
@@ -31,8 +39,8 @@ export function toPivotSegments(response: FibonacciPivotApiResponse): PivotSegme
         id: `${response.instrumentUid}:${response.chartTimeframe}:${period.validPeriod.id}:${level}:${period.algorithm.version}`,
         periodId: period.validPeriod.id,
         level,
-        x1,
-        x2,
+        x1: range.x1,
+        x2: range.x2,
         y1: y,
         y2: y,
       });
@@ -45,6 +53,6 @@ export function pivotLabelRows(segments: readonly PivotSegment[]): PivotSegment[
   if (segments.length === 0) {
     return [];
   }
-  const latestEnd = Math.max(...segments.map((segment) => segment.x2.getTime()));
-  return segments.filter((segment) => segment.x2.getTime() === latestEnd);
+  const latestEnd = Math.max(...segments.map((segment) => segment.x2));
+  return segments.filter((segment) => segment.x2 === latestEnd);
 }

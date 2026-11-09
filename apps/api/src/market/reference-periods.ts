@@ -55,12 +55,42 @@ export function referencePeriodsFromCandles(input: {
   });
 }
 
+export type TradingPeriodsOptions = {
+  /**
+   * When set past the last complete source end, appends a synthetic open
+   * trading window so in-progress chart sessions still get pivot levels
+   * (previous complete day → now), matching exchange terminals.
+   */
+  openPeriodEnd?: Date;
+};
+
 export function tradingPeriodsFromReference(
   sources: readonly ReferencePeriodOHLC[],
+  options: TradingPeriodsOptions = {},
 ): TradingPeriod[] {
-  return sources.map((source) => ({
+  const periods: TradingPeriod[] = sources.map((source) => ({
     periodId: `valid:${source.periodId}`,
     start: source.start,
     end: source.end,
   }));
+
+  const openPeriodEnd = options.openPeriodEnd;
+  if (openPeriodEnd === undefined || sources.length === 0) {
+    return periods;
+  }
+
+  const last = sources[sources.length - 1];
+  if (last === undefined) {
+    return periods;
+  }
+  if (openPeriodEnd.getTime() <= last.end.getTime()) {
+    return periods;
+  }
+
+  periods.push({
+    periodId: 'valid:open',
+    start: last.end,
+    end: openPeriodEnd,
+  });
+  return periods;
 }

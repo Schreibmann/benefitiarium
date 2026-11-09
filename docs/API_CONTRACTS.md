@@ -30,15 +30,27 @@ Commands verified present offline:
 
 - `GetSharesCommand`, `GetFuturesCommand`, `GetIndicativesCommand`
 - `GetCandlesCommand`, `GetLastPricesCommand`, `GetMarketdataStreamCommand`
+- `GetTechAnalysis` via local `BaseCommand` wrapper (`buildGetTechAnalysisCommand`) — SDK 1.61.0 has `GetTechAnalysisIndicatorsCommand` but does not re-export it; wrapper also maps `upperBand`
 - `GetSandboxAccountsCommand`, `GetSandboxPositionsCommand`, `PostSandboxOrderCommand`
 
 ### Futures vs Indicatives (v1.1)
 
-- **Futures / FutureBy** — tradeable contract series (commodity, equity_index, currency, …). Map via `GetFuturesCommand`; UID lookup is `FutureBy` at gRPC (`futureBy`). Node SDK 1.61.0 has no dedicated FutureBy command — adapter uses UID filter over futures catalog.
+- **Futures / FutureBy** — tradeable contract series. Map via `GetFuturesCommand` with InstrumentsRequest:
+  - `instrumentStatus = INSTRUMENT_STATUS_BASE`
+  - `instrumentExchange = INSTRUMENT_EXCHANGE_UNSPECIFIED` (enum from `@ttech-pub/grpc-node-client/compiled/instruments`)
+  - UID lookup is `FutureBy` at gRPC (`futureBy`). Node SDK 1.61.0 has no dedicated FutureBy command — adapter uses UID filter over futures catalog.
+  - Category resolution prefers `Future.sector`, falling back to `Future.asset_type` when sector is empty/unknown (`resolveFuturesListCategory`). Docs still document `asset_type`: `commodity` | `currency` | `security` | `index` (domain maps `security` → `share`, `index` → `equity_index`).
+  - Durable snapshot: `futures_catalog_cache` (migration 003). Successful list refreshes Postgres; on live failure (esp. `RESOURCE_EXHAUSTED`) API serves the snapshot when non-empty.
 - **Indicatives** — underlying index/commodity series (e.g. IMOEX). Candles allowed via `GetCandles`, but **must not** replace contract history.
-- Futures metadata used in domain: `basicAsset`, `basicAssetPositionUid`, `assetType`, `expirationDate`, `first1minCandleDate`, `first1dayCandleDate`, `minPriceIncrementAmount`, margins.
+- Futures metadata used in domain: `basicAsset`, `basicAssetPositionUid`, `assetType`, `sector`, `expirationDate`, `first1minCandleDate`, `first1dayCandleDate`, `minPriceIncrementAmount`, margins (MoneyValue/Quotation → decimal string).
 - History MD annual ZIP example naming: `CRZ5_SPBFUT`. Missing archive year → `unavailable`, not zero volume.
 - Candle requests always by `instrument_uid`.
+
+### GetTechAnalysis indicators
+
+- Official IndicatorType: **BB | EMA | RSI | MACD | SMA** only ([investAPI marketdata.proto](https://github.com/RussianInvestments/investAPI)).
+- **No Fibonacci** and **no horizontal volume / volume profile** in GetTechAnalysis. Local Fibonacci Pivot Points (`GET …/indicators/fibonacci-pivots`, `@moex/indicators`) remain the chart overlay and are **not** superseded.
+- Adapter: `TinvestReadApi.getTechAnalysis` → raw bands/signal/macd strings. No HTTP route yet for BB/EMA/RSI/MACD/SMA (stop at adapter + fixtures).
 
 Live probe: `pnpm --filter @moex/broker-tinvest spike` loads repo `.env` and uses  
 `TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` separately (never logs token values).

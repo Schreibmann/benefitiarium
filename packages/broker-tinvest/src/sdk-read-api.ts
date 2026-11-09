@@ -1,8 +1,10 @@
 import type { CandleInterval } from '@moex/domain';
 import {
+  InstrumentStatus,
   LastPriceType,
   CandleInterval as TinvestCandleInterval,
 } from '@ttech-pub/grpc-node-client';
+import { InstrumentExchangeType } from '@ttech-pub/grpc-node-client/compiled/instruments.js';
 import {
   GetCandlesCommand,
   GetFuturesCommand,
@@ -11,7 +13,12 @@ import {
   GetSharesCommand,
   type InvestNodeSDK,
 } from '@ttech-pub/invest-sdk-node';
+import {
+  buildGetTechAnalysisCommand,
+  mapTechAnalysisResponse,
+} from './get-tech-analysis-command.js';
 import { mapCandleIntervalToTinvest } from './mappers/candles.js';
+import { optionalQuotationToDecimalString, quotationToDecimalString } from './mappers/quotation.js';
 import type {
   TinvestCandleRaw,
   TinvestFutureRaw,
@@ -20,6 +27,10 @@ import type {
   TinvestShareRaw,
 } from './raw.js';
 import type { TinvestReadApi } from './read-api.js';
+import { createTtlSingleflightCache } from './ttl-singleflight-cache.js';
+
+/** Instrument catalogs change rarely; cache protects against GetFutures RESOURCE_EXHAUSTED. */
+const CATALOG_TTL_MS = 15 * 60 * 1000;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -30,17 +41,33 @@ function readString(record: Record<string, unknown>, key: string): string | null
   return typeof value === 'string' && value.trim().length > 0 ? value : null;
 }
 
+/** Missing flag → null (callers choose default). Explicit boolean is preserved. */
+function readOptionalBoolean(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function readAssetTypeLabel(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  // AssetType enum numeric wire values → Future.asset_type vocabulary.
+  if (value === 2) {
+    return 'commodity';
+  }
+  if (value === 3) {
+    return 'index';
+  }
+  if (value === 1) {
+    return 'currency';
+  }
+  if (value === 4) {
+    return 'security';
+  }
+  return null;
+}
+
 function decimalToString(value: unknown, field: string): string {
-  if (value === null || value === undefined) {
-    throw new Error(`Missing candle ${field}`);
-  }
-  if (typeof value === 'string' || typeof value === 'number') {
-    return String(value);
-  }
-  if (isRecord(value) && typeof value.toString === 'function') {
-    return value.toString();
-  }
-  throw new Error(`Unsupported candle ${field} type`);
+  return quotationToDecimalString(value, field);
 }
 
 function toSdkInterval(interval: CandleInterval): TinvestCandleInterval {
@@ -102,22 +129,24 @@ function mapFuture(raw: unknown): TinvestFutureRaw | null {
     currency,
     lot: typeof raw.lot === 'number' ? raw.lot : Number(raw.lot ?? 0),
     minPriceIncrement: decimalToString(raw.minPriceIncrement ?? '0.01', 'minPriceIncrement'),
-    minPriceIncrementAmount:
-      raw.minPriceIncrementAmount === undefined || raw.minPriceIncrementAmount === null
-        ? null
-        : decimalToString(raw.minPriceIncrementAmount, 'minPriceIncrementAmount'),
-    assetType: readString(raw, 'assetType'),
+    minPriceIncrementAmount: optionalQuotationToDecimalString(
+      raw.minPriceIncrementAmount,
+      'minPriceIncrementAmount',
+    ),
+    assetType: readAssetTypeLabel(raw.assetType),
+    sector: readString(raw, 'sector'),
     basicAsset: readString(raw, 'basicAsset'),
     basicAssetPositionUid: readString(raw, 'basicAssetPositionUid'),
     expirationDate: isoOrNull(raw.expirationDate),
     first1minCandleDate: isoOrNull(raw.first1minCandleDate),
     first1dayCandleDate: isoOrNull(raw.first1dayCandleDate),
-    initialMarginOnBuy:
-      raw.initialMarginOnBuy === undefined || raw.initialMarginOnBuy === null
-        ? null
-        : decimalToString(raw.initialMarginOnBuy, 'initialMarginOnBuy'),
+    initialMarginOnBuy: optionalQuotationToDecimalString(
+      raw.initialMarginOnBuy,
+      'initialMarginOnBuy',
+    ),
     futuresType: readString(raw, 'futuresType'),
-    apiTradeAvailableFlag: Boolean(raw.apiTradeAvailableFlag),
+    // Live payloads sometimes omit the flag; treat missing as tradeable so catalogs are usable.
+    apiTradeAvailableFlag: readOptionalBoolean(raw.apiTradeAvailableFlag) ?? true,
   };
 }
 
@@ -175,30 +204,59 @@ function isoOrNull(value: unknown): string | null {
       return parsed.toISOString();
     }
   }
+  if (isRecord(value)) {
+    const seconds = value.seconds;
+    if (typeof seconds === 'number' && Number.isFinite(seconds)) {
+      const nanos = typeof value.nanos === 'number' ? value.nanos : 0;
+      return new Date(seconds * 1000 + nanos / 1_000_000).toISOString();
+    }
+    if (typeof seconds === 'bigint') {
+      const nanos = typeof value.nanos === 'number' ? value.nanos : 0;
+      return new Date(Number(seconds) * 1000 + nanos / 1_000_000).toISOString();
+    }
+  }
   return null;
 }
 
 /**
  * Live TinvestReadApi backed by InvestNodeSDK (server-side only).
  * Write/account methods are intentionally unsupported on this read path.
+ * Catalog RPCs are TTL + singleflight cached to avoid InstrumentsService RESOURCE_EXHAUSTED.
  */
 export function createSdkTinvestReadApi(sdk: InvestNodeSDK): TinvestReadApi {
+  const sharesCache = createTtlSingleflightCache<TinvestShareRaw[]>({ ttlMs: CATALOG_TTL_MS });
+  const futuresCache = createTtlSingleflightCache<TinvestFutureRaw[]>({ ttlMs: CATALOG_TTL_MS });
+  const indicativesCache = createTtlSingleflightCache<TinvestIndicativeRaw[]>({
+    ttlMs: CATALOG_TTL_MS,
+  });
+
   const api: TinvestReadApi = {
-    listShares: async () => {
-      const response = await sdk.send(new GetSharesCommand({}));
-      const rows = Array.isArray(response.instruments) ? response.instruments : [];
-      return rows.map(mapShare).filter((row): row is TinvestShareRaw => row !== null);
-    },
-    listFutures: async () => {
-      const response = await sdk.send(new GetFuturesCommand({}));
-      const rows = Array.isArray(response.instruments) ? response.instruments : [];
-      return rows.map(mapFuture).filter((row): row is TinvestFutureRaw => row !== null);
-    },
-    listIndicatives: async () => {
-      const response = await sdk.send(new GetIndicativesCommand({}));
-      const rows = Array.isArray(response.instruments) ? response.instruments : [];
-      return rows.map(mapIndicative).filter((row): row is TinvestIndicativeRaw => row !== null);
-    },
+    listShares: async () =>
+      sharesCache.get(async () => {
+        const response = await sdk.send(
+          new GetSharesCommand({ instrumentStatus: InstrumentStatus.INSTRUMENT_STATUS_BASE }),
+        );
+        const rows = Array.isArray(response.instruments) ? response.instruments : [];
+        return rows.map(mapShare).filter((row): row is TinvestShareRaw => row !== null);
+      }),
+    listFutures: async () =>
+      futuresCache.get(async () => {
+        // Docs: Futures ← InstrumentsRequest; BASE + EXCHANGE_UNSPECIFIED.
+        const response = await sdk.send(
+          new GetFuturesCommand({
+            instrumentStatus: InstrumentStatus.INSTRUMENT_STATUS_BASE,
+            instrumentExchange: InstrumentExchangeType.INSTRUMENT_EXCHANGE_UNSPECIFIED,
+          }),
+        );
+        const rows = Array.isArray(response.instruments) ? response.instruments : [];
+        return rows.map(mapFuture).filter((row): row is TinvestFutureRaw => row !== null);
+      }),
+    listIndicatives: async () =>
+      indicativesCache.get(async () => {
+        const response = await sdk.send(new GetIndicativesCommand({}));
+        const rows = Array.isArray(response.instruments) ? response.instruments : [];
+        return rows.map(mapIndicative).filter((row): row is TinvestIndicativeRaw => row !== null);
+      }),
     getShareByUid: async (uid) => {
       const shares = await api.listShares();
       return shares.find((row) => row.uid === uid) ?? null;
@@ -249,6 +307,10 @@ export function createSdkTinvestReadApi(sdk: InvestNodeSDK): TinvestReadApi {
         });
       }
       return mapped;
+    },
+    getTechAnalysis: async (input) => {
+      const response = await sdk.send(buildGetTechAnalysisCommand(input));
+      return mapTechAnalysisResponse(response.technicalIndicators);
     },
     listAccounts: async () => {
       throw new Error('listAccounts is not available on the market-data read path');

@@ -16,8 +16,9 @@ export type PivotSegment = {
   id: string;
   periodId: string;
   level: PivotLevelName;
-  x1: Date;
-  x2: Date;
+  /** Session index (packed trading bars), not wall-clock time. */
+  x1: number;
+  x2: number;
   y1: number;
   y2: number;
 };
@@ -27,6 +28,34 @@ export type InstrumentLookup = {
   ticker: string;
   name: string;
   assetType: string;
+};
+
+export type FuturesListCategory = 'commodity' | 'equity_index' | 'currency' | 'share';
+
+export type FuturesFamilyContract = {
+  role: 'near' | 'next';
+  ticker: string;
+  instrumentUid: string;
+  name: string;
+  expirationAt: string;
+  classCode: string | null;
+  isActive: boolean;
+};
+
+export type FuturesFamily = {
+  family: string;
+  underlyingAssetName: string | null;
+  contracts: FuturesFamilyContract[];
+};
+
+export type FuturesCategoryBucket = {
+  category: FuturesListCategory;
+  families: FuturesFamily[];
+};
+
+export type FuturesCatalogResponse = {
+  syncedAt: string;
+  categories: FuturesCategoryBucket[];
 };
 
 export type FibonacciPivotApiResponse = {

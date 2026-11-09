@@ -1,7 +1,7 @@
 import type { InstrumentSpecInput, ProviderInstrument } from '@moex/contracts';
 import { parseDecimalString, parseIsoDateTime } from '@moex/domain';
 import type { TinvestFutureRaw, TinvestIndicativeRaw, TinvestShareRaw } from '../raw.js';
-import { deriveContractFamily, mapTinvestUnderlyingAssetType } from './underlying.js';
+import { deriveContractFamily, resolveFuturesListCategory } from './underlying.js';
 
 function normalizeCurrency(value: string): string | null {
   const normalized = value.trim().toUpperCase();
@@ -96,7 +96,8 @@ export function mapShareToInstrumentSpecInput(share: TinvestShareRaw): Instrumen
 }
 
 export function mapFutureToInstrumentSpecInput(future: TinvestFutureRaw): InstrumentSpecInput {
-  const underlyingAssetType = mapTinvestUnderlyingAssetType(future.assetType);
+  // Prefer sector; fall back to Future.asset_type (commodity|currency|security|index).
+  const underlyingAssetType = resolveFuturesListCategory(future.sector, future.assetType);
   const validFrom = parseIsoDateTime(
     future.first1dayCandleDate ?? future.first1minCandleDate ?? '1970-01-01T00:00:00.000Z',
   );
@@ -125,6 +126,7 @@ export function mapFutureToInstrumentSpecInput(future: TinvestFutureRaw): Instru
       basicAsset: future.basicAsset,
       basicAssetPositionUid: future.basicAssetPositionUid,
       assetType: future.assetType,
+      sector: future.sector,
       futuresType: future.futuresType,
       first1minCandleDate: future.first1minCandleDate,
       first1dayCandleDate: future.first1dayCandleDate,

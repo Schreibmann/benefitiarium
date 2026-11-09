@@ -10,6 +10,7 @@ import type {
   TinvestOrderRaw,
   TinvestPositionRaw,
   TinvestShareRaw,
+  TinvestTechAnalysisItemRaw,
 } from './raw.js';
 import type { TinvestReadApi } from './read-api.js';
 
@@ -65,6 +66,7 @@ function readFuture(value: unknown): TinvestFutureRaw {
     minPriceIncrement: String(value.minPriceIncrement),
     minPriceIncrementAmount: optionalString(value.minPriceIncrementAmount),
     assetType: optionalString(value.assetType),
+    sector: optionalString(value.sector),
     basicAsset: optionalString(value.basicAsset),
     basicAssetPositionUid: optionalString(value.basicAssetPositionUid),
     expirationDate: optionalString(value.expirationDate),
@@ -99,6 +101,7 @@ export function createFixtureTinvestReadApi(): TinvestReadApi {
   const indicativesFixture = loadJson('indicatives.json');
   const candlesFixture = loadJson('candles.json');
   const lastPriceFixture = loadJson('last-price.json');
+  const techAnalysisFixture = loadJson('tech-analysis.json');
   const accountsFixture = loadJson('accounts.json');
   const positionsFixture = loadJson('positions.json');
   const ordersFixture = loadJson('orders.json');
@@ -193,6 +196,25 @@ export function createFixtureTinvestReadApi(): TinvestReadApi {
     };
   });
 
+  if (!isObject(techAnalysisFixture) || !Array.isArray(techAnalysisFixture.technicalIndicators)) {
+    throw new Error('tech-analysis fixture invalid');
+  }
+  const techAnalysis: TinvestTechAnalysisItemRaw[] = techAnalysisFixture.technicalIndicators.map(
+    (item) => {
+      if (!isObject(item)) {
+        throw new Error('tech-analysis row invalid');
+      }
+      return {
+        timestamp: String(item.timestamp),
+        middleBand: optionalString(item.middleBand),
+        upperBand: optionalString(item.upperBand),
+        lowerBand: optionalString(item.lowerBand),
+        signal: optionalString(item.signal),
+        macd: optionalString(item.macd),
+      };
+    },
+  );
+
   return {
     listShares: async () => [share],
     listFutures: async () => futures,
@@ -202,6 +224,7 @@ export function createFixtureTinvestReadApi(): TinvestReadApi {
     getIndicativeByUid: async (uid) => indicatives.find((item) => item.uid === uid) ?? null,
     getCandles: async () => candles,
     getLastPrices: async (uids) => (uids.includes(lastPrice.instrumentUid) ? [lastPrice] : []),
+    getTechAnalysis: async () => techAnalysis,
     listAccounts: async () => accounts,
     getPositions: async () => positions,
     getOrders: async () => orders,

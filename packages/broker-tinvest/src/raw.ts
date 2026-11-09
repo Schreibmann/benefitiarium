@@ -30,8 +30,16 @@ export type TinvestFutureRaw = {
   lot: number;
   minPriceIncrement: string;
   minPriceIncrementAmount: string | null;
-  /** T-Invest Future.assetType string (commodity / currency / share / index / …). */
+  /**
+   * Future.asset_type from InstrumentsService.Futures:
+   * commodity | currency | security | index (also TYPE_* / ASSET_TYPE_* from live SDK).
+   */
   assetType: string | null;
+  /**
+   * Future.sector — primary category signal when it maps to a known list category;
+   * otherwise fall back to assetType (see resolveFuturesListCategory).
+   */
+  sector: string | null;
   basicAsset: string | null;
   basicAssetPositionUid: string | null;
   expirationDate: string | null;
@@ -40,6 +48,51 @@ export type TinvestFutureRaw = {
   initialMarginOnBuy: string | null;
   futuresType: string | null;
   apiTradeAvailableFlag: boolean;
+};
+
+/** GetTechAnalysis IndicatorType labels (BB/EMA/RSI/MACD/SMA only — no Fibonacci / volume profile). */
+export type TinvestTechAnalysisIndicatorType = 'bb' | 'ema' | 'rsi' | 'macd' | 'sma';
+
+export type TinvestTechAnalysisInterval =
+  | '1m'
+  | '2m'
+  | '3m'
+  | '5m'
+  | '10m'
+  | '15m'
+  | '30m'
+  | '1h'
+  | '2h'
+  | '4h'
+  | '1d'
+  | '1w'
+  | '1M';
+
+export type TinvestTechAnalysisPriceType = 'close' | 'open' | 'high' | 'low' | 'avg';
+
+export type TinvestTechAnalysisItemRaw = {
+  timestamp: string;
+  middleBand: string | null;
+  upperBand: string | null;
+  lowerBand: string | null;
+  signal: string | null;
+  macd: string | null;
+};
+
+export type TinvestGetTechAnalysisInput = {
+  instrumentUid: string;
+  indicatorType: TinvestTechAnalysisIndicatorType;
+  from: Date;
+  to: Date;
+  interval: TinvestTechAnalysisInterval;
+  typeOfPrice: TinvestTechAnalysisPriceType;
+  length?: number;
+  deviationMultiplier?: string;
+  smoothing?: {
+    fastLength: number;
+    slowLength: number;
+    signalSmoothing: number;
+  };
 };
 
 /**

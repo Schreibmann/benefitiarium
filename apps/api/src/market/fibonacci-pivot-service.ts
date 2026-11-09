@@ -10,6 +10,7 @@ import {
   generateHistoricalPivots,
   type ReferenceTimeframe,
 } from '@moex/indicators';
+import type { FuturesCatalogCacheRepository } from '@moex/persistence';
 import { referencePeriodsFromCandles, tradingPeriodsFromReference } from './reference-periods.js';
 
 export type FibonacciPivotPeriodDto = {
@@ -67,6 +68,8 @@ export type FibonacciPivotResponseDto = {
 
 export type ChartMarketDataDeps = {
   marketData: MarketDataProvider;
+  /** Optional durable Futures catalog snapshot for RESOURCE_EXHAUSTED fallback. */
+  futuresCatalogCache?: FuturesCatalogCacheRepository;
 };
 
 const CHART_INTERVALS = new Set<CandleInterval>(['5m', '1h']);
@@ -149,7 +152,7 @@ export async function getFibonacciPivots(
     timeframe: referenceTimeframe,
     candles: sourceCandles.items,
   });
-  const targets = tradingPeriodsFromReference(sources).filter(
+  const targets = tradingPeriodsFromReference(sources, { openPeriodEnd: input.to }).filter(
     (period) => period.start < input.to && period.end > input.from,
   );
 

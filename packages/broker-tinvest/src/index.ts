@@ -4,6 +4,19 @@ export type { CreateTinvestSdkInput } from './create-sdk.js';
 export { createTinvestSdk } from './create-sdk.js';
 export { createFixtureTinvestReadApi } from './fixture-read-api.js';
 export { createFixtureSandboxAccountProvider } from './fixture-sandbox-provider.js';
+export {
+  buildGetTechAnalysisCommand,
+  mapTechAnalysisResponse,
+  TECH_ANALYSIS_API_GAPS,
+} from './get-tech-analysis-command.js';
+export { mapTinvestUnderlyingAssetType, resolveFuturesListCategory } from './mappers/underlying.js';
+export type {
+  TinvestGetTechAnalysisInput,
+  TinvestTechAnalysisIndicatorType,
+  TinvestTechAnalysisInterval,
+  TinvestTechAnalysisItemRaw,
+  TinvestTechAnalysisPriceType,
+} from './raw.js';
 export type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
 export { mapTinvestAccountStatus, TINVEST_ACCOUNT_STATUS } from './sandbox-account-status.js';
 export { assertSandboxUrl, TINVEST_SANDBOX_HOST, TINVEST_SANDBOX_URL } from './sandbox-endpoint.js';
@@ -18,5 +31,9 @@ export type { TinvestBrokerGatewayOptions } from './tinvest-broker-gateway.js';
 export { createTinvestBrokerGateway } from './tinvest-broker-gateway.js';
 export type { TinvestMarketDataProviderOptions } from './tinvest-market-data-provider.js';
 export { createTinvestMarketDataProvider } from './tinvest-market-data-provider.js';
+export {
+  createTtlSingleflightCache,
+  isResourceExhaustedError,
+} from './ttl-singleflight-cache.js';
 
 export const packageName = '@moex/broker-tinvest' as const;

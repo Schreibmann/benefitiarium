@@ -17,45 +17,71 @@ import {
 } from './mappers/instruments.js';
 import { mapTinvestLastPriceToDomain } from './mappers/market.js';
 import type { InstrumentUidResolver, TinvestReadApi } from './read-api.js';
+import { createTtlSingleflightCache } from './ttl-singleflight-cache.js';
 
 export type TinvestMarketDataProviderOptions = {
   api: TinvestReadApi;
   resolver: InstrumentUidResolver;
   isSandbox?: boolean;
   now?: () => Date;
+  /** Catalog snapshot TTL (default 15m). */
+  catalogTtlMs?: number;
 };
 
+type CatalogCache = {
+  instruments: ProviderInstrument[];
+  specsByProviderId: Map<string, InstrumentSpecInput>;
+};
+
+/**
+ * Caches a shares+futures+indicatives snapshot so chart listing can resolve
+ * hundreds of specs without N+1 GetFutures/GetShares calls through UID helpers.
+ * Concurrent catalog/spec readers share one in-flight load (singleflight).
+ */
 export function createTinvestMarketDataProvider(
   options: TinvestMarketDataProviderOptions,
 ): MarketDataProvider {
   const now = options.now ?? (() => new Date());
+  const catalogTtlMs = options.catalogTtlMs ?? 15 * 60 * 1000;
+  const catalogCache = createTtlSingleflightCache<CatalogCache>({ ttlMs: catalogTtlMs });
 
-  return {
-    getInstrumentCatalog: async (): Promise<ProviderInstrument[]> => {
+  async function loadCatalogCache(): Promise<CatalogCache> {
+    return catalogCache.get(async () => {
       const [shares, futures, indicatives] = await Promise.all([
         options.api.listShares(),
         options.api.listFutures(),
         options.api.listIndicatives(),
       ]);
-      return [
+      const instruments: ProviderInstrument[] = [
         ...shares.map(mapShareToProviderInstrument),
         ...futures.map(mapFutureToProviderInstrument),
         ...indicatives.map(mapIndicativeToProviderInstrument),
       ];
+      const specsByProviderId = new Map<string, InstrumentSpecInput>();
+      for (const share of shares) {
+        specsByProviderId.set(share.uid, mapShareToInstrumentSpecInput(share));
+      }
+      for (const future of futures) {
+        specsByProviderId.set(future.uid, mapFutureToInstrumentSpecInput(future));
+      }
+      for (const indicative of indicatives) {
+        specsByProviderId.set(indicative.uid, mapIndicativeToInstrumentSpecInput(indicative));
+      }
+      return { instruments, specsByProviderId };
+    });
+  }
+
+  return {
+    getInstrumentCatalog: async (): Promise<ProviderInstrument[]> => {
+      const cache = await loadCatalogCache();
+      return cache.instruments;
     },
 
     getInstrumentSpec: async (providerInstrumentId: string): Promise<InstrumentSpecInput> => {
-      const share = await options.api.getShareByUid(providerInstrumentId);
-      if (share) {
-        return mapShareToInstrumentSpecInput(share);
-      }
-      const future = await options.api.getFutureByUid(providerInstrumentId);
-      if (future) {
-        return mapFutureToInstrumentSpecInput(future);
-      }
-      const indicative = await options.api.getIndicativeByUid(providerInstrumentId);
-      if (indicative) {
-        return mapIndicativeToInstrumentSpecInput(indicative);
+      const cache = await loadCatalogCache();
+      const cached = cache.specsByProviderId.get(providerInstrumentId);
+      if (cached !== undefined) {
+        return cached;
       }
       throw new Error(`Instrument not found at T-Invest: ${providerInstrumentId}`);
     },

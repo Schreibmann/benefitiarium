@@ -7,6 +7,11 @@ import {
   lookupInstrumentByTicker,
   parseChartTimeframe,
 } from './fibonacci-pivot-service.js';
+import { listFuturesCatalog } from './list-futures-by-category.js';
+
+function isResourceExhaustedMessage(message: string): boolean {
+  return message.includes('RESOURCE_EXHAUSTED');
+}
 
 function parseRequiredDate(value: unknown, field: string): Date {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -27,6 +32,21 @@ export async function registerMarketRoutes(
   app: FastifyInstance,
   deps: ChartMarketDataDeps,
 ): Promise<void> {
+  app.get('/api/v1/instruments/futures', async (_request, reply) => {
+    try {
+      return await listFuturesCatalog(deps);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'futures list request failed';
+      if (isResourceExhaustedMessage(message)) {
+        return reply.code(429).send({
+          error:
+            'T-Invest InstrumentsService/Futures rate limit (RESOURCE_EXHAUSTED). Retry in a few minutes; catalog is cached for 15m after a successful fetch.',
+        });
+      }
+      return reply.code(400).send({ error: message });
+    }
+  });
+
   app.get('/api/v1/instruments/by-ticker/:ticker', async (request, reply) => {
     const params = request.params;
     if (typeof params !== 'object' || params === null || !('ticker' in params)) {

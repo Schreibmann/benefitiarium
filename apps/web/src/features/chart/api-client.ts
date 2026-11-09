@@ -2,11 +2,17 @@ import type {
   CandleRow,
   ChartTimeframe,
   FibonacciPivotApiResponse,
+  FuturesCatalogResponse,
+  FuturesCategoryBucket,
+  FuturesFamily,
+  FuturesFamilyContract,
+  FuturesListCategory,
   InstrumentLookup,
 } from './types.js';
 
 export type ChartApiClient = {
   lookupByTicker: (ticker: string) => Promise<InstrumentLookup>;
+  listFuturesCatalog: () => Promise<FuturesCatalogResponse>;
   getCandles: (input: {
     instrumentUid: string;
     interval: ChartTimeframe;
@@ -70,6 +76,11 @@ export function createChartApiClient(
       };
     },
 
+    listFuturesCatalog: async () => {
+      const json = await request('/api/v1/instruments/futures');
+      return parseFuturesCatalogResponse(json);
+    },
+
     getCandles: async (input) => {
       const path =
         `/api/v1/instruments/${encodeURIComponent(input.instrumentUid)}/candles` +
@@ -131,6 +142,76 @@ export function createChartApiClient(
         meta: buildPivotMeta(json.meta),
       };
     },
+  };
+}
+
+function parseFuturesListCategory(value: string): FuturesListCategory {
+  if (
+    value === 'commodity' ||
+    value === 'equity_index' ||
+    value === 'currency' ||
+    value === 'share'
+  ) {
+    return value;
+  }
+  throw new Error('Invalid futures category');
+}
+
+function parseFuturesCatalogResponse(json: unknown): FuturesCatalogResponse {
+  if (!isRecord(json) || !Array.isArray(json.categories)) {
+    throw new Error('Invalid futures catalog response');
+  }
+  const syncedAt = requiredString(json, 'syncedAt');
+  const categories: FuturesCategoryBucket[] = [];
+  for (const bucketRaw of json.categories) {
+    if (!isRecord(bucketRaw) || !Array.isArray(bucketRaw.families)) {
+      throw new Error('Invalid futures category bucket');
+    }
+    const category = parseFuturesListCategory(requiredString(bucketRaw, 'category'));
+    const families: FuturesFamily[] = [];
+    for (const familyRaw of bucketRaw.families) {
+      families.push(parseFuturesFamily(familyRaw));
+    }
+    categories.push({ category, families });
+  }
+  return { syncedAt, categories };
+}
+
+function parseFuturesFamily(value: unknown): FuturesFamily {
+  if (!isRecord(value) || !Array.isArray(value.contracts)) {
+    throw new Error('Invalid futures family');
+  }
+  const underlyingRaw = value.underlyingAssetName;
+  const underlyingAssetName = typeof underlyingRaw === 'string' ? underlyingRaw : null;
+  const contracts: FuturesFamilyContract[] = [];
+  for (const contractRaw of value.contracts) {
+    contracts.push(parseFuturesContract(contractRaw));
+  }
+  return {
+    family: requiredString(value, 'family'),
+    underlyingAssetName,
+    contracts,
+  };
+}
+
+function parseFuturesContract(value: unknown): FuturesFamilyContract {
+  if (!isRecord(value)) {
+    throw new Error('Invalid futures contract');
+  }
+  const roleRaw = requiredString(value, 'role');
+  if (roleRaw !== 'near' && roleRaw !== 'next') {
+    throw new Error('Invalid futures contract role');
+  }
+  const classCodeRaw = value.classCode;
+  const classCode = typeof classCodeRaw === 'string' ? classCodeRaw : null;
+  return {
+    role: roleRaw,
+    ticker: requiredString(value, 'ticker'),
+    instrumentUid: requiredString(value, 'instrumentUid'),
+    name: requiredString(value, 'name'),
+    expirationAt: requiredString(value, 'expirationAt'),
+    classCode,
+    isActive: value.isActive === true,
   };
 }
 

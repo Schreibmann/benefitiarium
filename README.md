@@ -28,11 +28,12 @@ UI slice for **Fibonacci Pivot Points** (not retracement). Spec: [docs/ADR/fibon
 
 API:
 
-| Method | Path                                                                              | Notes                |
-| ------ | --------------------------------------------------------------------------------- | -------------------- |
-| GET    | `/api/v1/instruments/by-ticker/:ticker`                                           | Resolve T-Invest UID |
-| GET    | `/api/v1/instruments/:uid/candles?interval=5m\|1h&from=&to=`                      | Chart candles        |
-| GET    | `/api/v1/instruments/:uid/indicators/fibonacci-pivots?timeframe=5m\|1h&from=&to=` | Pivot segments       |
+| Method | Path                                                                              | Notes                                      |
+| ------ | --------------------------------------------------------------------------------- | ------------------------------------------ |
+| GET    | `/api/v1/instruments/futures`                                                     | Full futures catalog; near+next per family |
+| GET    | `/api/v1/instruments/by-ticker/:ticker`                                           | Resolve T-Invest UID                       |
+| GET    | `/api/v1/instruments/:uid/candles?interval=5m\|1h&from=&to=`                      | Chart candles                              |
+| GET    | `/api/v1/instruments/:uid/indicators/fibonacci-pivots?timeframe=5m\|1h&from=&to=` | Pivot segments                             |
 
 Pivots are computed **on read** (no persist/workers yet). Signals are not implemented.
 

@@ -19,6 +19,7 @@ export const MIGRATION_FILES = [
   '000_schema_migrations.sql',
   '001_init.sql',
   '002_audit_append_only.sql',
+  '003_futures_catalog_cache.sql',
 ] as const;
 
 export type { MemoryAuditLogStore } from './audit/memory.js';
@@ -56,6 +57,15 @@ export { createOutboxRepository } from './outbox/repository.js';
 export type { NewOutboxEvent, OutboxEvent } from './outbox/types.js';
 export type { BrokerAccountRepository } from './repos/broker-accounts.js';
 export { createBrokerAccountRepository } from './repos/broker-accounts.js';
+export type {
+  FuturesCatalogCacheRepository,
+  FuturesCatalogCacheRow,
+  FuturesCatalogListCategory,
+} from './repos/futures-catalog-cache.js';
+export {
+  createFuturesCatalogCacheRepository,
+  createMemoryFuturesCatalogCacheRepository,
+} from './repos/futures-catalog-cache.js';
 export type { InstrumentSpecRepository } from './repos/instrument-specs.js';
 export { createInstrumentSpecRepository } from './repos/instrument-specs.js';
 export type { CatalogProvider, InstrumentRepository } from './repos/instruments.js';

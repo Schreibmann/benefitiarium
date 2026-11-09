@@ -84,7 +84,13 @@
   border: 1px solid var(--chart-line);
   background: light-dark(#fffdf8, #12161f);
   padding: 0.5rem;
-  min-height: 480px;
+  min-height: 520px;
+}
+
+.price-chart__plot {
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
 }
 
 .price-chart a {

@@ -1,6 +1,6 @@
 import { loadEnv } from '@moex/config';
-import type { MarketDataProvider } from '@moex/contracts';
-import { parseCandle, parseInstrumentId } from '@moex/domain';
+import type { InstrumentSpecInput, MarketDataProvider, ProviderInstrument } from '@moex/contracts';
+import { parseCandle, parseDecimalString, parseInstrumentId, parseIsoDateTime } from '@moex/domain';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../create-app.js';
 
@@ -137,5 +137,201 @@ describe('market routes', () => {
     expect(body.periods.length).toBeGreaterThanOrEqual(1);
     expect(body.periods[0]?.values.p).toBeTruthy();
     expect(body.periods[0]?.algorithm.coefficients).toEqual(['0.382', '0.618', '1.000']);
+  });
+});
+
+function futureRow(input: {
+  uid: string;
+  ticker: string;
+  name: string;
+  isActive?: boolean;
+}): ProviderInstrument {
+  return {
+    provider: 't-invest',
+    providerInstrumentId: input.uid,
+    assetType: 'future',
+    ticker: input.ticker,
+    name: input.name,
+    currency: 'RUB',
+    classCode: 'SPBFUT',
+    engine: null,
+    market: null,
+    board: null,
+    secid: null,
+    isActive: input.isActive ?? true,
+  };
+}
+
+function futureSpec(input: {
+  uid: string;
+  underlyingAssetType: 'commodity' | 'equity_index' | 'currency' | 'share';
+  underlyingAssetName: string;
+  contractFamily: string;
+  expirationAt: string;
+}): InstrumentSpecInput {
+  return {
+    providerInstrumentId: input.uid,
+    validFrom: parseIsoDateTime('2025-01-01T00:00:00.000Z'),
+    validTo: null,
+    lotSize: 1,
+    minPriceIncrement: parseDecimalString('0.01'),
+    priceCurrency: 'RUB',
+    priceType: 'points',
+    contractMultiplier: null,
+    expirationAt: parseIsoDateTime(input.expirationAt),
+    marginInitial: null,
+    underlyingProviderPositionUid: null,
+    underlyingAssetType: input.underlyingAssetType,
+    underlyingAssetName: input.underlyingAssetName,
+    contractFamily: input.contractFamily,
+    priceUnit: 'points',
+    minPriceIncrementAmount: null,
+    raw: {},
+  };
+}
+
+describe('GET /api/v1/instruments/futures', () => {
+  it('returns full catalog buckets with near/next and skips inactive', async () => {
+    const brNearUid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb1';
+    const brNextUid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2';
+    const inactiveUid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3';
+    const indexUid = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4';
+
+    const specs = new Map<string, InstrumentSpecInput>([
+      [
+        brNearUid,
+        futureSpec({
+          uid: brNearUid,
+          underlyingAssetType: 'commodity',
+          underlyingAssetName: 'Brent',
+          contractFamily: 'BR',
+          expirationAt: '2026-02-16T00:00:00.000Z',
+        }),
+      ],
+      [
+        brNextUid,
+        futureSpec({
+          uid: brNextUid,
+          underlyingAssetType: 'commodity',
+          underlyingAssetName: 'Brent',
+          contractFamily: 'BR',
+          expirationAt: '2026-04-16T00:00:00.000Z',
+        }),
+      ],
+      [
+        inactiveUid,
+        futureSpec({
+          uid: inactiveUid,
+          underlyingAssetType: 'commodity',
+          underlyingAssetName: 'Brent',
+          contractFamily: 'BR',
+          expirationAt: '2026-01-16T00:00:00.000Z',
+        }),
+      ],
+      [
+        indexUid,
+        futureSpec({
+          uid: indexUid,
+          underlyingAssetType: 'equity_index',
+          underlyingAssetName: 'IMOEX',
+          contractFamily: 'MX',
+          expirationAt: '2026-03-19T00:00:00.000Z',
+        }),
+      ],
+    ]);
+
+    const marketData: MarketDataProvider = {
+      getInstrumentCatalog: async () => [
+        futureRow({ uid: brNearUid, ticker: 'BRH6', name: 'Brent-3.26' }),
+        futureRow({ uid: brNextUid, ticker: 'BRJ6', name: 'Brent-4.26' }),
+        futureRow({ uid: inactiveUid, ticker: 'BRF6', name: 'Brent-1.26', isActive: false }),
+        futureRow({ uid: indexUid, ticker: 'MXH6', name: 'MIX-3.26' }),
+      ],
+      getInstrumentSpec: async (providerInstrumentId) => {
+        const spec = specs.get(providerInstrumentId);
+        if (spec === undefined) {
+          throw new Error(`missing spec ${providerInstrumentId}`);
+        }
+        return spec;
+      },
+      getLastPrices: async () => [],
+      getCandles: async () => ({ items: [] }),
+    };
+
+    const env = loadEnv({
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/moex',
+    });
+    const app = await createApp({ env, marketData: { marketData } });
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/instruments/futures',
+    });
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.categories).toHaveLength(4);
+    expect(body.categories.map((item: { category: string }) => item.category)).toEqual([
+      'commodity',
+      'equity_index',
+      'currency',
+      'share',
+    ]);
+    expect(body.categories[0]).toMatchObject({
+      category: 'commodity',
+      families: [
+        {
+          family: 'BR',
+          underlyingAssetName: 'Brent',
+          contracts: [
+            {
+              role: 'near',
+              ticker: 'BRH6',
+              instrumentUid: brNearUid,
+              name: 'Brent-3.26',
+              expirationAt: '2026-02-16T00:00:00.000Z',
+              classCode: 'SPBFUT',
+              isActive: true,
+            },
+            {
+              role: 'next',
+              ticker: 'BRJ6',
+              instrumentUid: brNextUid,
+              name: 'Brent-4.26',
+              expirationAt: '2026-04-16T00:00:00.000Z',
+              classCode: 'SPBFUT',
+              isActive: true,
+            },
+          ],
+        },
+      ],
+    });
+    expect(body.categories[1]?.families[0]?.family).toBe('MX');
+    expect(body.categories[2]?.families).toEqual([]);
+    expect(body.categories[3]?.families).toEqual([]);
+  });
+
+  it('maps T-Invest RESOURCE_EXHAUSTED to HTTP 429 when cache is empty', async () => {
+    const marketData: MarketDataProvider = {
+      getInstrumentCatalog: async () => {
+        throw new Error(
+          '/tinkoff.public.invest.api.contract.v1.InstrumentsService/Futures RESOURCE_EXHAUSTED: ',
+        );
+      },
+      getInstrumentSpec: async () => {
+        throw new Error('unused');
+      },
+      getLastPrices: async () => [],
+      getCandles: async () => ({ items: [] }),
+    };
+    const env = loadEnv({
+      DATABASE_URL: 'postgresql://postgres:postgres@localhost:5432/moex',
+    });
+    const app = await createApp({ env, marketData: { marketData } });
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/instruments/futures',
+    });
+    expect(response.statusCode).toBe(429);
+    expect(String(response.json().error)).toContain('RESOURCE_EXHAUSTED');
   });
 });
