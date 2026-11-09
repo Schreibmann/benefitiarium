@@ -3,7 +3,6 @@ import type {
   EnqueueSandboxCommandInput,
   EnqueueSandboxCommandResult,
   SandboxAccountProvider,
-  SandboxProviderAccountRow,
 } from '@moex/contracts';
 import {
   parseIsoDateTime,
@@ -12,13 +11,30 @@ import {
   type SandboxAccountOperation,
 } from '@moex/domain';
 import type { SandboxAccountStore } from './account-store.js';
-import { validateSandboxFundAmount } from './funding.js';
+import {
+  assertClosePreviewUsable,
+  buildClosePreview,
+  type ClosePreviewStore,
+  closeRequiresOpenRiskAck,
+  createMemoryClosePreviewStore,
+  type SandboxClosePreview,
+} from './close-preview.js';
+import type { SandboxCommandRequest } from './command-request.js';
+import { sandboxFundPolicyNotes, validateSandboxFundAmount } from './funding.js';
 import { createQueuedOperation, type OperationJournal } from './operation-journal.js';
+import { isTimeoutLikeProviderError, providerErrorMessage } from './provider-errors.js';
+import {
+  listMissingAccountRecoveries,
+  type MissingAccountRecovery,
+  reconcileSandboxAccounts,
+  type SandboxSyncSummary,
+} from './sync.js';
 
 export type SandboxAccountServiceOptions = {
   provider: SandboxAccountProvider;
   accounts: SandboxAccountStore;
   journal: OperationJournal;
+  closePreviews?: ClosePreviewStore;
   now?: () => Date;
   /**
    * When false (API path), create/fund/close only enqueue durable operations.
@@ -27,20 +43,18 @@ export type SandboxAccountServiceOptions = {
   allowProviderWrites?: boolean;
 };
 
-/** In-memory payload until durable request bodies are persisted beside the journal. */
-type PendingPayload =
-  | { type: 'create'; name: string }
-  | { type: 'fund'; amount: string }
-  | { type: 'close' }
-  | { type: 'sync'; accountId: string | null };
-
 export type SandboxAccountService = {
   listLocalAccounts: () => Promise<SandboxAccount[]>;
   getAccount: (accountId: string) => Promise<SandboxAccount | null>;
+  listMissingRecoveries: () => Promise<MissingAccountRecovery[]>;
+  fundPolicyNotes: () => string[];
+  previewClose: (accountId: string) => Promise<SandboxClosePreview>;
   enqueue: (input: EnqueueSandboxCommandInput) => Promise<EnqueueSandboxCommandResult>;
   listOperations: () => Promise<SandboxAccountOperation[]>;
   executeOperation: (operationId: string) => Promise<SandboxAccountOperation>;
-  reconcileWithProvider: () => Promise<SandboxAccount[]>;
+  reconcileWithProvider: () => Promise<SandboxSyncSummary>;
+  /** Attempt to resolve UNKNOWN create/fund/close via provider reads (no blind retry). */
+  reconcileUnknownOperation: (operationId: string) => Promise<SandboxAccountOperation>;
 };
 
 function requestHash(parts: Record<string, string>): string {
@@ -59,16 +73,21 @@ export function createSandboxAccountService(
 
   const now = options.now ?? (() => new Date());
   const allowWrites = options.allowProviderWrites ?? false;
-  const payloads = new Map<string, PendingPayload>();
+  const closePreviews = options.closePreviews ?? createMemoryClosePreviewStore();
 
   async function enqueueOrReuse(
     input: EnqueueSandboxCommandInput,
     hash: string,
     accountId: SandboxAccount['id'] | null,
-    payload: PendingPayload,
+    request: SandboxCommandRequest,
   ): Promise<EnqueueSandboxCommandResult> {
     const existing = await options.journal.findByIdempotencyKey(input.idempotencyKey);
     if (existing !== null) {
+      if ((existing.requestHash ?? null) !== hash) {
+        throw new Error(
+          `Idempotency key reuse with different request hash: ${input.idempotencyKey}`,
+        );
+      }
       return { operation: existing, accepted: true };
     }
     const operation = await options.journal.append(
@@ -80,15 +99,74 @@ export function createSandboxAccountService(
         requestHash: hash,
         now,
       }),
+      request,
     );
-    payloads.set(operation.id, payload);
     return { operation, accepted: true };
+  }
+
+  async function runReconcile(): Promise<SandboxSyncSummary> {
+    return reconcileSandboxAccounts({
+      accounts: options.accounts,
+      listProviderAccounts: () => options.provider.listAccounts(),
+      now,
+    });
+  }
+
+  async function markTerminal(
+    operation: SandboxAccountOperation,
+    status: 'succeeded' | 'failed' | 'unknown',
+    errorMessage: string | null,
+  ): Promise<SandboxAccountOperation> {
+    return options.journal.update({
+      ...operation,
+      status,
+      completedAt: parseIsoDateTime(now().toISOString()),
+      errorMessage,
+    });
+  }
+
+  async function tryResolveAmbiguousCreate(
+    running: SandboxAccountOperation,
+    name: string,
+  ): Promise<SandboxAccountOperation | null> {
+    const summary = await runReconcile();
+    const matches = summary.accounts.filter(
+      (account) =>
+        account.displayName === name &&
+        (account.localStatus === 'active' || account.localStatus === 'new'),
+    );
+    if (matches.length !== 1) {
+      return null;
+    }
+    const matched = matches[0];
+    if (matched === undefined) {
+      return null;
+    }
+    return markSucceeded(options.journal, { ...running, accountId: matched.id }, now);
   }
 
   return {
     listLocalAccounts: () => options.accounts.list(),
 
     getAccount: async (accountId) => options.accounts.getById(parseUuid(accountId)),
+
+    listMissingRecoveries: () => listMissingAccountRecoveries(options.accounts),
+
+    fundPolicyNotes: () => sandboxFundPolicyNotes(),
+
+    previewClose: async (accountId) => {
+      const account = await options.accounts.getById(parseUuid(accountId));
+      if (account === null) {
+        throw new Error(`Local sandbox account not found: ${accountId}`);
+      }
+      const [openOrders, positions] = await Promise.all([
+        options.provider.getOrders(account.providerAccountId),
+        options.provider.getPositions(account.providerAccountId),
+      ]);
+      const preview = buildClosePreview({ account, openOrders, positions, now });
+      await closePreviews.put(preview);
+      return preview;
+    },
 
     enqueue: async (input) => {
       if (input.type === 'create') {
@@ -100,6 +178,25 @@ export function createSandboxAccountService(
           type: 'create',
           name,
         });
+      }
+
+      if (input.type === 'sync') {
+        if (input.accountId === null) {
+          return enqueueOrReuse(input, requestHash({ type: 'sync', accountId: '' }), null, {
+            type: 'sync',
+            accountId: null,
+          });
+        }
+        const account = await options.accounts.getById(input.accountId);
+        if (account === null) {
+          throw new Error(`Local sandbox account not found: ${input.accountId}`);
+        }
+        return enqueueOrReuse(
+          input,
+          requestHash({ type: 'sync', accountId: account.id }),
+          account.id,
+          { type: 'sync', accountId: account.id },
+        );
       }
 
       const account = await options.accounts.getById(input.accountId);
@@ -124,37 +221,89 @@ export function createSandboxAccountService(
             currency: 'RUB',
           }),
           account.id,
-          { type: 'fund', amount: validated.amount },
+          { type: 'fund', amount: validated.amount, currency: 'RUB' },
         );
       }
 
-      if (input.type === 'close') {
-        if (input.confirmation.trim().length === 0) {
-          throw new Error('close confirmation is required');
-        }
-        const expected = account.displayName ?? account.providerAccountId;
-        if (input.confirmation.trim() !== expected && input.confirmation.trim() !== account.id) {
-          throw new Error('close confirmation does not match account name or id');
-        }
-        return enqueueOrReuse(
-          input,
-          requestHash({ type: 'close', accountId: account.id }),
-          account.id,
-          { type: 'close' },
+      const preview = assertClosePreviewUsable({
+        preview: await closePreviews.get(input.previewId),
+        accountId: account.id,
+        now,
+      });
+      if (input.confirmation.trim().length === 0) {
+        throw new Error('close confirmation is required');
+      }
+      if (!preview.confirmationTargets.includes(input.confirmation.trim())) {
+        throw new Error('close confirmation does not match preview targets');
+      }
+      if (closeRequiresOpenRiskAck(preview) && !input.acknowledgeOpenPositionsAndOrders) {
+        throw new Error(
+          'acknowledgeOpenPositionsAndOrders is required when preview has open orders or positions',
         );
       }
-
       return enqueueOrReuse(
         input,
-        requestHash({ type: 'sync', accountId: account.id }),
+        requestHash({
+          type: 'close',
+          accountId: account.id,
+          previewId: preview.previewId,
+          ack: input.acknowledgeOpenPositionsAndOrders ? '1' : '0',
+        }),
         account.id,
-        { type: 'sync', accountId: account.id },
+        { type: 'close' },
       );
     },
 
     listOperations: () => options.journal.list(),
 
-    reconcileWithProvider: () => reconcileAccounts(options, now),
+    reconcileWithProvider: () => runReconcile(),
+
+    reconcileUnknownOperation: async (operationId) => {
+      const operations = await options.journal.list();
+      const operation = operations.find((item) => item.id === operationId);
+      if (operation === undefined) {
+        throw new Error(`Operation not found: ${operationId}`);
+      }
+      if (operation.status !== 'unknown') {
+        return operation;
+      }
+      const payload = await options.journal.getRequest(operation.id);
+      if (payload === null) {
+        throw new Error(`Missing durable payload for operation ${operation.id}`);
+      }
+      if (payload.type === 'create') {
+        const resolved = await tryResolveAmbiguousCreate(operation, payload.name);
+        if (resolved !== null) {
+          return resolved;
+        }
+        throw new Error(
+          'Create result is still ambiguous; create a new account manually or resolve in Admin UI',
+        );
+      }
+      if (payload.type === 'sync') {
+        await runReconcile();
+        return markSucceeded(options.journal, operation, now);
+      }
+      if (operation.accountId === null) {
+        throw new Error('UNKNOWN operation requires accountId for fund/close reconciliation');
+      }
+      const account = await options.accounts.getById(operation.accountId);
+      if (account === null) {
+        throw new Error(`Account missing for operation ${operation.id}`);
+      }
+      await runReconcile();
+      const refreshed = await options.accounts.getById(account.id);
+      if (payload.type === 'close' && refreshed?.localStatus === 'closed') {
+        return markSucceeded(options.journal, operation, now);
+      }
+      if (payload.type === 'fund') {
+        // Funding cannot be proven uniquely from portfolio alone; leave unknown.
+        throw new Error(
+          'Fund UNKNOWN cannot be auto-resolved; inspect portfolio/operations manually',
+        );
+      }
+      throw new Error('Close UNKNOWN not confirmed by provider status; manual resolution required');
+    },
 
     executeOperation: async (operationId) => {
       if (!allowWrites) {
@@ -172,8 +321,8 @@ export function createSandboxAccountService(
         throw new Error('UNKNOWN operation requires reconciliation before retry');
       }
 
-      const payload = payloads.get(operation.id);
-      if (payload === undefined) {
+      const payload = await options.journal.getRequest(operation.id);
+      if (payload === null) {
         throw new Error(`Missing durable payload for operation ${operation.id}`);
       }
 
@@ -201,7 +350,7 @@ export function createSandboxAccountService(
         }
 
         if (payload.type === 'sync') {
-          await reconcileAccounts(options, now);
+          await runReconcile();
           return markSucceeded(options.journal, running, now);
         }
 
@@ -238,13 +387,17 @@ export function createSandboxAccountService(
         });
         return markSucceeded(options.journal, running, now);
       } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        return options.journal.update({
-          ...running,
-          status: 'failed',
-          completedAt: parseIsoDateTime(now().toISOString()),
-          errorMessage: message,
-        });
+        const message = providerErrorMessage(error);
+        if (isTimeoutLikeProviderError(error)) {
+          if (payload.type === 'create') {
+            const resolved = await tryResolveAmbiguousCreate(running, payload.name);
+            if (resolved !== null) {
+              return resolved;
+            }
+          }
+          return markTerminal(running, 'unknown', message);
+        }
+        return markTerminal(running, 'failed', message);
       }
     },
   };
@@ -261,60 +414,4 @@ async function markSucceeded(
     completedAt: parseIsoDateTime(now().toISOString()),
     errorMessage: null,
   });
-}
-
-async function reconcileAccounts(
-  options: SandboxAccountServiceOptions,
-  now: () => Date,
-): Promise<SandboxAccount[]> {
-  let providerRows: SandboxProviderAccountRow[];
-  try {
-    providerRows = await options.provider.listAccounts();
-  } catch {
-    // Transient provider errors must not mark all locals missing.
-    return options.accounts.list();
-  }
-
-  const providerIds = new Set(providerRows.map((row) => row.providerAccountId));
-  const local = await options.accounts.list();
-  const verifiedAt = parseIsoDateTime(now().toISOString());
-
-  for (const row of providerRows) {
-    const existing = await options.accounts.getByProviderAccountId(row.providerAccountId);
-    if (existing !== null) {
-      await options.accounts.upsert({
-        ...existing,
-        displayName: row.displayName ?? existing.displayName,
-        providerStatus: row.providerStatus,
-        localStatus: row.providerStatus === 'closed' ? 'closed' : 'active',
-        openedAt: row.openedAt ?? existing.openedAt,
-        closedAt: row.closedAt,
-        lastVerifiedAt: verifiedAt,
-      });
-      continue;
-    }
-    await options.accounts.upsert({
-      id: parseUuid(randomUUID()),
-      providerAccountId: row.providerAccountId,
-      environment: 'sandbox',
-      displayName: row.displayName,
-      providerStatus: row.providerStatus,
-      localStatus: row.providerStatus === 'closed' ? 'closed' : 'active',
-      openedAt: row.openedAt,
-      closedAt: row.closedAt,
-      lastVerifiedAt: verifiedAt,
-    });
-  }
-
-  for (const account of local) {
-    if (!providerIds.has(account.providerAccountId) && account.localStatus !== 'closed') {
-      await options.accounts.upsert({
-        ...account,
-        localStatus: 'missing',
-        lastVerifiedAt: verifiedAt,
-      });
-    }
-  }
-
-  return options.accounts.list();
 }

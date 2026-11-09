@@ -9,8 +9,11 @@ import {
   type SandboxAccountOperation,
 } from '@moex/domain';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { REDACTED } from '../audit/redact.js';
+import { createAuditLogRepository } from '../audit/repository.js';
 import type { DbClient } from '../db/client.js';
 import { createPsqlDbClient } from '../db/psql-client.js';
+import { createOutboxRepository } from '../outbox/repository.js';
 import { createBrokerAccountRepository } from './broker-accounts.js';
 import { createInstrumentSpecRepository } from './instrument-specs.js';
 import { createInstrumentRepository } from './instruments.js';
@@ -43,7 +46,7 @@ describe('BL-021 repositories (Postgres)', () => {
       return;
     }
     await db.execute(`
-      TRUNCATE sandbox_account_operations, broker_accounts,
+      TRUNCATE audit_log, outbox_events, sandbox_account_operations, broker_accounts,
         instrument_specs, instrument_provider_ids, instruments
       RESTART IDENTITY CASCADE
     `);
@@ -167,10 +170,21 @@ describe('BL-021 repositories (Postgres)', () => {
       errorMessage: null,
       requestHash: 'abc',
     };
-    await operations.append(operation);
+    await operations.append(operation, {
+      type: 'fund',
+      amount: '1000',
+      currency: 'RUB',
+    });
     expect((await operations.findByIdempotencyKey('idem-1'))?.status).toBe('queued');
+    expect(await operations.getRequest(OPERATION_ID)).toEqual({
+      type: 'fund',
+      amount: '1000',
+      currency: 'RUB',
+    });
 
-    await expect(operations.append(operation)).rejects.toThrow(/Duplicate idempotency key/);
+    await expect(
+      operations.append(operation, { type: 'fund', amount: '1000', currency: 'RUB' }),
+    ).rejects.toThrow(/Duplicate idempotency key/);
 
     const updated = await operations.update({
       ...operation,
@@ -179,5 +193,59 @@ describe('BL-021 repositories (Postgres)', () => {
     });
     expect(updated.status).toBe('succeeded');
     expect((await operations.list()).length).toBe(1);
+  });
+
+  it('enqueues and publishes outbox events by eventId', async () => {
+    if (!available) {
+      return;
+    }
+    const outbox = createOutboxRepository(db);
+    const eventId = parseUuid('33333333-3333-4333-8333-333333333333');
+    await outbox.enqueue({
+      id: eventId,
+      aggregateType: 'sandbox_account_operation',
+      aggregateId: OPERATION_ID,
+      eventType: 'sandbox.operation.queued',
+      payload: { operationId: OPERATION_ID },
+      createdAt: parseIsoDateTime('2026-11-09T03:00:00.000Z'),
+    });
+    expect((await outbox.listPending())[0]?.id).toBe(eventId);
+    const published = await outbox.markPublished(
+      eventId,
+      parseIsoDateTime('2026-11-09T03:05:00.000Z'),
+    );
+    expect(published.publishedAt).toBe('2026-11-09T03:05:00.000Z');
+    expect(await outbox.listPending()).toHaveLength(0);
+    await expect(
+      outbox.enqueue({
+        id: eventId,
+        aggregateType: 'sandbox_account_operation',
+        aggregateId: OPERATION_ID,
+        eventType: 'sandbox.operation.queued',
+        payload: { operationId: OPERATION_ID },
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('appends audit rows with redacted secrets', async () => {
+    if (!available) {
+      return;
+    }
+    const audit = createAuditLogRepository(db);
+    const written = await audit.append({
+      actorType: 'api',
+      actorId: 'admin',
+      action: 'sandbox.account.fund.enqueue',
+      targetType: 'sandbox_account',
+      targetId: ACCOUNT_ID,
+      correlationId: 'corr-audit-1',
+      result: 'accepted',
+      payload: { token: 'plaintext-secret-should-be-redacted-0001' },
+      createdAt: parseIsoDateTime('2026-11-09T05:00:00.000Z'),
+    });
+    expect(written.payload.token).toBe(REDACTED);
+    expect((await audit.listByCorrelationId('corr-audit-1'))[0]?.action).toBe(
+      'sandbox.account.fund.enqueue',
+    );
   });
 });

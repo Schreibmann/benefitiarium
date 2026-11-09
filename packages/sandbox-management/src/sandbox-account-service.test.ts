@@ -121,6 +121,57 @@ describe('SandboxAccountService', () => {
     expect(await service.listOperations()).toHaveLength(1);
   });
 
+  it('rejects idempotency key reuse with a different payload hash', async () => {
+    const service = createSandboxAccountService({
+      provider: createTestProvider(),
+      accounts: createMemorySandboxAccountStore(),
+      journal: createMemoryOperationJournal(),
+    });
+    await service.enqueue({
+      type: 'create',
+      name: 'bot-a',
+      idempotencyKey: 'same-key',
+      correlationId: 'c1',
+    });
+    await expect(
+      service.enqueue({
+        type: 'create',
+        name: 'bot-b',
+        idempotencyKey: 'same-key',
+        correlationId: 'c2',
+      }),
+    ).rejects.toThrow(/different request hash/);
+  });
+
+  it('executes from durable journal payload after service restart', async () => {
+    const provider = createTestProvider();
+    const accounts = createMemorySandboxAccountStore();
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'create',
+      name: 'durable-bot',
+      idempotencyKey: 'durable-create',
+      correlationId: 'c-durable',
+    });
+
+    const worker = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: true,
+      now: () => new Date('2026-11-08T21:00:00.000Z'),
+    });
+    const executed = await worker.executeOperation(enqueued.operation.id);
+    expect(executed.status).toBe('succeeded');
+    expect((await worker.listLocalAccounts())[0]?.displayName).toBe('durable-bot');
+  });
+
   it('worker path creates, funds, marks missing, and closes accounts', async () => {
     const provider = createTestProvider();
     const accounts = createMemorySandboxAccountStore();
@@ -172,19 +223,143 @@ describe('SandboxAccountService', () => {
     await accounts.upsert(orphan);
     const reconciled = await service.reconcileWithProvider();
     expect(
-      reconciled.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus,
+      reconciled.accounts.find((row) => row.providerAccountId === 'gone-provider-id')?.localStatus,
     ).toBe('missing');
-    expect(reconciled.find((row) => row.id === account.id)?.localStatus).toBe('active');
+    expect(reconciled.accounts.find((row) => row.id === account.id)?.localStatus).toBe('active');
+    expect(reconciled.missingProviderAccountIds).toContain('gone-provider-id');
+    expect(reconciled.providerUnavailable).toBe(false);
+
+    const preview = await service.previewClose(account.id);
+    expect(preview.openOrders).toHaveLength(0);
+    expect(service.fundPolicyNotes().some((note) => /withdraw/i.test(note))).toBe(true);
 
     const closeOp = await service.enqueue({
       type: 'close',
       accountId: account.id,
+      previewId: preview.previewId,
       confirmation: 'research-bot',
+      acknowledgeOpenPositionsAndOrders: false,
       idempotencyKey: 'op-close',
       correlationId: 'c-close',
     });
     expect((await service.executeOperation(closeOp.operation.id)).status).toBe('succeeded');
     expect((await service.getAccount(account.id))?.localStatus).toBe('closed');
+  });
+
+  it('requires close preview and open-risk ack before enqueue', async () => {
+    const base = createTestProvider([
+      {
+        providerAccountId: 'acc-risk',
+        displayName: 'risk-bot',
+        providerStatus: 'open',
+        openedAt: '2026-11-01T00:00:00.000Z',
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const provider: SandboxAccountProvider = {
+      ...base,
+      getOrders: async (providerAccountId) => [
+        {
+          providerAccountId,
+          brokerOrderId: 'ord-1',
+          providerInstrumentId: 'BBG000',
+          direction: 'BUY',
+          orderType: 'LIMIT',
+          lotsRequested: 1,
+          lotsExecuted: 0,
+          status: 'NEW',
+          orderDate: parseIsoDateTime('2026-11-08T18:00:00.000Z'),
+        },
+      ],
+    };
+    const accountId = parseUuid('55555555-5555-4555-8555-555555555555');
+    const service = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore([
+        {
+          id: accountId,
+          providerAccountId: 'acc-risk',
+          environment: 'sandbox',
+          displayName: 'risk-bot',
+          providerStatus: 'open',
+          localStatus: 'active',
+          openedAt: parseIsoDateTime('2026-11-01T00:00:00.000Z'),
+          closedAt: null,
+          lastVerifiedAt: null,
+        },
+      ]),
+      journal: createMemoryOperationJournal(),
+      now: () => new Date('2026-11-08T20:00:00.000Z'),
+    });
+
+    await expect(
+      service.enqueue({
+        type: 'close',
+        accountId,
+        previewId: parseUuid('66666666-6666-4666-8666-666666666666'),
+        confirmation: 'risk-bot',
+        acknowledgeOpenPositionsAndOrders: true,
+        idempotencyKey: 'no-preview',
+        correlationId: 'c',
+      }),
+    ).rejects.toThrow(/preview/i);
+
+    const preview = await service.previewClose(accountId);
+    await expect(
+      service.enqueue({
+        type: 'close',
+        accountId,
+        previewId: preview.previewId,
+        confirmation: 'risk-bot',
+        acknowledgeOpenPositionsAndOrders: false,
+        idempotencyKey: 'no-ack',
+        correlationId: 'c',
+      }),
+    ).rejects.toThrow(/acknowledgeOpenPositionsAndOrders/);
+
+    const accepted = await service.enqueue({
+      type: 'close',
+      accountId,
+      previewId: preview.previewId,
+      confirmation: 'risk-bot',
+      acknowledgeOpenPositionsAndOrders: true,
+      idempotencyKey: 'with-ack',
+      correlationId: 'c',
+    });
+    expect(accepted.operation.status).toBe('queued');
+  });
+
+  it('marks write ops unknown on timeout and refuses blind retry', async () => {
+    const base = createTestProvider();
+    const provider: SandboxAccountProvider = {
+      ...base,
+      openAccount: async () => {
+        throw new Error('gateway timeout while opening sandbox account');
+      },
+    };
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore(),
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'create',
+      name: 'timeout-bot',
+      idempotencyKey: 'create-timeout',
+      correlationId: 'c-timeout',
+    });
+    const worker = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore(),
+      journal,
+      allowProviderWrites: true,
+    });
+    const unknown = await worker.executeOperation(enqueued.operation.id);
+    expect(unknown.status).toBe('unknown');
+    await expect(worker.executeOperation(unknown.id)).rejects.toThrow(/reconciliation/i);
   });
 
   it('rejects fund above limit and refuses non-sandbox host', async () => {
@@ -262,6 +437,101 @@ describe('SandboxAccountService', () => {
       allowProviderWrites: true,
     });
     const listed = await service.reconcileWithProvider();
-    expect(listed[0]?.localStatus).toBe('active');
+    expect(listed.providerUnavailable).toBe(true);
+    expect(listed.accounts[0]?.localStatus).toBe('active');
+    expect(listed.missingProviderAccountIds).toHaveLength(0);
+  });
+
+  it('enqueues global discovery sync without accountId and recovers missing on reappear', async () => {
+    const provider = createTestProvider([
+      {
+        providerAccountId: 'acc-live',
+        displayName: 'live',
+        providerStatus: 'open',
+        openedAt: '2026-11-01T00:00:00.000Z',
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const accounts = createMemorySandboxAccountStore([
+      {
+        id: parseUuid('33333333-3333-4333-8333-333333333333'),
+        providerAccountId: 'acc-live',
+        environment: 'sandbox',
+        displayName: 'live',
+        providerStatus: 'open',
+        localStatus: 'missing',
+        openedAt: parseIsoDateTime('2026-11-01T00:00:00.000Z'),
+        closedAt: null,
+        lastVerifiedAt: null,
+      },
+    ]);
+    const journal = createMemoryOperationJournal();
+    const api = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: false,
+    });
+    const enqueued = await api.enqueue({
+      type: 'sync',
+      accountId: null,
+      idempotencyKey: 'global-sync-1',
+      correlationId: 'c-sync',
+    });
+    expect(enqueued.operation.accountId).toBeNull();
+
+    const worker = createSandboxAccountService({
+      provider,
+      accounts,
+      journal,
+      allowProviderWrites: true,
+      now: () => new Date('2026-11-08T22:00:00.000Z'),
+    });
+    expect((await worker.executeOperation(enqueued.operation.id)).status).toBe('succeeded');
+    const recovered = await worker.getAccount('33333333-3333-4333-8333-333333333333');
+    expect(recovered?.localStatus).toBe('active');
+    expect(recovered?.providerAccountId).toBe('acc-live');
+    expect(await worker.listMissingRecoveries()).toHaveLength(0);
+  });
+
+  it('maps provider NEW to local new and keeps history for missing accounts', async () => {
+    const provider = createTestProvider([
+      {
+        providerAccountId: 'acc-new',
+        displayName: 'new-one',
+        providerStatus: 'new',
+        openedAt: null,
+        closedAt: null,
+        balanceRub: '0',
+      },
+    ]);
+    const service = createSandboxAccountService({
+      provider,
+      accounts: createMemorySandboxAccountStore([
+        {
+          id: parseUuid('44444444-4444-4444-8444-444444444444'),
+          providerAccountId: 'gone',
+          environment: 'sandbox',
+          displayName: 'old',
+          providerStatus: 'open',
+          localStatus: 'active',
+          openedAt: parseIsoDateTime('2026-10-01T00:00:00.000Z'),
+          closedAt: null,
+          lastVerifiedAt: null,
+        },
+      ]),
+      journal: createMemoryOperationJournal(),
+      allowProviderWrites: true,
+    });
+    const summary = await service.reconcileWithProvider();
+    expect(summary.discoveredProviderAccountIds).toContain('acc-new');
+    expect(summary.accounts.find((row) => row.providerAccountId === 'acc-new')?.localStatus).toBe(
+      'new',
+    );
+    const missing = summary.accounts.find((row) => row.providerAccountId === 'gone');
+    expect(missing?.localStatus).toBe('missing');
+    expect(missing?.id).toBe('44444444-4444-4444-8444-444444444444');
+    expect((await service.listMissingRecoveries())[0]?.action).toBe('create_new_account');
   });
 });

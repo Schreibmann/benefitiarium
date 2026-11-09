@@ -77,7 +77,8 @@ export type EnqueueSandboxCommandInput =
     }
   | {
       type: 'sync';
-      accountId: UUID;
+      /** Null = full discovery sync of all sandbox accounts (BL-079). */
+      accountId: UUID | null;
       idempotencyKey: string;
       correlationId: string;
     }
@@ -92,7 +93,11 @@ export type EnqueueSandboxCommandInput =
   | {
       type: 'close';
       accountId: UUID;
+      /** Issued by SandboxAccountService.previewClose (BL-087). */
+      previewId: UUID;
       confirmation: string;
+      /** Required when preview reports open orders or positions. */
+      acknowledgeOpenPositionsAndOrders: boolean;
       idempotencyKey: string;
       correlationId: string;
     };

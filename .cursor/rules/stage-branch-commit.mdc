@@ -1,0 +1,12 @@
+---
+description: One backlog stage per branch; commit when the stage is done
+alwaysApply: true
+---
+
+# Stage workflow
+
+- Implement **one backlog stage per git branch** (e.g. `cursor/bl-078-…`, then `cursor/bl-079-…` from updated `main`).
+- When a stage is **complete** (code + tests + STATUS), **create a git commit** on that branch without waiting for an extra ask.
+- Do not start the next stage on the same branch; open a new branch after the commit.
+- Still run `pnpm lint` and `pnpm typecheck` (or the pre-commit hook) before committing.
+- Push / open a PR only when the user asks.

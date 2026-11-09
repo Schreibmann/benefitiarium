@@ -1,16 +1,22 @@
 import { randomUUID } from 'node:crypto';
 import { parseIsoDateTime, parseUuid, type SandboxAccountOperation, type UUID } from '@moex/domain';
+import type { SandboxCommandRequest } from './command-request.js';
 
 export type OperationJournal = {
   findByIdempotencyKey: (key: string) => Promise<SandboxAccountOperation | null>;
-  append: (operation: SandboxAccountOperation) => Promise<SandboxAccountOperation>;
+  append: (
+    operation: SandboxAccountOperation,
+    request: SandboxCommandRequest,
+  ) => Promise<SandboxAccountOperation>;
   update: (operation: SandboxAccountOperation) => Promise<SandboxAccountOperation>;
   list: () => Promise<SandboxAccountOperation[]>;
+  getRequest: (operationId: UUID) => Promise<SandboxCommandRequest | null>;
 };
 
 export function createMemoryOperationJournal(): OperationJournal {
   const byId = new Map<string, SandboxAccountOperation>();
   const byIdempotency = new Map<string, string>();
+  const requests = new Map<string, SandboxCommandRequest>();
 
   return {
     findByIdempotencyKey: async (key) => {
@@ -20,12 +26,13 @@ export function createMemoryOperationJournal(): OperationJournal {
       }
       return byId.get(id) ?? null;
     },
-    append: async (operation) => {
+    append: async (operation, request) => {
       if (byIdempotency.has(operation.idempotencyKey)) {
         throw new Error(`Duplicate idempotency key: ${operation.idempotencyKey}`);
       }
       byId.set(operation.id, operation);
       byIdempotency.set(operation.idempotencyKey, operation.id);
+      requests.set(operation.id, request);
       return operation;
     },
     update: async (operation) => {
@@ -36,6 +43,7 @@ export function createMemoryOperationJournal(): OperationJournal {
       return operation;
     },
     list: async () => [...byId.values()],
+    getRequest: async (operationId) => requests.get(operationId) ?? null,
   };
 }
 

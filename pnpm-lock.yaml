@@ -29,12 +29,27 @@ importers:
 
   apps/api:
     dependencies:
+      '@moex/broker-tinvest':
+        specifier: workspace:*
+        version: link:../../packages/broker-tinvest
       '@moex/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@moex/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@moex/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@moex/observability':
         specifier: workspace:*
         version: link:../../packages/observability
+      '@moex/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@moex/sandbox-management':
+        specifier: workspace:*
+        version: link:../../packages/sandbox-management
       fastify:
         specifier: ^5.6.2
         version: 5.12.8

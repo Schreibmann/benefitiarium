@@ -4,6 +4,18 @@ import { type DecimalString, parseDecimalString } from '@moex/domain';
 /** Documented T-Invest SandboxPayIn upper bound. */
 export const SANDBOX_PAYIN_MAX_RUB = parseDecimalString('30000000');
 
+/** Product copy for Admin UI / API (SandboxPayIn cannot decrease balance). */
+export const SANDBOX_PAYIN_NO_WITHDRAW_WARNING =
+  'SandboxPayIn only increases the RUB balance; withdrawal or balance decrease is not supported.';
+
+export function sandboxFundPolicyNotes(): string[] {
+  return [
+    SANDBOX_PAYIN_NO_WITHDRAW_WARNING,
+    `Maximum documented SandboxPayIn amount is ${SANDBOX_PAYIN_MAX_RUB} RUB.`,
+    'Funding is not provider-side idempotent; rely on app Idempotency-Key + request hash.',
+  ];
+}
+
 export type FundValidationResult =
   | { ok: true; amount: DecimalString }
   | { ok: false; reason: string };

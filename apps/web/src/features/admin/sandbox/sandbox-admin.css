@@ -1,0 +1,129 @@
+.sandbox-admin {
+  --bg: #f3efe6;
+  --ink: #1c2416;
+  --accent: #2f5d3a;
+  --warn: #8a4b12;
+  --error: #8b1e1e;
+  --line: #cfc6b4;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top left, #fff8e8, transparent 40%),
+    linear-gradient(180deg, #f7f2e8, var(--bg));
+  min-height: 100vh;
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+.sandbox-admin h1,
+.sandbox-admin h2,
+.sandbox-admin h3 {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  margin: 0 0 0.5rem;
+}
+
+.sandbox-admin__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1rem;
+}
+
+.sandbox-admin__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sandbox-admin .badge {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  padding: 0.15rem 0.45rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sandbox-admin .panel {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.sandbox-admin .stack {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.sandbox-admin label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.sandbox-admin input[type="text"],
+.sandbox-admin input[type="password"],
+.sandbox-admin input:not([type]),
+.sandbox-admin input[inputmode="decimal"],
+.sandbox-admin select {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  background: #fffdf8;
+  color: var(--ink);
+}
+
+.sandbox-admin button {
+  border: 1px solid var(--accent);
+  background: #e7f0e8;
+  color: var(--ink);
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+.sandbox-admin button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.sandbox-admin .actions {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.sandbox-admin .muted {
+  color: #5c614f;
+}
+
+.sandbox-admin .error {
+  color: var(--error);
+}
+
+.sandbox-admin .notice,
+.sandbox-admin .warn {
+  color: var(--warn);
+}
+
+.sandbox-admin .account-list {
+  list-style: none;
+  padding: 0;
+}
+
+.sandbox-admin .account-list li {
+  margin: 0.35rem 0;
+}
+
+.sandbox-admin pre {
+  overflow: auto;
+  background: #fffdf8;
+  border: 1px solid var(--line);
+  padding: 0.75rem;
+  font-size: 0.85rem;
+}
