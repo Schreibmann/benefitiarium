@@ -30,7 +30,9 @@ export function parseDecimalString(value: string): DecimalString {
 }
 
 export function parseIsoDateTime(value: string): IsoDateTime {
-  return isoDateTimeSchema.parse(value);
+  const accepted = isoDateTimeSchema.parse(value);
+  // Canonical UTC form (ms + Z) so Postgres offset strings and Date#toISOString match.
+  return isoDateTimeSchema.parse(new Date(accepted).toISOString());
 }
 
 export function tryParseUuid(value: string): UUID | null {
@@ -45,5 +47,9 @@ export function tryParseDecimalString(value: string): DecimalString | null {
 
 export function tryParseIsoDateTime(value: string): IsoDateTime | null {
   const result = isoDateTimeSchema.safeParse(value);
-  return result.success ? result.data : null;
+  if (!result.success) {
+    return null;
+  }
+  const normalized = isoDateTimeSchema.safeParse(new Date(result.data).toISOString());
+  return normalized.success ? normalized.data : null;
 }

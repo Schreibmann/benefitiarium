@@ -29,6 +29,7 @@ describe('branded scalars', () => {
     expect(parseDecimalString('12.345')).toBe('12.345');
     expect(parseDecimalString('-0.5')).toBe('-0.5');
     expect(parseIsoDateTime('2026-11-08T12:00:00.000Z')).toBe('2026-11-08T12:00:00.000Z');
+    expect(parseIsoDateTime('2026-11-09T03:05:00+00:00')).toBe('2026-11-09T03:05:00.000Z');
   });
 
   it('rejects invalid branded values', () => {

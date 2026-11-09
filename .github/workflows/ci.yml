@@ -75,6 +75,12 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Install Playwright Chromium
+        run: pnpm --filter @moex/web exec playwright install --with-deps chromium
+
+      - name: E2E Admin UI
+        run: pnpm --filter @moex/web test:e2e
+
       - name: Build
         run: pnpm build
 
