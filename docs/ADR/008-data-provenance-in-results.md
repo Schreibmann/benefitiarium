@@ -1,17 +1,23 @@
-# ADR-008: Data source and version are part of analysis results
+# ADR-008: Data source and version are part of analysis results / Источник данных и версия — часть результатов анализа
 
-## Status
+## Status / Статус
 
-Accepted
+Accepted (принято)
 
-## Context
+## Context / Контекст
 
-Mixing MOEX ISS and T-Invest candles without provenance breaks reproducibility and QA.
+**RU.** Смешивание свечей MOEX ISS и T-Invest без происхождения данных ломает воспроизводимость и QA.
 
-## Decision
+**EN.** Mixing MOEX ISS and T-Invest candles without provenance breaks reproducibility and QA.
 
-Every candle carries provider/source metadata. Backtests bind to fixed dataset snapshot/revision, strategy version, parameters, and cost model. Do not silently merge providers in one series.
+## Decision / Решение
 
-## Consequences
+**RU.** Каждая свеча несёт метаданные провайдера/источника. Бэктесты привязаны к фиксированному снимку/ревизии датасета, версии стратегии, параметрам и модели издержек. Не сливать провайдеров в одну серию без явного решения.
 
-Schema uniqueness includes provider; dataset versioning is required before serious backtests.
+**EN.** Every candle carries provider/source metadata. Backtests bind to fixed dataset snapshot/revision, strategy version, parameters, and cost model. Do not silently merge providers in one series.
+
+## Consequences / Последствия
+
+**RU.** Уникальность в схеме включает провайдера; версионирование датасета обязательно до серьёзных бэктестов.
+
+**EN.** Schema uniqueness includes provider; dataset versioning is required before serious backtests.

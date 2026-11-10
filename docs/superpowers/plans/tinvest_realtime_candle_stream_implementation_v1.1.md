@@ -1,5 +1,7 @@
-# Moved (v1.3)
+# Moved (v1.3) / Перенесено (v1.3)
 
-Canonical realtime candle stream guide:
+**RU.** Каноническое руководство по realtime-потоку свечей:
+
+**EN.** Canonical realtime candle stream guide:
 
 [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](../../realtime/TINVEST_REALTIME_CANDLE_STREAM.md)

@@ -1,8 +1,14 @@
-# External API contract notes
+# External API contract notes / Заметки по внешним API-контрактам
 
-**Updated:** 2026-11-10  
-**Aligned with:** TECHNICAL_BACKLOG v1.2  
-Sanitized notes from spikes. Do not commit tokens or personal account payloads.
+**RU.** **Обновлено:** 2026-11-10  
+**EN.** **Updated:** 2026-11-10
+
+**RU.** **Согласовано с:** TECHNICAL_BACKLOG v1.2  
+**EN.** **Aligned with:** TECHNICAL_BACKLOG v1.2
+
+**RU.** Санитизированные заметки со spike. Не коммитить токены и персональные payload счёта.
+
+**EN.** Sanitized notes from spikes. Do not commit tokens or personal account payloads.
 
 ## T-Invest SDK (`@ttech-pub/*`) — BL-013 / BL-014
 
@@ -12,7 +18,9 @@ Sanitized notes from spikes. Do not commit tokens or personal account payloads.
 | `@ttech-pub/invest-core`      | `1.61.0`       |
 | `@ttech-pub/grpc-node-client` | `1.61.0`       |
 
-Runtime notes:
+**RU.** Заметки по runtime:
+
+**EN.** Runtime notes:
 
 - Node.js `>=22` (repo `.node-version`).
 - Entry: `InvestNodeSDK.create({ token, url, telemetry })` then `sdk.send(command)`.
@@ -26,7 +34,9 @@ Runtime notes:
 - Peer warning observed on install: `@opentelemetry/api` range mismatch under `@sentry/node` (non-blocking for offline spike).
 - Runtime gap: `@ttech-pub/grpc-node-client@1.61.0` requires `@bufbuild/protobuf` (`/wire`) and peer `nice-grpc`; added explicitly in `@moex/broker-tinvest`.
 
-Commands verified present offline:
+**RU.** Команды, подтверждённые offline:
+
+**EN.** Commands verified present offline:
 
 - `GetSharesCommand`, `GetFuturesCommand`, `GetIndicativesCommand`
 - `GetCandlesCommand`, `GetLastPricesCommand`, `GetMarketdataStreamCommand`
@@ -35,9 +45,13 @@ Commands verified present offline:
 
 ### MarketDataStream realtime (BL-040…BL-045 / RT-01…RT-09)
 
-Canonical guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**).
+**RU.** Каноническое руководство: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**).
 
-SDK spike notes (1.61.0):
+**EN.** Canonical guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**).
+
+**RU.** Заметки SDK spike (1.61.0):
+
+**EN.** SDK spike notes (1.61.0):
 
 - `GetMarketdataStreamCommand` opens **`marketDataServerSideStream`** (unary request → server stream), not the bidirectional `MarketDataStream`. Dynamic subscribe/unsubscribe on one connection requires low-level `NodeApiClient.marketdataStream.marketDataStream(AsyncIterable<MarketDataRequest>)`.
 - Platform manager: `@moex/broker-tinvest` `StreamConnectionManager` + `SubscriptionRegistry` (ref-counted provider keys; limits **32** quote stream connections / **300** subscriptions per stream / **100** subscribe requests/min).
@@ -65,32 +79,45 @@ SDK spike notes (1.61.0):
 - **No Fibonacci** and **no horizontal volume / volume profile** in GetTechAnalysis. Local Fibonacci Pivot Points (`GET …/indicators/fibonacci-pivots`, `@moex/indicators`) remain the chart overlay and are **not** superseded.
 - Adapter: `TinvestReadApi.getTechAnalysis` → raw bands/signal/macd strings. No HTTP route yet for BB/EMA/RSI/MACD/SMA (stop at adapter + fixtures).
 
-Live probe: `pnpm --filter @moex/broker-tinvest spike` loads repo `.env` and uses  
-`TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` separately (never logs token values).
+**RU.** Live probe: `pnpm --filter @moex/broker-tinvest spike` загружает repo `.env` и использует `TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` раздельно (значения токенов не логируются).
 
-Last successful sandbox probe (2026-11-08): 562 futures, 78 indicatives, sample `GetCandles` on commodity `S2H7` returned 3 daily bars. Production read probe skipped while `TINVEST_READ_ONLY_TOKEN` is empty.
+**EN.** Live probe: `pnpm --filter @moex/broker-tinvest spike` loads repo `.env` and uses `TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` separately (never logs token values).
+
+**RU.** Последний успешный sandbox probe (2026-11-08): 562 futures, 78 indicatives, sample `GetCandles` на commodity `S2H7` вернул 3 daily bars. Production read probe пропущен, пока `TINVEST_READ_ONLY_TOKEN` пуст.
+
+**EN.** Last successful sandbox probe (2026-11-08): 562 futures, 78 indicatives, sample `GetCandles` on commodity `S2H7` returned 3 daily bars. Production read probe skipped while `TINVEST_READ_ONLY_TOKEN` is empty.
 
 ## Sandbox Account Management (v1.2 / BL-078)
 
-Allowlisted host: `sandbox-invest-public-api.tbank.ru` (`createSandboxSdk` / `assertSandboxUrl`).
+**RU.** Allowlisted host: `sandbox-invest-public-api.tbank.ru` (`createSandboxSdk` / `assertSandboxUrl`).
 
-SDK commands required for lifecycle (verified offline in 1.61.0):
+**EN.** Allowlisted host: `sandbox-invest-public-api.tbank.ru` (`createSandboxSdk` / `assertSandboxUrl`).
+
+**RU.** SDK-команды, необходимые для lifecycle (подтверждены offline в 1.61.0):
+
+**EN.** SDK commands required for lifecycle (verified offline in 1.61.0):
 
 - `GetSandboxAccountsCommand`, `OpenSandboxAccountCommand`, `CloseSandboxAccountCommand`
 - `SandboxPayInCommand` (RUB only; max 30_000_000; no withdraw)
 - `GetSandboxPortfolioCommand`, `GetSandboxPositionsCommand`
 - No dedicated `GetSandboxOperations` in SDK 1.61.0 — adapter may return empty until confirmed
 
-Application layer: `@moex/sandbox-management` (`SandboxAccountService`) — enqueue vs execute separation; `MISSING` is local-only after reconcile.
+**RU.** Прикладной слой: `@moex/sandbox-management` (`SandboxAccountService`) — разделение enqueue vs execute; `MISSING` — локально только после reconcile.
 
-Coverage matrix scaffold: [`FUTURES_HISTORY_COVERAGE.md`](FUTURES_HISTORY_COVERAGE.md).
+**EN.** Application layer: `@moex/sandbox-management` (`SandboxAccountService`) — enqueue vs execute separation; `MISSING` is local-only after reconcile.
+
+**RU.** Каркас матрицы покрытия: [`FUTURES_HISTORY_COVERAGE.md`](FUTURES_HISTORY_COVERAGE.md).
+
+**EN.** Coverage matrix scaffold: [`FUTURES_HISTORY_COVERAGE.md`](FUTURES_HISTORY_COVERAGE.md).
 
 ## MOEX ISS / AlgoPack — BL-015 / BL-033
 
 Base URL: `https://iss.moex.com/iss`  
 Auth modes: `anonymous` (default) or `authenticated` via `MOEX_ISS_AUTH_MODE` + `MOEX_ISS_TOKEN`.
 
-Verified client behaviors (unit + optional live smoke):
+**RU.** Подтверждённые поведения клиента (unit + optional live smoke):
+
+**EN.** Verified client behaviors (unit + optional live smoke):
 
 - GET with timeout + abort
 - Retry/backoff on `429`/`5xx` and transient network errors
@@ -98,7 +125,9 @@ Verified client behaviors (unit + optional live smoke):
 - Pagination via `start`
 - Optional Bearer auth header in authenticated mode
 
-Example anonymous endpoints used in smoke:
+**RU.** Примеры anonymous endpoints в smoke:
+
+**EN.** Example anonymous endpoints used in smoke:
 
 - `GET /engines.json`
 - `GET /engines/stock/markets/shares/boards/TQBR/securities/SBER.json`
@@ -111,12 +140,18 @@ Path helper: `buildFortsCandlesPath({ ticker })` →
 
 Query params typically: `from`, `till`, `interval`, pagination `start`.
 
-Notes:
+**RU.** Заметки:
+
+**EN.** Notes:
 
 - T-Invest `class_code` `SPBFUT` maps to ISS board `RFUD` (alias in cross-provider mapping).
 - Full historical depth / delay / auth requirements are **not** assumed; verify per contract in BL-039 / BL-033.
 - AlgoPack is an optional reconciliation source — not a blocker for T-Invest history ingestion.
 
-History `/iss/history` availability depends on subscription; do not assume full history for all boards without checking.
+**RU.** Доступность History `/iss/history` зависит от подписки; не предполагать полную историю по всем boards без проверки.
 
-Live smoke: `pnpm --filter @moex/marketdata-moex-iss smoke` (requires `DATABASE_URL` via `.env` / env for `@moex/config`).
+**EN.** History `/iss/history` availability depends on subscription; do not assume full history for all boards without checking.
+
+**RU.** Live smoke: `pnpm --filter @moex/marketdata-moex-iss smoke` (требует `DATABASE_URL` через `.env` / env для `@moex/config`).
+
+**EN.** Live smoke: `pnpm --filter @moex/marketdata-moex-iss smoke` (requires `DATABASE_URL` via `.env` / env for `@moex/config`).

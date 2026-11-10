@@ -1,5 +1,9 @@
-# Roadmap pointer
+# Roadmap pointer / Указатель roadmap
 
-Канонический roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
+**RU.** Канонический roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 
-Текущий статус: [`docs/STATUS.md`](docs/STATUS.md)
+**EN.** Canonical roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md)
+
+**RU.** Текущий статус: [`docs/STATUS.md`](docs/STATUS.md)
+
+**EN.** Current status: [`docs/STATUS.md`](docs/STATUS.md)

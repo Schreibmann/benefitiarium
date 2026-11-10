@@ -1,14 +1,24 @@
-# Futures history coverage matrix (BL-039)
+# Futures history coverage matrix (BL-039) / Матрица покрытия истории фьючерсов (BL-039)
 
-**Status:** fixture scaffold + first sandbox live probe (2026-11-08)  
-**Updated:** 2026-11-08  
-**Backlog:** TECHNICAL_BACKLOG v1.1 / BL-039
+**RU.** **Статус:** fixture scaffold + первый sandbox live probe (2026-11-08)  
+**EN.** **Status:** fixture scaffold + first sandbox live probe (2026-11-08)
 
-Do not treat missing archive years as zero market volume — mark `unavailable`.
+**RU.** **Обновлено:** 2026-11-08  
+**EN.** **Updated:** 2026-11-08
 
-## Live sandbox probe (TINVEST_SANDBOX_TOKEN)
+**RU.** **Backlog:** TECHNICAL_BACKLOG v1.1 / BL-039
 
-Sanitized notes from `pnpm --filter @moex/broker-tinvest spike` (values never logged):
+**EN.** **Backlog:** TECHNICAL_BACKLOG v1.1 / BL-039
+
+**RU.** Отсутствующие годы архива не считать нулевым объёмом рынка — помечать `unavailable`.
+
+**EN.** Do not treat missing archive years as zero market volume — mark `unavailable`.
+
+## Live sandbox probe (TINVEST_SANDBOX_TOKEN) / Live sandbox probe (TINVEST_SANDBOX_TOKEN)
+
+**RU.** Санитизированные заметки из `pnpm --filter @moex/broker-tinvest spike` (значения никогда не логируются):
+
+**EN.** Sanitized notes from `pnpm --filter @moex/broker-tinvest spike` (values never logged):
 
 | Check            | Result                                                                                            |
 | ---------------- | ------------------------------------------------------------------------------------------------- |
@@ -22,31 +32,50 @@ Sanitized notes from `pnpm --filter @moex/broker-tinvest spike` (values never lo
 | GetCandles DAY   | `S2H7` → 3 rows over last 3 days                                                                  |
 | Production read  | skipped — `TINVEST_READ_ONLY_TOKEN` empty                                                         |
 
-Asset type labels from live API use `TYPE_*` prefix; domain mapper normalizes them.
+**RU.** Метки asset type из live API используют префикс `TYPE_*`; domain mapper нормализует их.
 
-## Fixture seed set (offline)
+**EN.** Asset type labels from live API use `TYPE_*` prefix; domain mapper normalizes them.
 
-Sanitized UIDs below are local fixtures in `@moex/broker-tinvest`, not live broker IDs.
+## Fixture seed set (offline) / Набор fixture (offline)
 
-| Ticker | Class  | Underlying type | Underlying | Expiry     | Active | Fixture UID                             | first_1min | first_1day | GetCandles 1m/5m/1h/1d | Archive years | Notes                                              |
-| ------ | ------ | --------------- | ---------- | ---------- | ------ | --------------------------------------- | ---------- | ---------- | ---------------------- | ------------- | -------------------------------------------------- |
-| BRH6   | SPBFUT | commodity       | Brent      | 2026-02-16 | yes    | `br-active-uid-0001-0000-000000000001`  | 2025-08-01 | 2025-08-01 | pending_live           | pending_live  | commodity sample                                   |
-| GDH6   | SPBFUT | commodity       | Gold       | 2026-03-19 | yes    | `gd-active-uid-0001-0000-000000000002`  | 2025-09-01 | 2025-09-01 | pending_live           | pending_live  | commodity sample                                   |
-| MXH6   | SPBFUT | equity_index    | IMOEX      | 2026-03-19 | yes    | `mx-active-uid-0001-0000-000000000003`  | 2025-09-15 | 2025-09-15 | pending_live           | pending_live  | index future; do not substitute IMOEX indicative   |
-| RIH6   | SPBFUT | equity_index    | RTSI       | 2026-03-19 | yes    | `ri-active-uid-0001-0000-000000000004`  | 2025-09-15 | 2025-09-15 | pending_live           | pending_live  | index future                                       |
-| CRZ5   | SPBFUT | currency        | CNY/RUB    | 2025-12-18 | no     | `cr-expired-uid-0001-0000-000000000005` | 2024-12-01 | 2024-12-01 | pending_live           | pending_live  | expired series; History MD sample id `CRZ5_SPBFUT` |
-| SiH6   | SPBFUT | currency        | USD/RUB    | 2026-03-19 | yes    | `a1b2c3d4-e5f6-4789-a012-3456789abcde`  | 2025-09-01 | 2025-09-01 | pending_live           | pending_live  | extra FX future                                    |
+**RU.** Санитизированные UID ниже — локальные fixtures в `@moex/broker-tinvest`, не live broker IDs.
 
-## Indicatives (not futures)
+**EN.** Sanitized UIDs below are local fixtures in `@moex/broker-tinvest`, not live broker IDs.
 
-| Ticker | Fixture UID                         | Role                                                                                 |
-| ------ | ----------------------------------- | ------------------------------------------------------------------------------------ |
-| IMOEX  | `imoex-indicative-uid-000000000001` | Underlying index series for MX\* contracts — candles allowed, never contract history |
-| RTSI   | `rtsi-indicative-uid-000000000002`  | Underlying index series for RI\* contracts                                           |
+| Ticker | Class  | Underlying type | Underlying | Expiry     | Active | Fixture UID                             | first_1min | first_1day | GetCandles 1m/5m/1h/1d | Archive years | Notes                                                                                       |
+| ------ | ------ | --------------- | ---------- | ---------- | ------ | --------------------------------------- | ---------- | ---------- | ---------------------- | ------------- | ------------------------------------------------------------------------------------------- |
+| BRH6   | SPBFUT | commodity       | Brent      | 2026-02-16 | yes    | `br-active-uid-0001-0000-000000000001`  | 2025-08-01 | 2025-08-01 | pending_live           | pending_live  | commodity sample / пример товарного                                                         |
+| GDH6   | SPBFUT | commodity       | Gold       | 2026-03-19 | yes    | `gd-active-uid-0001-0000-000000000002`  | 2025-09-01 | 2025-09-01 | pending_live           | pending_live  | commodity sample / пример товарного                                                         |
+| MXH6   | SPBFUT | equity_index    | IMOEX      | 2026-03-19 | yes    | `mx-active-uid-0001-0000-000000000003`  | 2025-09-15 | 2025-09-15 | pending_live           | pending_live  | index future; do not substitute IMOEX indicative / индексный; не подменять indicative IMOEX |
+| RIH6   | SPBFUT | equity_index    | RTSI       | 2026-03-19 | yes    | `ri-active-uid-0001-0000-000000000004`  | 2025-09-15 | 2025-09-15 | pending_live           | pending_live  | index future / индексный фьючерс                                                            |
+| CRZ5   | SPBFUT | currency        | CNY/RUB    | 2025-12-18 | no     | `cr-expired-uid-0001-0000-000000000005` | 2024-12-01 | 2024-12-01 | pending_live           | pending_live  | expired series; History MD sample id `CRZ5_SPBFUT` / истёкшая серия; пример History MD      |
+| SiH6   | SPBFUT | currency        | USD/RUB    | 2026-03-19 | yes    | `a1b2c3d4-e5f6-4789-a012-3456789abcde`  | 2025-09-01 | 2025-09-01 | pending_live           | pending_live  | extra FX future / доп. валютный фьючерс                                                     |
 
-## Reproducible live probe plan
+## Indicatives (not futures) / Индикативы (не фьючерсы)
 
-Requires `TINVEST_READ_ONLY_TOKEN` and/or `TINVEST_SANDBOX_TOKEN` (and optionally `MOEX_ISS_TOKEN` for AlgoPack).
+| Ticker | Fixture UID                         | Role                                                                                                           |
+| ------ | ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| IMOEX  | `imoex-indicative-uid-000000000001` | Underlying index series for MX\* contracts — candles allowed, never contract history / базовый индекс для MX\* |
+| RTSI   | `rtsi-indicative-uid-000000000002`  | Underlying index series for RI\* contracts / базовый индекс для RI\*                                           |
+
+## Reproducible live probe plan / Воспроизводимый план live probe
+
+**RU.** Требуются `TINVEST_READ_ONLY_TOKEN` и/или `TINVEST_SANDBOX_TOKEN` (опционально `MOEX_ISS_TOKEN` для AlgoPack).
+
+**EN.** Requires `TINVEST_READ_ONLY_TOKEN` and/or `TINVEST_SANDBOX_TOKEN` (and optionally `MOEX_ISS_TOKEN` for AlgoPack).
+
+**RU.**
+
+1. `GetFutures` / UID lookup в стиле `FutureBy` для одного активного товарного и одного активного индексного фьючерса; сохранить реальный UID, ticker/class_code, basic_asset / basic_asset_position_uid, expiry, `first_1min_candle_date`, `first_1day_candle_date`.
+2. Для каждого UID вызвать `GetCandles` для интервалов `1m`, `5m`, `1h`, `1d` в коротком окне внутри границы first candle; записать количество строк и гэпы.
+3. Проверить annual ZIP archives по UID/году; отсутствующий год → `unavailable`.
+4. Сверить один контракт с примером именования History MD `CRZ5_SPBFUT` (истёкшая CNY серия).
+5. Опционально: AlgoPack FORTS path  
+   `GET /iss/engines/futures/markets/forts/boards/rfud/securities/{ticker}/candles.json?from=&till=&interval=`  
+   через `buildFortsCandlesPath` в `@moex/marketdata-moex-iss`.
+6. Повторить: `pnpm --filter @moex/broker-tinvest spike` после настройки токенов; приложить санитизированные образцы сюда (без токенов и персональных счетов).
+
+**EN.**
 
 1. `GetFutures` / `FutureBy`-style UID lookup for one active commodity and one active index future; persist real UID, ticker/class_code, basic_asset / basic_asset_position_uid, expiry, `first_1min_candle_date`, `first_1day_candle_date`.
 2. For each UID call `GetCandles` for intervals `1m`, `5m`, `1h`, `1d` over a short window inside the first-candle boundary; record row counts and gaps.
@@ -57,15 +86,17 @@ Requires `TINVEST_READ_ONLY_TOKEN` and/or `TINVEST_SANDBOX_TOKEN` (and optionall
    via `buildFortsCandlesPath` in `@moex/marketdata-moex-iss`.
 6. Re-run: `pnpm --filter @moex/broker-tinvest spike` after setting tokens; attach sanitized samples here (no tokens, no personal accounts).
 
-## Coverage status legend
+## Coverage status legend / Легенда статусов покрытия
 
-| Value          | Meaning                                     |
-| -------------- | ------------------------------------------- |
-| `pending_live` | Fixture only; live API not probed           |
-| `available`    | Confirmed rows / archive present            |
-| `unavailable`  | Provider reports missing history/archive    |
-| `gap`          | Partial coverage with detected session gaps |
+| Value          | Meaning / Смысл                                                            |
+| -------------- | -------------------------------------------------------------------------- |
+| `pending_live` | Fixture only; live API not probed / Только fixture; live API не проверен   |
+| `available`    | Confirmed rows / archive present / Подтверждены строки / архив есть        |
+| `unavailable`  | Provider reports missing history/archive / Provider сообщает об отсутствии |
+| `gap`          | Partial coverage with detected session gaps / Частичное покрытие с гэпами  |
 
-## Gate for BL-031
+## Gate for BL-031 / Критерий для BL-031
 
-Importer work must not start from assumed full history. Fill this matrix for ≥2 commodity + ≥2 index futures including ≥1 expired series before merging GetCandles importer.
+**RU.** Работа importer не должна начинаться с предположения о полной истории. Заполнить эту матрицу для ≥2 товарных + ≥2 индексных фьючерсов, включая ≥1 истёкшую серию, перед merge GetCandles importer.
+
+**EN.** Importer work must not start from assumed full history. Fill this matrix for ≥2 commodity + ≥2 index futures including ≥1 expired series before merging GetCandles importer.

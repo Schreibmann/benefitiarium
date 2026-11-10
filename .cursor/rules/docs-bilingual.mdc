@@ -1,0 +1,13 @@
+---
+description: Keep project documentation bilingual (RU + EN) in the same files
+globs: "{README.md,ROADMAP.md,BACKLOG.md,docs/**/*.md,infra/**/*.md}"
+alwaysApply: true
+---
+
+# Bilingual documentation (RU + EN)
+
+- All project docs are **bilingual in the same file**. Do not create `*.ru.md` / `*.en.md` twins.
+- Convention: bilingual headings (`Title / Заголовок`); body as paired **RU.** / **EN.** blocks (or equivalent clear pairing). Tables may use bilingual Notes cells or paired note lines.
+- After **every** documentation change (status, roadmap, README, ADR, contracts, etc.), update **both** languages in that file before finishing the task.
+- Canonical language policy note: `docs/DOC_LANGUAGE.md`.
+- Code identifiers, paths, env vars, and API routes stay as-is (not translated).
