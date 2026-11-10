@@ -1,0 +1,108 @@
+/*
+  BENEFITIARIUM design tokens (UI-002).
+  Source: docs/benefitiarium_visual_concept.md §3
+  Themes switch via html[data-theme="dark"|"light"] — no per-component hardcoding.
+*/
+
+:root {
+  color-scheme: dark;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  /* Layout */
+  --sidebar-width: 248px;
+  --sidebar-collapsed: 72px;
+  --topbar-height: 64px;
+  --control-height: 40px;
+  --content-max-landing: 1280px;
+  --content-pad-desktop: 24px;
+  --content-pad-compact: 16px;
+
+  /* Motion */
+  --motion-fast: 140ms;
+  --motion-panel: 180ms;
+
+  /* Typography */
+  --font-sans: Inter, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "Segoe UI Mono", monospace;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+  --font-size-hero: clamp(1.875rem, 4vw, 3.5rem);
+  --line-height-tight: 1.2;
+  --line-height-body: 1.5;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Focus */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-canvas: #0b0f15;
+  --bg-sidebar: #101722;
+  --bg-surface: #151e2a;
+  --bg-elevated: #1b2635;
+  --bg-hover: #202d3e;
+  --border-subtle: #263345;
+  --border-strong: #3a4a60;
+  --text-primary: #f1f4f8;
+  --text-secondary: #a2adbc;
+  --text-muted: #748194;
+  --brand-primary: #d7a64a;
+  --brand-hover: #e6b95f;
+  --brand-soft: #3b2d19;
+  --positive: #2fc18b;
+  --negative: #f06b70;
+  --warning: #e7ad4d;
+  --info: #68a9e8;
+  --focus: #f0c46f;
+  --shadow-soft: 0 0 0 transparent;
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-canvas: #f3f5f8;
+  --bg-sidebar: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: #f0f3f7;
+  --border-subtle: #e3e8ef;
+  --border-strong: #c8d1de;
+  --text-primary: #172230;
+  --text-secondary: #586779;
+  --text-muted: #8491a1;
+  --brand-primary: #a97825;
+  --brand-hover: #91651d;
+  --brand-soft: #f7eedc;
+  --positive: #11845f;
+  --negative: #cf4652;
+  --warning: #a96a0b;
+  --info: #286eae;
+  --focus: #a97825;
+  --shadow-soft: 0 1px 2px rgb(23 34 48 / 6%), 0 8px 24px rgb(23 34 48 / 6%);
+}

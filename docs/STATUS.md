@@ -9,29 +9,29 @@
 **RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE на main) · UI foundation (visual concept)  
 **EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE on main) · UI foundation (visual concept)
 
-**RU.** **Активная задача:** `cursor/ui-001-frontend-audit` — DONE (этот коммит)  
-**EN.** **Active task:** `cursor/ui-001-frontend-audit` — DONE (this commit)
+**RU.** **Активная задача:** `cursor/ui-002-design-tokens` — DONE (этот коммит)  
+**EN.** **Active task:** `cursor/ui-002-design-tokens` — DONE (this commit)
 
-**RU.** **Следующая задача:** UI-002 Design tokens Dark/Light (`cursor/ui-002-design-tokens`)  
-**EN.** **Next task:** UI-002 Design tokens Dark/Light (`cursor/ui-002-design-tokens`)
+**RU.** **Следующая задача:** UI-003 App Shell (`cursor/ui-003-app-shell`)  
+**EN.** **Next task:** UI-003 App Shell (`cursor/ui-003-app-shell`)
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone / Вехи
 
-| Milestone            | Status / Статус | Notes / Примечания                         |
-| -------------------- | --------------- | ------------------------------------------ |
-| M0 — Foundation      | DONE            | EPIC E0 verified locally                   |
-| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done            |
-| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031          |
-| M3 — Realtime        | TODO on main    | Work continues on realtime feature branch  |
-| M4 — Signals         | TODO            | —                                          |
-| M5 — Backtesting     | TODO            | —                                          |
-| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                         |
-| M7 — Paper           | TODO            | —                                          |
-| M8 — Guarded Live    | TODO            | —                                          |
-| UI foundation        | IN_PROGRESS     | Visual concept + UI-001 audit; next UI-002 |
+| Milestone            | Status / Статус | Notes / Примечания                        |
+| -------------------- | --------------- | ----------------------------------------- |
+| M0 — Foundation      | DONE            | EPIC E0 verified locally                  |
+| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done           |
+| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031         |
+| M3 — Realtime        | TODO on main    | Work continues on realtime feature branch |
+| M4 — Signals         | TODO            | —                                         |
+| M5 — Backtesting     | TODO            | —                                         |
+| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                        |
+| M7 — Paper           | TODO            | —                                         |
+| M8 — Guarded Live    | TODO            | —                                         |
+| UI foundation        | IN_PROGRESS     | UI-001/002 done; next App Shell (UI-003)  |
 
 ## EPIC E7A (v1.2) / EPIC E7A (v1.2)
 
@@ -48,15 +48,15 @@
 **RU.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)  
 **EN.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)
 
-| ID     | Status / Статус | Notes / Примечания                  |
-| ------ | --------------- | ----------------------------------- |
-| UI-001 | DONE            | Frontend audit; no duplicate UI kit |
-| UI-002 | TODO            | Design tokens Dark/Light            |
-| UI-003 | TODO            | App shell (sidebar/topbar)          |
-| UI-004 | TODO            | Shared UI primitives                |
-| UI-005 | TODO            | Landing Page                        |
-| UI-006 | TODO            | Dashboard Overview                  |
-| UI-007 | TODO            | Empty/onboarding Dashboard          |
+| ID     | Status / Статус | Notes / Примечания                      |
+| ------ | --------------- | --------------------------------------- |
+| UI-001 | DONE            | Frontend audit; no duplicate UI kit     |
+| UI-002 | DONE            | Tokens + ThemeProvider + FOUC bootstrap |
+| UI-003 | TODO            | App shell (sidebar/topbar)              |
+| UI-004 | TODO            | Shared UI primitives                    |
+| UI-005 | TODO            | Landing Page                            |
+| UI-006 | TODO            | Dashboard Overview                      |
+| UI-007 | TODO            | Empty/onboarding Dashboard              |
 
 ## Notes / Заметки
 
@@ -76,12 +76,12 @@
 
 **RU.**
 
-1. UI-002 — design tokens + theme switch without reload
-2. UI-003 — App Shell
-3. UI-004 — shared primitives, then Landing/Dashboard
+1. UI-003 — App Shell (sidebar / topbar / responsive)
+2. UI-004 — shared primitives
+3. UI-005 / UI-006 — Landing + Dashboard empty states
 
 **EN.**
 
-1. UI-002 — design tokens + theme switch without reload
-2. UI-003 — App Shell
-3. UI-004 — shared primitives, then Landing/Dashboard
+1. UI-003 — App Shell (sidebar / topbar / responsive)
+2. UI-004 — shared primitives
+3. UI-005 / UI-006 — Landing + Dashboard empty states
