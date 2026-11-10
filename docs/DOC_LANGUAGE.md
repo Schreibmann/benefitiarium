@@ -16,6 +16,12 @@
 7. Code identifiers, paths, env vars, and API routes are **not** translated.
 8. After any docs change, both languages are updated in the same PR/commit.
 
+## Чтение агентами / Agent reading
+
+**RU.** При работе (реализация, исследование) агенты читают **только английский** (`**EN.**`), чтобы не дублировать контекст. Русский обновляют при правках docs, но не тащат в рабочий контекст.
+
+**EN.** When working (implementation, research), agents read **English only** (`**EN.**`) so context is not doubled. Russian is still updated on doc edits, but must not be loaded into the working context.
+
 ## Область / Scope
 
 - Root: `README.md`, `ROADMAP.md`, `BACKLOG.md`

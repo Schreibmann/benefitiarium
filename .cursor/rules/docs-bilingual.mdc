@@ -11,3 +11,10 @@ alwaysApply: true
 - After **every** documentation change (status, roadmap, README, ADR, contracts, etc.), update **both** languages in that file before finishing the task.
 - Canonical language policy note: `docs/DOC_LANGUAGE.md`.
 - Code identifiers, paths, env vars, and API routes stay as-is (not translated).
+
+## Reading / context (agents)
+
+- When **reading** docs for implementation or research, use **English only** (`**EN.**` blocks and EN side of bilingual headings).
+- Do **not** load or restate Russian (`**RU.**`) into the working context — it duplicates meaning and wastes tokens.
+- Prefer targeted reads (offset/limit, grep for `**EN.**` / section headings) over slurping entire bilingual files.
+- When **editing** docs, still update RU and EN together; do not drop either language.
