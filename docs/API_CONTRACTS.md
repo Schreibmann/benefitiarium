@@ -1,7 +1,7 @@
 # External API contract notes
 
-**Updated:** 2026-11-08  
-**Aligned with:** TECHNICAL_BACKLOG v1.1  
+**Updated:** 2026-11-10  
+**Aligned with:** TECHNICAL_BACKLOG v1.2  
 Sanitized notes from spikes. Do not commit tokens or personal account payloads.
 
 ## T-Invest SDK (`@ttech-pub/*`) — BL-013 / BL-014
@@ -32,6 +32,19 @@ Commands verified present offline:
 - `GetCandlesCommand`, `GetLastPricesCommand`, `GetMarketdataStreamCommand`
 - `GetTechAnalysis` via local `BaseCommand` wrapper (`buildGetTechAnalysisCommand`) — SDK 1.61.0 has `GetTechAnalysisIndicatorsCommand` but does not re-export it; wrapper also maps `upperBand`
 - `GetSandboxAccountsCommand`, `GetSandboxPositionsCommand`, `PostSandboxOrderCommand`
+
+### MarketDataStream realtime (BL-040…BL-045 / RT-01…RT-09)
+
+Canonical guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**).
+
+SDK spike notes (1.61.0):
+
+- `GetMarketdataStreamCommand` opens **`marketDataServerSideStream`** (unary request → server stream), not the bidirectional `MarketDataStream`. Dynamic subscribe/unsubscribe on one connection requires low-level `NodeApiClient.marketdataStream.marketDataStream(AsyncIterable<MarketDataRequest>)`.
+- Platform manager: `@moex/broker-tinvest` `StreamConnectionManager` + `SubscriptionRegistry` (ref-counted provider keys; limits **32** quote stream connections / **300** subscriptions per stream / **100** subscribe requests/min).
+- **Candle ≠ HistoricCandle:** stream `Candle` has no `is_complete`; `HistoricCandle` from `GetCandles` does. Contract test: `stream-candle-contract.test.ts`. Lifecycle uses `waitingClose` → `deliveryMode`/`barState` (`UPDATING` | `CLOSE_EMITTED` | `FINALIZED_BY_SCHEDULE` | `CORRECTED`).
+- Candle source enum in stream SDK: `CandleSource.CANDLE_SOURCE_EXCHANGE` / `CANDLE_SOURCE_DEALER_WEEKEND` (REST may say `INCLUDE_WEEKEND`); canonical label `WEEKEND_INCLUDED`.
+- Internal browser transport (MVP): WebSocket `/ws/market-data` with `market.subscribe` / `market.unsubscribe` / `market.subscription.state` / `market.candle.updated|close_emitted|finalized|corrected` (no broker token in browser). Currently attached in-process to `apps/api` until `worker-market-data` hosts the stream.
+- Chart page Live button: one `instrumentId` + one timeframe per subscribe; ephemeral `CHART` leases only after explicit click; history load does not create demand.
 
 ### Futures vs Indicatives (v1.1)
 

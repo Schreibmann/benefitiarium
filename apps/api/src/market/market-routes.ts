@@ -84,8 +84,8 @@ export async function registerMarketRoutes(
       }
       const intervalRaw =
         'interval' in query && typeof query.interval === 'string' ? query.interval : '';
-      if (intervalRaw !== '5m' && intervalRaw !== '1h') {
-        return reply.code(400).send({ error: 'interval must be 5m or 1h' });
+      if (intervalRaw !== '1m' && intervalRaw !== '5m' && intervalRaw !== '1h') {
+        return reply.code(400).send({ error: 'interval must be 1m, 5m, or 1h' });
       }
       const from = parseRequiredDate('from' in query ? query.from : undefined, 'from');
       const to = parseRequiredDate('to' in query ? query.to : undefined, 'to');

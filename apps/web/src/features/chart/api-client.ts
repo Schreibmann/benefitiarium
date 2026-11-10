@@ -120,7 +120,7 @@ export function createChartApiClient(
       }
       const instrumentUid = requiredString(json, 'instrumentUid');
       const chartTimeframeRaw = requiredString(json, 'chartTimeframe');
-      if (chartTimeframeRaw !== '5m' && chartTimeframeRaw !== '1h') {
+      if (chartTimeframeRaw !== '1m' && chartTimeframeRaw !== '5m' && chartTimeframeRaw !== '1h') {
         throw new Error('Invalid chartTimeframe');
       }
       const referenceTimeframeRaw = requiredString(json, 'referenceTimeframe');

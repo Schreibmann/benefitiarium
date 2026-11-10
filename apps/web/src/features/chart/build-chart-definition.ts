@@ -1,10 +1,20 @@
 import { barY, defineChart, link, text } from '@tanstack/charts';
-import { controlledSignal } from '@tanstack/charts/interaction/signal';
-import { type ZoomXChange, type ZoomXWindow, zoomX } from '@tanstack/charts/interaction/zoom';
 import { scaleLinear } from 'd3-scale';
+import type { ChartXWindow } from './chart-viewport.js';
 import { candlePriceDomain, type SessionCandleRow } from './session-scale.js';
 import { pivotLabelRows } from './to-pivot-segments.js';
 import type { PivotSegment } from './types.js';
+
+export type { ChartTimeRange, ChartXWindow } from './chart-viewport.js';
+export {
+  clampXWindow,
+  defaultSessionXWindow,
+  panXWindow,
+  sessionXExtent,
+  timeRangeFromXWindow,
+  xWindowFromTimeRange,
+  zoomXWindowAt,
+} from './chart-viewport.js';
 
 const PIVOT_STROKE: Record<PivotSegment['level'], string> = {
   P: 'var(--chart-pivot-p)',
@@ -15,8 +25,6 @@ const PIVOT_STROKE: Record<PivotSegment['level'], string> = {
   S2: 'var(--chart-pivot-s)',
   S3: 'var(--chart-pivot-s)',
 };
-
-export type ChartXWindow = ZoomXWindow<number>;
 
 type CandleBodyRow = SessionCandleRow & {
   BodyLow: number;
@@ -35,12 +43,34 @@ function toBodyRows(rows: readonly SessionCandleRow[]): CandleBodyRow[] {
   });
 }
 
-function formatSessionTick(candles: readonly SessionCandleRow[], index: number): string {
+function pad2(value: number): string {
+  return value < 10 ? `0${value}` : String(value);
+}
+
+/** Local clock time as HH:mm for the session axis. */
+export function formatSessionTick(candles: readonly SessionCandleRow[], index: number): string {
   const candle = candles.find((row) => row.index === Math.round(index));
   if (candle === undefined) {
     return '';
   }
-  return candle.Date.toISOString().slice(5, 16).replace('T', ' ');
+  return `${pad2(candle.Date.getHours())}:${pad2(candle.Date.getMinutes())}`;
+}
+
+function formatPriceTick(value: number): string {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+  const abs = Math.abs(value);
+  if (abs >= 1000) {
+    return value.toFixed(0);
+  }
+  if (abs >= 10) {
+    return value.toFixed(2);
+  }
+  if (abs >= 1) {
+    return value.toFixed(3);
+  }
+  return value.toFixed(4);
 }
 
 /** Candles inside the committed x window (for y autoscaling only — marks keep full series). */
@@ -53,32 +83,10 @@ export function visibleCandles(
   return candles.filter((candle) => candle.index >= start && candle.index <= end);
 }
 
-export function sessionXExtent(candles: readonly SessionCandleRow[]): readonly [number, number] {
-  if (candles.length > 1) {
-    return [0, candles.length - 1];
-  }
-  return [-0.5, 0.5];
-}
-
-/** Default view: last ~120 bars (or full series when shorter). */
-export function defaultSessionXWindow(
-  candles: readonly SessionCandleRow[],
-  visibleBars = 120,
-): ChartXWindow {
-  const extent = sessionXExtent(candles);
-  const span = extent[1] - extent[0];
-  if (span <= visibleBars) {
-    return { start: extent[0], end: extent[1] };
-  }
-  return { start: extent[1] - visibleBars, end: extent[1] };
-}
-
 export function buildPriceChartDefinition(input: {
   candles: readonly SessionCandleRow[];
   pivots: readonly PivotSegment[];
   xWindow: ChartXWindow;
-  xExtent: readonly [number, number];
-  onXWindowChange: (next: ChartXWindow) => void;
 }) {
   const candles = [...input.candles];
   // Keep the full series in marks so pan can reveal off-window bars.
@@ -89,6 +97,10 @@ export function buildPriceChartDefinition(input: {
   const pivots = [...input.pivots];
   const labels = pivotLabelRows(pivots);
   const priceDomain = candlePriceDomain(visible.length > 0 ? visible : candles);
+  const yScale =
+    priceDomain === null
+      ? scaleLinear()
+      : scaleLinear().domain([priceDomain.min, priceDomain.max]).nice(8);
 
   return defineChart({
     marks: [
@@ -161,37 +173,29 @@ export function buildPriceChartDefinition(input: {
     ],
     scales: {
       x: {
+        // Content domain is inferred from candle indices; viewport is the zoom/pan window.
         scale: scaleLinear,
-        // Match TanStack zoomX contract: scale domain === controlled window;
-        // marks keep the full series so pan can reveal neighboring bars.
-        domain: [input.xWindow.start, input.xWindow.end],
+        viewport: { domain: [input.xWindow.start, input.xWindow.end] },
         grid: false,
         axis: {
-          label: 'Session',
           ticks: {
+            count: 8,
             format: (value: number) => formatSessionTick(candles, value),
           },
         },
       },
       y: {
-        scale: scaleLinear,
-        ...(priceDomain !== null ? { domain: [priceDomain.min, priceDomain.max] } : {}),
+        scale: yScale,
         grid: true,
         side: 'right',
-        axis: { label: 'Price' },
+        axis: {
+          ticks: {
+            count: 8,
+            size: 6,
+            format: formatPriceTick,
+          },
+        },
       },
     },
-    controls: [
-      zoomX({
-        window: controlledSignal<ChartXWindow, ZoomXChange<number>>(input.xWindow, (next) => {
-          input.onXWindowChange(next);
-        }),
-        extent: input.xExtent,
-        scaleExtent: [1, 64],
-        wheelActivation: 'always',
-        ariaLabel: 'Zoom and pan price chart',
-        format: (value) => formatSessionTick(candles, value),
-      }),
-    ],
   });
 }

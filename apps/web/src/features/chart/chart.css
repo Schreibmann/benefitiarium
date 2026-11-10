@@ -5,9 +5,9 @@
   --chart-up: #2f7d4a;
   --chart-down: #b42318;
   --chart-wick: light-dark(#5c614f, #9aa3b5);
-  --chart-pivot-p: light-dark(#1d4f91, #7db1ff);
-  --chart-pivot-r: light-dark(#8a4b12, #f0b27a);
-  --chart-pivot-s: light-dark(#2f5d3a, #8fd0a0);
+  --chart-pivot-p: light-dark(#6b7280, #9ca3af);
+  --chart-pivot-r: light-dark(#b42318, #f07167);
+  --chart-pivot-s: light-dark(#2f7d4a, #6fbf86);
 
   min-height: 100vh;
   margin: 0 auto;
@@ -24,6 +24,20 @@
   margin: 0 0 0.35rem;
   font-family: "IBM Plex Serif", Georgia, serif;
   text-wrap: balance;
+}
+
+.price-chart__title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  align-items: baseline;
+}
+
+.price-chart__price {
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .price-chart__header {
@@ -87,9 +101,19 @@
   min-height: 520px;
 }
 
+.price-chart__plot-host {
+  position: relative;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.price-chart__plot-host:active {
+  cursor: grabbing;
+}
+
 .price-chart__plot {
   touch-action: none;
-  cursor: crosshair;
   user-select: none;
 }
 

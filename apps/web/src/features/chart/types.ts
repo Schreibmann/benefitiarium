@@ -1,4 +1,4 @@
-export type ChartTimeframe = '5m' | '1h';
+export type ChartTimeframe = '1m' | '5m' | '1h';
 
 export type CandleRow = {
   Date: Date;

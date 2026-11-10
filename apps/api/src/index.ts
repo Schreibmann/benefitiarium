@@ -19,19 +19,28 @@ async function main(): Promise<void> {
       }))
     : null;
 
-  const marketData = await composeMarketDataDeps(env);
+  const market = await composeMarketDataDeps(env);
 
   const app = await createApp({
     env,
     ...(sandboxAdmin !== null ? { sandboxAdmin: sandboxAdmin.deps } : {}),
-    ...(marketData !== null ? { marketData } : {}),
+    ...(market !== null ? { marketData: market.chartDeps } : {}),
+    ...(market?.chartLive !== null && market?.chartLive !== undefined
+      ? { chartLive: market.chartLive }
+      : {}),
   });
   await app.listen({ port, host: '0.0.0.0' });
+
+  if (market?.chartLive !== null && market?.chartLive !== undefined) {
+    market.chartLive.attach(app.server);
+  }
+
   logger.info('api listening', {
     port,
     sandboxAdminEnabled: sandboxAdmin !== null,
     sandboxAdminStore: sandboxAdmin?.storeMode ?? null,
-    marketDataEnabled: marketData !== null,
+    marketDataEnabled: market !== null,
+    chartLiveEnabled: market?.chartLive !== null && market?.chartLive !== undefined,
   });
 }
 

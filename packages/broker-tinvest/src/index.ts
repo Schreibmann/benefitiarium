@@ -2,6 +2,8 @@ export type { CreateSandboxSdkInput } from './create-sandbox-sdk.js';
 export { createSandboxSdk } from './create-sandbox-sdk.js';
 export type { CreateTinvestSdkInput } from './create-sdk.js';
 export { createTinvestSdk } from './create-sdk.js';
+export type { CreateTinvestStreamClientInput } from './create-stream-client.js';
+export { createTinvestStreamClient } from './create-stream-client.js';
 export { createFixtureTinvestReadApi } from './fixture-read-api.js';
 export { createFixtureSandboxAccountProvider } from './fixture-sandbox-provider.js';
 export {
@@ -27,6 +29,53 @@ export {
 } from './sdk-read-api.js';
 export type { SandboxSdkSender } from './sdk-sandbox-account-provider.js';
 export { createSdkSandboxAccountProvider } from './sdk-sandbox-account-provider.js';
+export type {
+  CanonicalStreamCandle,
+  RealtimeBarState,
+  StreamCandleSource,
+  StreamDeliveryMode,
+} from './stream/map-stream-candle.js';
+export {
+  buildStreamCandleEventHash,
+  deliveryModeFromWaitingClose,
+  initialBarStateForDelivery,
+  mapStreamCandle,
+  marketCandleEventTypeForBarState,
+} from './stream/map-stream-candle.js';
+export type { StreamCandleInterval } from './stream/map-subscription-interval.js';
+export {
+  isStreamCandleInterval,
+  mapIntervalToSubscriptionInterval,
+  mapSubscriptionIntervalToCandleInterval,
+} from './stream/map-subscription-interval.js';
+export type { InternalSubscriptionStatus } from './stream/map-subscription-status.js';
+export { mapSubscriptionStatus } from './stream/map-subscription-status.js';
+export type { ProviderSubscriptionKey } from './stream/provider-subscription-key.js';
+export {
+  formatProviderSubscriptionKey,
+  parseProviderSubscriptionKey,
+} from './stream/provider-subscription-key.js';
+export type { ReconnectPolicy } from './stream/reconnect-policy.js';
+export {
+  DEFAULT_RECONNECT_POLICY,
+  nextReconnectDelayMs,
+} from './stream/reconnect-policy.js';
+export type {
+  StreamConnectionManagerHandlers,
+  StreamConnectionManagerOptions,
+  StreamConnectionState,
+  StreamSubscriptionAck,
+} from './stream/stream-connection-manager.js';
+export { StreamConnectionManager } from './stream/stream-connection-manager.js';
+export type {
+  ChartLease,
+  ConsumerRef,
+  ConsumerType,
+  LeaseStatus,
+  ProviderSubscriptionState,
+  SubscriptionRegistryOptions,
+} from './stream/subscription-registry.js';
+export { SubscriptionRegistry } from './stream/subscription-registry.js';
 export type { TinvestBrokerGatewayOptions } from './tinvest-broker-gateway.js';
 export { createTinvestBrokerGateway } from './tinvest-broker-gateway.js';
 export type { TinvestMarketDataProviderOptions } from './tinvest-market-data-provider.js';

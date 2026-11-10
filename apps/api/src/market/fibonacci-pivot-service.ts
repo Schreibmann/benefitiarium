@@ -72,13 +72,13 @@ export type ChartMarketDataDeps = {
   futuresCatalogCache?: FuturesCatalogCacheRepository;
 };
 
-const CHART_INTERVALS = new Set<CandleInterval>(['5m', '1h']);
+const CHART_INTERVALS = new Set<CandleInterval>(['1m', '5m', '1h']);
 
 export function parseChartTimeframe(value: string): ChartTimeframe {
-  if (value === '5m' || value === '1h') {
+  if (value === '1m' || value === '5m' || value === '1h') {
     return value;
   }
-  throw new Error('timeframe must be 5m or 1h');
+  throw new Error('timeframe must be 1m, 5m, or 1h');
 }
 
 function toApiReferenceTimeframe(value: ReferenceTimeframe): '1D' | '1W' {
@@ -111,7 +111,7 @@ export async function getChartCandles(
   },
 ): Promise<Candle[]> {
   if (!CHART_INTERVALS.has(input.interval)) {
-    throw new Error('interval must be 5m or 1h');
+    throw new Error('interval must be 1m, 5m, or 1h');
   }
   const instrumentId = parseInstrumentId(input.instrumentUid);
   const result = await deps.marketData.getCandles({

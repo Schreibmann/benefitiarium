@@ -3,6 +3,9 @@ import {
   createSdkTinvestReadApi,
   createTinvestMarketDataProvider,
   createTinvestSdk,
+  createTinvestStreamClient,
+  StreamConnectionManager,
+  SubscriptionRegistry,
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
 import { resolveTinvestToken } from '@moex/config';
@@ -12,6 +15,7 @@ import {
   type DbClient,
   type FuturesCatalogCacheRepository,
 } from '@moex/persistence';
+import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
 import type { ChartMarketDataDeps } from './market/fibonacci-pivot-service.js';
 
 async function canReachPostgres(db: DbClient): Promise<boolean> {
@@ -34,12 +38,19 @@ async function tryCreateFuturesCatalogCache(): Promise<FuturesCatalogCacheReposi
   return createFuturesCatalogCacheRepository(db);
 }
 
+export type ComposedMarketData = {
+  chartDeps: ChartMarketDataDeps;
+  chartLive: ChartLiveGateway | null;
+};
+
 /**
- * Compose market-data deps for chart/pivot read routes.
+ * Compose market-data deps for chart/pivot read routes and optional live stream gateway.
  * Prefers TINVEST_READ_ONLY_TOKEN; falls back to sandbox token for sandbox env.
  * When Postgres is reachable, attaches futures catalog cache for list fallback.
+ *
+ * Live stream runs in-process with the API for MVP (worker-market-data will host later).
  */
-export async function composeMarketDataDeps(env: AppEnv): Promise<ChartMarketDataDeps | null> {
+export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarketData | null> {
   const readOnly = resolveTinvestToken(env, 'read_only');
   const sandbox = resolveTinvestToken(env, 'sandbox');
   const token = readOnly ?? sandbox;
@@ -60,8 +71,38 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ChartMarketDat
     isSandbox: sdkEnv === 'sandbox',
   });
   const futuresCatalogCache = await tryCreateFuturesCatalogCache();
-  return {
+  const chartDeps: ChartMarketDataDeps = {
     marketData,
     ...(futuresCatalogCache !== undefined ? { futuresCatalogCache } : {}),
   };
+
+  let chartLive: ChartLiveGateway | null = null;
+  try {
+    const streamClient = await createTinvestStreamClient({
+      token,
+      env: sdkEnv,
+      baseUrl: env.TINVEST_BASE_URL,
+    });
+    const registry = new SubscriptionRegistry();
+    // Gateway + manager are wired through shared mutable holder so callbacks close over gateway.
+    const holder: { gateway: ChartLiveGateway | null } = { gateway: null };
+    const streamManager = new StreamConnectionManager({
+      client: streamClient,
+      handlers: {
+        onCandle: (candle) => {
+          holder.gateway?.handleCandle(candle);
+        },
+        onSubscriptionAck: (acks) => {
+          holder.gateway?.handleSubscriptionAcks(acks);
+        },
+      },
+    });
+    const gateway = createChartLiveGateway({ streamManager, registry });
+    holder.gateway = gateway;
+    chartLive = gateway;
+  } catch {
+    chartLive = null;
+  }
+
+  return { chartDeps, chartLive };
 }

@@ -10,6 +10,7 @@ export const FIBONACCI_PIVOT_COEFFICIENTS = {
 } as const;
 
 export const FIBONACCI_PIVOT_TIMEFRAME_MAP = {
+  '1m': '1d',
   '5m': '1d',
   '1h': '1w',
 } as const;
