@@ -1,46 +1,87 @@
-# Project Status
+# Project Status / Статус проекта
 
-**Updated:** 2026-11-09  
-**Backlog version:** TECHNICAL_BACKLOG **v1.2**  
-**Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** E7A locally verified; next is PR / merge to main  
-**Next task:** Open PR / merge E7A stack to main; then worker outbox drain
+**RU.** **Обновлено:** 2026-11-10  
+**EN.** **Updated:** 2026-11-10
 
-Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
+**RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
+**EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
 
-## Milestone
+**RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE на main) · UI foundation (visual concept)  
+**EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE on main) · UI foundation (visual concept)
 
-| Milestone            | Status      | Notes                                |
-| -------------------- | ----------- | ------------------------------------ |
-| M0 — Foundation      | DONE        | EPIC E0 verified locally             |
-| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done      |
-| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031    |
-| M3 — Realtime        | TODO        |                                      |
-| M4 — Signals         | TODO        |                                      |
-| M5 — Backtesting     | TODO        |                                      |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A Admin API + UI + e2e in progress |
-| M7 — Paper           | TODO        |                                      |
-| M8 — Guarded Live    | TODO        |                                      |
+**RU.** **Активная задача:** `cursor/ui-001-frontend-audit` — DONE (этот коммит)  
+**EN.** **Active task:** `cursor/ui-001-frontend-audit` — DONE (this commit)
 
-## EPIC E7A (v1.2)
+**RU.** **Следующая задача:** UI-002 Design tokens Dark/Light (`cursor/ui-002-design-tokens`)  
+**EN.** **Next task:** UI-002 Design tokens Dark/Light (`cursor/ui-002-design-tokens`)
 
-| ID     | Status | Notes                                                               |
-| ------ | ------ | ------------------------------------------------------------------- |
-| BL-078 | DONE   | Durable command request bodies                                      |
-| BL-079 | DONE   | Discovery sync + ACCOUNT_STATUS_ALL                                 |
-| BL-087 | DONE   | Safe fund/close                                                     |
-| BL-088 | DONE   | Admin API + Postgres durable stores (auto/memory fallback)          |
-| BL-089 | DONE   | Admin UI + Playwright e2e (auth gate, create queued, no optimistic) |
+**RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
+**EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
-## Notes
+## Milestone / Вехи
+
+| Milestone            | Status / Статус | Notes / Примечания                         |
+| -------------------- | --------------- | ------------------------------------------ |
+| M0 — Foundation      | DONE            | EPIC E0 verified locally                   |
+| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done            |
+| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031          |
+| M3 — Realtime        | TODO on main    | Work continues on realtime feature branch  |
+| M4 — Signals         | TODO            | —                                          |
+| M5 — Backtesting     | TODO            | —                                          |
+| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                         |
+| M7 — Paper           | TODO            | —                                          |
+| M8 — Guarded Live    | TODO            | —                                          |
+| UI foundation        | IN_PROGRESS     | Visual concept + UI-001 audit; next UI-002 |
+
+## EPIC E7A (v1.2) / EPIC E7A (v1.2)
+
+| ID     | Status / Статус | Notes / Примечания                                                  |
+| ------ | --------------- | ------------------------------------------------------------------- |
+| BL-078 | DONE            | Durable command request bodies                                      |
+| BL-079 | DONE            | Discovery sync + ACCOUNT_STATUS_ALL                                 |
+| BL-087 | DONE            | Safe fund/close                                                     |
+| BL-088 | DONE            | Admin API + Postgres durable stores (auto/memory fallback)          |
+| BL-089 | DONE            | Admin UI + Playwright e2e (auth gate, create queued, no optimistic) |
+
+## UI design backlog / UI design backlog
+
+**RU.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)  
+**EN.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)
+
+| ID     | Status / Статус | Notes / Примечания                  |
+| ------ | --------------- | ----------------------------------- |
+| UI-001 | DONE            | Frontend audit; no duplicate UI kit |
+| UI-002 | TODO            | Design tokens Dark/Light            |
+| UI-003 | TODO            | App shell (sidebar/topbar)          |
+| UI-004 | TODO            | Shared UI primitives                |
+| UI-005 | TODO            | Landing Page                        |
+| UI-006 | TODO            | Dashboard Overview                  |
+| UI-007 | TODO            | Empty/onboarding Dashboard          |
+
+## Notes / Заметки
+
+**RU.**
 
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
-- Local verify 2026-11-09: `docker compose` Postgres healthy; migrations 000–002 applied; `pnpm lint` (warnings only), `typecheck`, `test`, `build`, Playwright e2e 3/3; API health smoke OK (`ADMIN_API_TOKEN` empty → admin routes off)
 
-## Next
+**EN.**
 
-1. Set `ADMIN_API_TOKEN` in `.env` for full Admin UI loop
-2. Merge stage branches / open PR to main
-3. Worker outbox drain for sandbox commands
+- E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
+- Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
+- Quality: Biome + `pnpm precommit`
+
+## Next / Дальше
+
+**RU.**
+
+1. UI-002 — design tokens + theme switch without reload
+2. UI-003 — App Shell
+3. UI-004 — shared primitives, then Landing/Dashboard
+
+**EN.**
+
+1. UI-002 — design tokens + theme switch without reload
+2. UI-003 — App Shell
+3. UI-004 — shared primitives, then Landing/Dashboard
