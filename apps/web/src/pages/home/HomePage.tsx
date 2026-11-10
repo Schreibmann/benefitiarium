@@ -19,11 +19,11 @@ export function HomePage() {
           next UI stages — without fabricated quotes or portfolio figures.
         </p>
         <div className="home-page__actions">
-          <a className="home-page__btn home-page__btn--primary" href="/admin/sandbox">
-            Open Sandbox Admin
+          <a className="home-page__btn home-page__btn--primary" href="/app">
+            Открыть платформу
           </a>
-          <a className="home-page__btn home-page__btn--ghost" href="#status">
-            Platform status
+          <a className="home-page__btn home-page__btn--ghost" href="/admin/sandbox">
+            Sandbox Admin
           </a>
         </div>
       </section>
@@ -36,8 +36,8 @@ export function HomePage() {
             Design tokens Dark/Light
           </li>
           <li>
-            <span className="home-page__pill">UI-003</span>
-            App Shell — next
+            <span className="home-page__pill home-page__pill--ok">UI-003</span>
+            App Shell sidebar / topbar
           </li>
           <li>
             <span className="home-page__pill">UI-005</span>

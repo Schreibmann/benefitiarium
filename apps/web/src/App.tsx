@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react';
 import { AppProviders } from './app/providers/AppProviders.js';
+import { AppRouter } from './pages/app/AppRouter.js';
 import { HomePage } from './pages/home/HomePage.js';
+import { isAppPath } from './widgets/app-shell/nav-items.js';
 
 const SandboxAdminApp = lazy(async () => {
   const module = await import('./features/admin/sandbox/SandboxAdminApp.js');
@@ -16,12 +18,22 @@ function RouteFallback() {
 }
 
 export function App() {
-  if (isAdminPath(window.location.pathname)) {
+  const pathname = window.location.pathname;
+
+  if (isAdminPath(pathname)) {
     return (
       <AppProviders>
         <Suspense fallback={<RouteFallback />}>
           <SandboxAdminApp />
         </Suspense>
+      </AppProviders>
+    );
+  }
+
+  if (isAppPath(pathname)) {
+    return (
+      <AppProviders>
+        <AppRouter pathname={pathname} />
       </AppProviders>
     );
   }
