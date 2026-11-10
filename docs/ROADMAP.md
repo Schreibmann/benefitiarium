@@ -1,7 +1,8 @@
 # Roadmap разработки торговой платформы для MOEX
 
-**Версия документа:** 1.0  
+**Версия документа:** 1.1  
 **Дата исследования:** 8 ноября 2026 г.  
+**Статусы этапов обновлены:** 10 ноября 2026 г. (синхронизация с `docs/STATUS.md`)  
 **Основной стек:** TypeScript / Node.js, React, PostgreSQL  
 **Брокерский API для исполнения:** T-Invest API (Т‑Банк)  
 **Дополнительный источник биржевых данных:** MOEX ISS
@@ -815,22 +816,29 @@ GET    /api/system/data-health
 
 Оценки ниже — ориентир для одного разработчика с опытом TypeScript/React, а не обещание календарного срока. Этапы можно корректировать после технического прототипа.
 
+**Индикация готовности** (синхронизируется с [`docs/STATUS.md`](STATUS.md), срез 2026-11-10):
+
+- у этапа — строка `Статус: DONE | PARTIAL | IN_PROGRESS | TODO`;
+- у задач — `[x]` сделано, `[~]` частично / MVP, `[ ]` не начато.
+
 ### Этап 0. Подготовка и проверка интеграций
+
+**Статус:** DONE
 
 **Цель:** доказать, что все внешние интеграции доступны и правильно поняты.
 
 Задачи:
 
-- создать репозиторий и pnpm workspace;
-- настроить TypeScript strict, ESLint, Prettier, Vitest;
-- убедиться, что открыт и идентифицирован брокерский счёт, доступный для T-Invest API;
-- получить read-only и sandbox tokens;
-- установить `@ttech-pub/invest-sdk-node` и согласованные зависимости;
-- сделать POC запросов: список акций, список фьючерсов, спецификация инструмента, `GetCandles`, last price, GetAccounts;
-- проверить stream-соединение и восстановление после disconnect;
-- сделать один запрос к MOEX ISS для структуры рынка, одного инструмента и исторических свечей;
-- проверить сертификаты и доступ к API из целевой среды выполнения;
-- изучить исходники/README `invest-engine-node` и сделать мини-бенчмарк его возможностей.
+- [x] создать репозиторий и pnpm workspace;
+- [x] настроить TypeScript strict, Biome, Vitest (вместо ESLint/Prettier);
+- [x] убедиться, что открыт и идентифицирован брокерский счёт, доступный для T-Invest API;
+- [x] получить read-only и sandbox tokens (env schema + `.env.example`);
+- [x] установить `@ttech-pub/invest-sdk-node` и согласованные зависимости;
+- [x] сделать POC запросов: список акций, список фьючерсов, спецификация инструмента, `GetCandles`, last price, GetAccounts;
+- [~] проверить stream-соединение и восстановление после disconnect (полный stream-контур — этап 3);
+- [x] сделать один запрос к MOEX ISS для структуры рынка, одного инструмента и исторических свечей;
+- [x] проверить сертификаты и доступ к API из целевой среды выполнения;
+- [ ] изучить исходники/README `invest-engine-node` и сделать мини-бенчмарк его возможностей.
 
 **Результат:** небольшой CLI/скрипт, который получает каталог, историю, текущую цену и демонстрирует тестовое подключение к sandbox.
 
@@ -838,146 +846,167 @@ GET    /api/system/data-health
 
 ### Этап 1. Каталог инструментов и слой провайдеров
 
+**Статус:** PARTIAL
+
 **Цель:** единая идентификация инструментов при нескольких источниках.
 
 Задачи:
 
-- спроектировать `Instrument`, `InstrumentSpec`, `ProviderInstrumentId`;
-- реализовать `BrokerGateway` и `MarketDataProvider` интерфейсы;
-- реализовать адаптер T‑Invest API;
-- реализовать MOEX ISS adapter для структуры рынков/режимов/инструментов;
-- сопоставить broker UID с `SECID/BOARDID`;
-- обновлять каталог по расписанию и хранить историю изменений спецификации;
-- добавить фильтры: акции, фьючерсы, облигации, валюты, активные/истёкшие.
+- [x] спроектировать `Instrument`, `InstrumentSpec`, `ProviderInstrumentId`;
+- [x] реализовать `BrokerGateway` и `MarketDataProvider` интерфейсы;
+- [x] реализовать адаптер T‑Invest API;
+- [x] реализовать MOEX ISS adapter для структуры рынков/режимов/инструментов;
+- [~] сопоставить broker UID с `SECID/BOARDID` (базовый mapping есть; полное покрытие режимов — нет);
+- [~] обновлять каталог по расписанию и хранить историю изменений спецификации (futures catalog snapshot/cache-first; полное schedule/versioning — нет);
+- [~] добавить фильтры: акции, фьючерсы, облигации, валюты, активные/истёкшие (futures picker по категориям на chart UI; полный multi-asset catalog UI — нет).
 
 **Критерии приёмки:** выбранные инструменты можно найти по тикеру, UID, FIGI (legacy), SECID и биржевому режиму; неоднозначный тикер не приводит к выбору неправильного инструмента.
 
 ### Этап 2. Исторические данные и хранилище
 
+**Статус:** PARTIAL
+
 **Цель:** надёжный импорт и повторяемая история.
 
 Задачи:
 
-- поднять PostgreSQL и миграции;
-- создать таблицы каталога, свечей, import jobs и data gaps;
-- реализовать `GetCandles` с оконной загрузкой и rate limiter;
-- реализовать загрузку годовых ZIP-архивов, если она покрывает целевой инструмент;
-- реализовать MOEX ISS history/candles с пагинацией;
-- нормализовать времена к UTC и значения к Decimal;
-- добавить backfill и nightly reconciliation;
-- создать API чтения свечей и простую страницу графика.
+- [x] поднять PostgreSQL и миграции;
+- [~] создать таблицы каталога, свечей, import jobs и data gaps (каталог/admin persistence есть; полный candle store + jobs/gaps — нет);
+- [~] реализовать `GetCandles` с оконной загрузкой и rate limiter (on-read через T-Invest для chart; durable windowed import — нет);
+- [ ] реализовать загрузку годовых ZIP-архивов, если она покрывает целевой инструмент;
+- [~] реализовать MOEX ISS history/candles с пагинацией (client/path helpers есть; полный history import — нет);
+- [x] нормализовать времена к UTC и значения к Decimal;
+- [ ] добавить backfill и nightly reconciliation;
+- [x] создать API чтения свечей и страницу графика (`/charts`, TF `1m|5m|1h`, Fibonacci pivots overlay, session X-scale, zoom/pan).
 
 **Критерии приёмки:** повторный импорт не создаёт дубликаты; пропуски видны; импорт может продолжиться после перезапуска; объём и интервалы проверены на ручной выборке; можно построить дневной и внутридневной график.
 
 ### Этап 3. Realtime-котировки и здоровье данных
 
+**Статус:** IN_PROGRESS
+
 **Цель:** стабильное получение текущей рыночной информации.
 
 Задачи:
 
-- создать единый stream manager;
-- реализовать подписку на last price, свечи, trades, book и trading status;
-- восстановление stream-подписок;
-- stale data detection;
-- backfill после reconnect;
-- отдачу данных в UI через WebSocket/SSE;
-- мониторинг задержек и статуса источников.
+- [x] создать единый stream manager (`StreamConnectionManager` + reconnect backoff);
+- [~] реализовать подписку на last price, свечи, trades, book и trading status (candle stream MVP; остальные каналы — нет);
+- [x] восстановление stream-подписок (`SubscriptionRegistry`);
+- [ ] stale data detection / feed health (RT-07);
+- [ ] backfill после reconnect / gap backfill (RT-06);
+- [~] отдачу данных в UI через WebSocket (`/ws/market-data` в API process; chart auto-live + history REST fallback; host в `worker-market-data` — нет);
+- [ ] мониторинг задержек и статуса источников;
+- [ ] durable DB upsert stream-свечей (RT-04 deferred).
 
 **Критерии приёмки:** после отключения сети соединение восстанавливается и подписки возвращаются; пропуски не маскируются; UI показывает источник и время обновления; автоматическая торговля не может использовать stale data.
 
 ### Этап 4. Индикаторы и сигналы
 
+**Статус:** PARTIAL
+
 **Цель:** реализовать прозрачный аналитический контур.
 
 Задачи:
 
-- выбрать библиотеку/собственную реализацию индикаторов;
-- написать unit-тесты на контрольных наборах данных;
-- реализовать SMA/EMA, RSI, MACD, ATR, Bollinger, VWAP и volume statistics;
-- сделать единый интерфейс Strategy;
-- реализовать 2–3 baseline-стратегии;
-- сохранять версии стратегии и входные параметры;
-- формировать сигналы с объяснениями, временем действия и data-quality;
-- добавить UI списка сигналов и детализации.
+- [~] выбрать библиотеку/собственную реализацию индикаторов (`@moex/indicators`: Fibonacci Pivot Points; классические SMA/RSI/… — stubs);
+- [x] написать unit-тесты на контрольных наборах данных (для Fibonacci pivots);
+- [ ] реализовать SMA/EMA, RSI, MACD, ATR, Bollinger, VWAP и volume statistics;
+- [x] Fibonacci Pivot Points overlay на chart (5m→1D / 1h→1W; on-read API);
+- [ ] сделать единый интерфейс Strategy;
+- [ ] реализовать 2–3 baseline-стратегии;
+- [ ] сохранять версии стратегии и входные параметры;
+- [ ] формировать сигналы с объяснениями, временем действия и data-quality;
+- [ ] добавить UI списка сигналов и детализации.
 
 **Критерии приёмки:** одинаковый набор данных и одна версия стратегии дают одинаковый результат; сигнал объясним; повторное получение одной и той же свечи не создаёт дублирующий сигнал.
 
 ### Этап 5. Backtesting и Strategy Lab
 
+**Статус:** TODO
+
 **Цель:** отделить гипотезу от результата симуляции.
 
 Задачи:
 
-- проверить `invest-engine-node` по чек-листу раздела 8;
-- выбрать: использовать готовый engine, адаптировать или написать simulator;
-- реализовать модель комиссий, slippage, lot size, tick size, расписание торгов;
-- реализовать исполнение на следующем доступном событии;
-- сохранить результаты и dataset version;
-- создать отчёт с equity, drawdown, PnL и торговой статистикой;
-- добавить out-of-sample и walk-forward сценарии.
+- [ ] проверить `invest-engine-node` по чек-листу раздела 8;
+- [ ] выбрать: использовать готовый engine, адаптировать или написать simulator;
+- [ ] реализовать модель комиссий, slippage, lot size, tick size, расписание торгов;
+- [ ] реализовать исполнение на следующем доступном событии;
+- [ ] сохранить результаты и dataset version;
+- [ ] создать отчёт с equity, drawdown, PnL и торговой статистикой;
+- [ ] добавить out-of-sample и walk-forward сценарии.
 
 **Критерии приёмки:** симулятор не использует будущие данные; комиссии и проскальзывание учтены; одинаковый запуск воспроизводим; есть тесты на gap, partial fill, expiry и no-liquidity случаи.
 
 ### Этап 6. Ручная торговля
 
+**Статус:** PARTIAL
+
 **Цель:** безопасно отправлять поручения по подтверждению пользователя.
 
 Задачи:
 
-- подключить accounts, positions, order state и operations;
-- реализовать preview заявки;
-- реализовать серверные pre-trade checks;
-- интегрировать `PostOrder`, `GetOrderState`, `GetOrders`, `CancelOrder`, `ReplaceOrder`;
-- подписаться на order/trade streams;
-- реализовать state machine и `UNKNOWN` state;
-- добавить журнал заявок и аудита;
-- протестировать частичное исполнение, отказ, timeout и cancel race.
+- [~] подключить accounts, positions, order state и operations (Sandbox Admin reads; live order ticket — нет);
+- [ ] реализовать preview заявки (торговый preview; close-preview для sandbox accounts есть);
+- [ ] реализовать серверные pre-trade checks для ордеров;
+- [ ] интегрировать `PostOrder`, `GetOrderState`, `GetOrders`, `CancelOrder`, `ReplaceOrder`;
+- [ ] подписаться на order/trade streams;
+- [~] реализовать state machine и `UNKNOWN` state (для sandbox durable ops / timeout→unknown; не полный order SM);
+- [x] добавить журнал операций и аудита (Sandbox Admin);
+- [~] протестировать частичное исполнение, отказ, timeout и cancel race (sandbox fund/close/timeout paths; не live orders).
 
 **Критерии приёмки:** пользователь видит подтверждённый статус; timeout не приводит к дублирующей заявке; количество лотов/цена валидируются; торговля недоступна при stale quote/закрытом рынке/недостатке лимита.
 
 ### Этап 7. Paper и Sandbox
 
+**Статус:** PARTIAL
+
 **Цель:** проверить весь pipeline без риска реальными средствами.
 
 Задачи:
 
-- реализовать PAPER broker simulator на live data;
-- реализовать sandbox gateway;
-- прогнать стратегии не менее нескольких торговых недель;
-- сравнить ожидаемые и фактические сигналы;
-- проверить reconnect, restart, database outage, provider outage;
-- протестировать kill switch и дневные лимиты;
-- построить отчёт об ошибках и расхождениях исполнения.
+- [ ] реализовать PAPER broker simulator на live data;
+- [x] реализовать sandbox gateway / Sandbox Admin (E7A: create/sync/fund/close, durable journal/outbox/audit, Admin UI + e2e);
+- [ ] прогнать стратегии не менее нескольких торговых недель;
+- [ ] сравнить ожидаемые и фактические сигналы;
+- [~] проверить reconnect, restart, database outage, provider outage (частично на sandbox/admin и stream MVP);
+- [~] протестировать kill switch и дневные лимиты (env defaults safe; полный runtime enforcement — нет);
+- [ ] построить отчёт об ошибках и расхождениях исполнения;
+- [ ] worker outbox drain для sandbox writes.
 
 **Критерии приёмки:** система устойчиво переживает сетевые сбои; заявки не дублируются; все изменения состояния аудируются; paper-результаты не зависят от повторного чтения одного event.
 
 ### Этап 8. Ограниченный LIVE
 
+**Статус:** TODO
+
 **Цель:** реальное исполнение одной проверенной стратегии в ограниченных условиях.
 
 Предусловия:
 
-- стратегия заморожена и версионирована;
-- есть out-of-sample результаты и paper trading track record;
-- определены max daily loss / per-trade risk / allowed instruments;
-- проверены спецификации и маржинальные показатели;
-- есть аварийное отключение и уведомления;
-- настроены backup, мониторинг, health checks и reconciliation;
-- live-токен существует только в Execution Worker.
+- [ ] стратегия заморожена и версионирована;
+- [ ] есть out-of-sample результаты и paper trading track record;
+- [ ] определены max daily loss / per-trade risk / allowed instruments;
+- [ ] проверены спецификации и маржинальные показатели;
+- [ ] есть аварийное отключение и уведомления;
+- [ ] настроены backup, мониторинг, health checks и reconciliation;
+- [ ] live-токен существует только в Execution Worker.
 
 Начать с минимально допустимого объёма и ограниченного whitelist. В первые недели не включать автоматическое увеличение позиции, усреднение и сложные мультиинструментальные сценарии. После каждого отклонения от ожидаемого исполнения проводить review.
 
 ### Этап 9. Расширение
 
+**Статус:** TODO
+
 После стабилизации core:
 
-- фьючерсные roll-стратегии и анализ open interest;
-- расширенные order-flow features;
-- portfolio-level risk и корреляции;
-- дополнительные broker adapters;
-- ML-модели для классификации режимов рынка/поиска аномалий;
-- Telegram/email уведомления;
-- multi-account и multi-strategy orchestration.
+- [ ] фьючерсные roll-стратегии и анализ open interest;
+- [ ] расширенные order-flow features;
+- [ ] portfolio-level risk и корреляции;
+- [ ] дополнительные broker adapters;
+- [ ] ML-модели для классификации режимов рынка/поиска аномалий;
+- [ ] Telegram/email уведомления;
+- [ ] multi-account и multi-strategy orchestration.
 
 ML добавлять после того, как собраны качественные данные, определены baseline-метрики и есть воспроизводимый benchmark. Нейросеть не должна обходить risk engine.
 
@@ -1107,32 +1136,32 @@ ML добавлять после того, как собраны качеств�
 
 - [x] Создать monorepo `apps/*` и `packages/*`.
 - [x] Настроить TypeScript strict, lint, format, unit tests.
-- [ ] Поднять PostgreSQL и миграции. _(Compose ready in M0; Drizzle migrations = BL-020)_
+- [x] Поднять PostgreSQL и миграции. _(Compose + SQL migrations via `@moex/persistence`)_
 - [x] Описать env schema для T‑Invest production/sandbox и MOEX ISS.
 - [x] Добавить секреты в локальный `.env`, исключить его из Git. _(`.env.example` + gitignore; local `.env` is operator-owned)_
 - [x] Реализовать `Decimal` helpers и unit tests. _(BL-011)_
 
 ### Providers
 
-- [ ] Реализовать `BrokerGateway` интерфейс.
-- [ ] Подключить `@ttech-pub/invest-sdk-node`.
-- [ ] Получить аккаунты и каталог акций/фьючерсов.
-- [ ] Реализовать получение спецификации и торгового статуса.
-- [ ] Реализовать `MoexIssClient` с timeout, pagination и retry.
-- [ ] Сделать mapping `instrument_uid ↔ SECID/BOARD/engine/market/board`.
+- [x] Реализовать `BrokerGateway` интерфейс.
+- [x] Подключить `@ttech-pub/invest-sdk-node`.
+- [x] Получить аккаунты и каталог акций/фьючерсов.
+- [~] Реализовать получение спецификации и торгового статуса. _(spec mapping есть; trading status stream — нет)_
+- [x] Реализовать `MoexIssClient` с timeout, pagination и retry.
+- [~] Сделать mapping `instrument_uid ↔ SECID/BOARD/engine/market/board`.
 
 ### Data
 
-- [ ] Создать schema для instruments/specs/candles/jobs/gaps.
-- [ ] Реализовать импорт `GetCandles` с оконной загрузкой.
+- [~] Создать schema для instruments/specs/candles/jobs/gaps. _(instruments/specs/admin; candles jobs/gaps — нет)_
+- [~] Реализовать импорт `GetCandles` с оконной загрузкой. _(on-read chart path; durable import — нет)_
 - [ ] Реализовать импорт годовых архивов, если доступен нужный инструмент.
-- [ ] Реализовать MOEX ISS history/candles.
+- [~] Реализовать MOEX ISS history/candles.
 - [ ] Добавить идемпотентный upsert и data quality checks.
-- [ ] Построить простой API и график истории.
+- [x] Построить API и график истории. _(`/charts`, pivots, live WS MVP)_
 
 ### Analysis
 
-- [ ] Реализовать базовые индикаторы.
+- [~] Реализовать базовые индикаторы. _(Fibonacci Pivot Points DONE; classic set — нет)_
 - [ ] Добавить baseline strategy interface.
 - [ ] Добавить signal store и дедупликацию.
 - [ ] Сделать signal detail в UI.
@@ -1140,12 +1169,12 @@ ML добавлять после того, как собраны качеств�
 
 ### Trading
 
-- [ ] Подключить positions, orders, order state и trades streams.
+- [~] Подключить positions, orders, order state и trades streams. _(Sandbox Admin reads)_
 - [ ] Реализовать `OrderPreview` и risk checks.
-- [ ] Реализовать ручные заявки только в sandbox.
-- [ ] Реализовать state machine и reconciliation.
+- [~] Реализовать ручные заявки только в sandbox. _(Sandbox Admin account lifecycle; order ticket — нет)_
+- [~] Реализовать state machine и reconciliation. _(sandbox ops UNKNOWN/timeout)_
 - [ ] Реализовать PAPER executor.
-- [ ] Добавить kill switch и журнал аудита.
+- [x] Добавить kill switch defaults и журнал аудита. _(env + Sandbox Admin audit)_
 
 ---
 

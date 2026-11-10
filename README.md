@@ -8,23 +8,27 @@ Personal research and trading platform for MOEX instruments: market data, analyt
 
 A TypeScript monorepo that separates four product contours:
 
-| Contour                | Goal                                                       | Status today                                    |
-| ---------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial (E1 providers mostly done)              |
-| **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots chart UI (5m/1h)               |
-| **Signals & backtest** | Reproducible signals + event-driven simulation             | Packages exist as stubs                         |
-| **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** |
+| Contour                | Goal                                                       | Status today                                                           |
+| ---------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial + realtime MVP (`/ws/market-data`, chart auto-live)            |
+| **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots + chart UX (`1m`/`5m`/`1h`, zoom/pan, futures picker) |
+| **Signals & backtest** | Reproducible signals + event-driven simulation             | Packages exist as stubs                                                |
+| **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical**                        |
 
 The architectural rule is firm: **exchange data source ≠ broker execution channel**. Strategies talk to ports (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), not to SDK DTOs.
 
 ## What works now (chart + Fibonacci pivots)
 
-UI slice for **Fibonacci Pivot Points** (not retracement). Spec: [docs/ADR/fibonacci-pivot-points-implementation-spec.md](docs/ADR/fibonacci-pivot-points-implementation-spec.md).
+UI for **Fibonacci Pivot Points** (not retracement) on `/charts/:ticker`, with futures picker, multi-TF history, zoom/pan, and auto-live. Spec: [docs/ADR/fibonacci-pivot-points-implementation-spec.md](docs/ADR/fibonacci-pivot-points-implementation-spec.md). Status: [docs/STATUS.md](docs/STATUS.md).
 
 1. Set `TINVEST_READ_ONLY_TOKEN` (or sandbox token) in `.env`.
-2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`).
-3. Open `http://127.0.0.1:5173/charts/NG-12.26`.
-4. Switch **5m** (daily reference) / **1h** (weekly reference); levels `P/R1–R3/S1–S3` overlay candles.
+2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`). Vite proxies `/api` and `/ws` → `:3000`.
+3. Open `http://127.0.0.1:5173/charts` (or `/charts/:ticker`).
+4. Pick a futures contract: categories (товарные / индексные / валютные / на акции) + family optgroups; catalog is cache-first (`nanostores` + API snapshot).
+5. Switch **`1m` / `5m` / `1h`**; header shows ticker · name and last close.
+6. History loads via REST; Fibonacci levels `P/R1–R3/S1–S3` overlay candles. Session X-scale; wheel zoom / drag pan; **Reset zoom**; viewport is preserved across TF changes.
+7. **Live stream starts automatically** for the selected instrument (CHART lease). Candle upserts into the series; on REJECTED/error the UI falls back to historical REST.
+8. Chart route is code-split; bootstrap avoids an extra warm refresh.
 
 API:
 
@@ -32,10 +36,17 @@ API:
 | ------ | --------------------------------------------------------------------------------- | ------------------------------------------ |
 | GET    | `/api/v1/instruments/futures`                                                     | Full futures catalog; near+next per family |
 | GET    | `/api/v1/instruments/by-ticker/:ticker`                                           | Resolve T-Invest UID                       |
-| GET    | `/api/v1/instruments/:uid/candles?interval=5m\|1h&from=&to=`                      | Chart candles                              |
+| GET    | `/api/v1/instruments/:uid/candles?interval=1m\|5m\|1h&from=&to=`                  | Chart candles                              |
 | GET    | `/api/v1/instruments/:uid/indicators/fibonacci-pivots?timeframe=5m\|1h&from=&to=` | Pivot segments                             |
+| WS     | `/ws/market-data`                                                                 | Realtime candle fan-out (chart auto-live)  |
 
 Pivots are computed **on read** (no persist/workers yet). Signals are not implemented.
+
+## What works now (realtime)
+
+MVP candle stream for the chart: stream manager + registry + WS fan-out + auto-live subscription. Details: [docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md](docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md). Matrix and gaps: [docs/STATUS.md](docs/STATUS.md) (M3 / RT-01…).
+
+Not done yet: durable DB upsert, gap fill, health endpoints, dedicated worker host.
 
 ## What works now (E7A Sandbox Admin)
 

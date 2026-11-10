@@ -10,17 +10,17 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## Milestone
 
-| Milestone            | Status      | Notes                                                      |
-| -------------------- | ----------- | ---------------------------------------------------------- |
-| M0 — Foundation      | DONE        | EPIC E0 verified locally                                   |
-| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done                            |
-| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031                          |
-| M3 — Realtime        | IN_PROGRESS | Stream manager + registry + chart WS Live button (API MVP) |
-| M4 — Signals         | TODO        |                                                            |
-| M5 — Backtesting     | TODO        |                                                            |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A Admin API + UI + e2e in progress                       |
-| M7 — Paper           | TODO        |                                                            |
-| M8 — Guarded Live    | TODO        |                                                            |
+| Milestone            | Status      | Notes                                                       |
+| -------------------- | ----------- | ----------------------------------------------------------- |
+| M0 — Foundation      | DONE        | EPIC E0 verified locally                                    |
+| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done                             |
+| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031                           |
+| M3 — Realtime        | IN_PROGRESS | Stream manager + registry + chart WS Live button (API MVP)  |
+| M4 — Signals         | TODO        |                                                             |
+| M5 — Backtesting     | TODO        |                                                             |
+| M6 — Manual Sandbox  | IN_PROGRESS | E7A Admin (BL-078…089) DONE; live manual order ticket — нет |
+| M7 — Paper           | TODO        |                                                             |
+| M8 — Guarded Live    | TODO        |                                                             |
 
 ## EPIC E7A (v1.2)
 
@@ -39,8 +39,12 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 | Pure calculator `@moex/indicators`   | DONE     | ADR formula; 5m→1D / 1h→1W                                        |
 | On-read API candles + pivots         | DONE     | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token           |
 | TanStack Charts UI `/charts/:ticker` | DONE     | Candles + period-bounded pivot `link`s                            |
+| Timeframes `1m` / `5m` / `1h`        | DONE     | Chart TF switch; pivots on 5m/1h                                  |
+| Session X-scale + Reset zoom         | DONE     | Session domain; wheel zoom / drag pan; Reset zoom control         |
+| Preserve viewport across TF          | DONE     | Zoom/pan kept when switching `1m`/`5m`/`1h`                       |
 | Custom wheel zoom / drag pan         | DONE     | Replaces broken TanStack `zoomX` remount loop                     |
-| Futures catalog cache-first picker   | DONE     | nanostores persistent + DB snapshot                               |
+| Futures catalog cache-first picker   | DONE     | Categories + family optgroups; nanostores + API snapshot          |
+| Auto-live + history REST fallback    | DONE     | Auto-subscribe on instrument select; REJECTED/error → REST        |
 | Chart route code-split + bootstrap   | DONE     | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
 | Signals                              | DEFERRED | Out of scope for this slice                                       |
 | Persist table / workers              | DEFERRED | Next stage after UI                                               |
