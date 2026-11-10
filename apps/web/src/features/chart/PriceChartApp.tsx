@@ -1,6 +1,6 @@
 import { useStore } from '@nanostores/react';
 import { Chart } from '@tanstack/charts/react';
-import { useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type ChartApiClient, createChartApiClient } from './api-client';
 import {
   buildPriceChartDefinition,
@@ -9,6 +9,14 @@ import {
   sessionXExtent,
 } from './build-chart-definition';
 import './chart.css';
+import {
+  findContractInCatalog,
+  findTickerInFamilies,
+  firstNearTicker,
+  instrumentFromContract,
+  pickTickerForCategory,
+  shouldRefreshAfterCatalog,
+} from './chart-instrument';
 import {
   familiesForCategory,
   futuresCatalogPersistent,
@@ -20,7 +28,6 @@ import { toPivotSegments } from './to-pivot-segments';
 import type {
   CandleRow,
   ChartTimeframe,
-  FuturesFamily,
   FuturesListCategory,
   InstrumentLookup,
   PivotSegment,
@@ -46,38 +53,6 @@ function defaultRange(timeframe: ChartTimeframe): { from: string; to: string } {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
-function findTickerInFamilies(families: FuturesFamily[], ticker: string): string | null {
-  const normalized = ticker.trim().toUpperCase();
-  for (const family of families) {
-    for (const contract of family.contracts) {
-      if (contract.ticker.toUpperCase() === normalized) {
-        return contract.ticker;
-      }
-    }
-  }
-  return null;
-}
-
-function firstNearTicker(families: FuturesFamily[]): string | null {
-  for (const family of families) {
-    const near = family.contracts.find((contract) => contract.role === 'near');
-    if (near !== undefined) {
-      return near.ticker;
-    }
-    const first = family.contracts[0];
-    if (first !== undefined) {
-      return first.ticker;
-    }
-  }
-  return null;
-}
-
-function pickTickerForCategory(families: FuturesFamily[], preferredTicker: string): string {
-  return (
-    findTickerInFamilies(families, preferredTicker) ?? firstNearTicker(families) ?? preferredTicker
-  );
-}
-
 function updateChartPath(ticker: string): void {
   const path = `/charts/${encodeURIComponent(ticker)}`;
   window.history.pushState({}, '', path);
@@ -99,6 +74,8 @@ export function PriceChartApp(props: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [xWindow, setXWindow] = useState<ChartXWindow>({ start: -0.5, end: 0.5 });
+  const [plotWidth, setPlotWidth] = useState(0);
+  const plotRef = useRef<HTMLDivElement | null>(null);
 
   const families = useMemo(
     () => familiesForCategory(persistedCatalog.categories, category),
@@ -114,7 +91,14 @@ export function PriceChartApp(props: Props) {
     setError(null);
     try {
       const range = defaultRange(nextTimeframe);
-      const lookedUp = await client.lookupByTicker(nextTicker);
+      const catalogContract = findContractInCatalog(
+        futuresCatalogPersistent.get().categories,
+        nextTicker,
+      );
+      const lookedUp =
+        catalogContract !== null
+          ? instrumentFromContract(catalogContract)
+          : await client.lookupByTicker(nextTicker);
       const [candleRows, pivotResponse] = await Promise.all([
         client.getCandles({
           instrumentUid: lookedUp.instrumentUid,
@@ -160,7 +144,8 @@ export function PriceChartApp(props: Props) {
       const cachedTicker = pickTickerForCategory(cachedFamilies, initialTicker);
       setTicker(cachedTicker);
       updateChartPath(cachedTicker);
-      if (cachedFamilies.length > 0) {
+      const earlyRefreshStarted = cachedFamilies.length > 0;
+      if (earlyRefreshStarted) {
         void refresh(cachedTicker, '5m');
       }
       try {
@@ -175,7 +160,15 @@ export function PriceChartApp(props: Props) {
       const nextTicker = pickTickerForCategory(nextFamilies, cachedTicker);
       setTicker(nextTicker);
       updateChartPath(nextTicker);
-      void refresh(nextTicker, '5m');
+      if (
+        shouldRefreshAfterCatalog({
+          earlyRefreshStarted,
+          cachedTicker,
+          nextTicker,
+        })
+      ) {
+        void refresh(nextTicker, '5m');
+      }
     })();
   }, [client, initialTicker]);
 
@@ -185,6 +178,27 @@ export function PriceChartApp(props: Props) {
   useEffect(() => {
     setXWindow(defaultSessionXWindow(sessionCandles));
   }, [sessionCandles]);
+
+  useEffect(() => {
+    const el = plotRef.current;
+    if (el === null || candles.length === 0) {
+      return;
+    }
+    const updateWidth = () => {
+      const next = Math.floor(el.getBoundingClientRect().width);
+      if (next > 0) {
+        setPlotWidth(next);
+      }
+    };
+    updateWidth();
+    const observer = new ResizeObserver(() => {
+      updateWidth();
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [candles.length]);
 
   const definition = useMemo(
     () =>
@@ -334,12 +348,15 @@ export function PriceChartApp(props: Props) {
         {candles.length > 0 ? (
           <>
             <p className="price-chart__meta">Wheel: zoom · drag: pan · price on the right</p>
-            <Chart
-              definition={definition}
-              ariaLabel={`${instrument?.ticker ?? ticker} ${timeframe} candlestick chart with Fibonacci pivots`}
-              height={520}
-              className="price-chart__plot"
-            />
+            <div ref={plotRef} className="price-chart__plot-host">
+              <Chart
+                definition={definition}
+                ariaLabel={`${instrument?.ticker ?? ticker} ${timeframe} candlestick chart with Fibonacci pivots`}
+                height={520}
+                {...(plotWidth > 0 ? { width: plotWidth } : {})}
+                className="price-chart__plot"
+              />
+            </div>
           </>
         ) : null}
       </div>

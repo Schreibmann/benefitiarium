@@ -1,6 +1,6 @@
 # Project Status
 
-**Updated:** 2026-11-09  
+**Updated:** 2026-11-10  
 **Backlog version:** TECHNICAL_BACKLOG **v1.2**  
 **Current milestone:** M6 — Manual Sandbox (E7A) + Fibonacci pivots chart UI slice  
 **Active task:** Fibonacci Pivot Points chart UI (`cursor/bl-fib-pivots-chart-ui`)  
@@ -34,13 +34,14 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 
 ## Fibonacci Pivot Points (UI slice)
 
-| Piece                                | Status   | Notes                                                   |
-| ------------------------------------ | -------- | ------------------------------------------------------- |
-| Pure calculator `@moex/indicators`   | DONE     | ADR formula; 5m→1D / 1h→1W                              |
-| On-read API candles + pivots         | DONE     | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token |
-| TanStack Charts UI `/charts/:ticker` | DONE     | Candles + period-bounded pivot `link`s                  |
-| Signals                              | DEFERRED | Out of scope for this slice                             |
-| Persist table / workers              | DEFERRED | Next stage after UI                                     |
+| Piece                                | Status   | Notes                                                             |
+| ------------------------------------ | -------- | ----------------------------------------------------------------- |
+| Pure calculator `@moex/indicators`   | DONE     | ADR formula; 5m→1D / 1h→1W                                        |
+| On-read API candles + pivots         | DONE     | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token           |
+| TanStack Charts UI `/charts/:ticker` | DONE     | Candles + period-bounded pivot `link`s                            |
+| Chart route code-split + bootstrap   | DONE     | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
+| Signals                              | DEFERRED | Out of scope for this slice                                       |
+| Persist table / workers              | DEFERRED | Next stage after UI                                               |
 
 ## Notes
 
@@ -48,6 +49,7 @@ Statuses live here. Do not treat agent chat messages as source of truth without 
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
 - Chart: `http://127.0.0.1:5173/charts/NG-12.26` (Vite proxies `/api` → `:3000`)
+- Perf / Lighthouse: measure `pnpm --filter @moex/web build` + `preview` (not `vite` dev); preview proxies `/api` and `/ws` → `:3000`
 - Spec: `docs/ADR/fibonacci-pivot-points-implementation-spec.md`
 
 ## Next
