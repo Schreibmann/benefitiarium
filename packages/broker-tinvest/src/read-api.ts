@@ -3,11 +3,13 @@ import type {
   TinvestAccountRaw,
   TinvestCandleRaw,
   TinvestFutureRaw,
+  TinvestGetTechAnalysisInput,
   TinvestIndicativeRaw,
   TinvestLastPriceRaw,
   TinvestOrderRaw,
   TinvestPositionRaw,
   TinvestShareRaw,
+  TinvestTechAnalysisItemRaw,
 } from './raw.js';
 
 /**
@@ -31,6 +33,11 @@ export type TinvestReadApi = {
     to: Date;
   }) => Promise<TinvestCandleRaw[]>;
   getLastPrices: (instrumentUids: string[]) => Promise<TinvestLastPriceRaw[]>;
+  /**
+   * MarketDataService.GetTechAnalysis — BB/EMA/RSI/MACD/SMA only.
+   * No Fibonacci / horizontal volume in the broker API (see TECH_ANALYSIS_API_GAPS).
+   */
+  getTechAnalysis: (input: TinvestGetTechAnalysisInput) => Promise<TinvestTechAnalysisItemRaw[]>;
   listAccounts: () => Promise<TinvestAccountRaw[]>;
   getPositions: (accountId: string) => Promise<TinvestPositionRaw[]>;
   getOrders: (accountId: string) => Promise<TinvestOrderRaw[]>;

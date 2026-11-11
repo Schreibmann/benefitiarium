@@ -31,11 +31,16 @@ function resolveComposeFile(options: PsqlClientOptions): string {
   return join(repoRootFromHere(), 'docker-compose.yml');
 }
 
+/**
+ * Feed SQL via stdin (`-f -`) instead of `-c`.
+ * Windows CreateProcess caps argv (~8191 chars); large upserts were dying with status null.
+ */
 export function runPsqlRaw(sql: string, options: PsqlClientOptions = {}): PsqlResult {
   const databaseUrl = (options.databaseUrl ?? process.env.DATABASE_URL ?? '').trim();
   if (databaseUrl.length > 0) {
-    const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-At', '-c', sql], {
+    const result = spawnSync('psql', [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-At', '-f', '-'], {
       encoding: 'utf8',
+      input: sql,
       maxBuffer: 20 * 1024 * 1024,
     });
     const err = result.error;
@@ -75,10 +80,14 @@ export function runPsqlRaw(sql: string, options: PsqlClientOptions = {}): PsqlRe
       '-v',
       'ON_ERROR_STOP=1',
       '-At',
-      '-c',
-      sql,
+      '-f',
+      '-',
     ],
-    { encoding: 'utf8', maxBuffer: 20 * 1024 * 1024 },
+    {
+      encoding: 'utf8',
+      input: sql,
+      maxBuffer: 20 * 1024 * 1024,
+    },
   );
   return {
     status: result.status,

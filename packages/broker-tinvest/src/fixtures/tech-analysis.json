@@ -1,0 +1,20 @@
+{
+  "technicalIndicators": [
+    {
+      "timestamp": "2026-11-05T00:00:00.000Z",
+      "middleBand": "100.5",
+      "upperBand": "110.25",
+      "lowerBand": "90.75",
+      "signal": null,
+      "macd": null
+    },
+    {
+      "timestamp": "2026-11-06T00:00:00.000Z",
+      "middleBand": "101.0",
+      "upperBand": "111.0",
+      "lowerBand": "91.0",
+      "signal": null,
+      "macd": null
+    }
+  ]
+}

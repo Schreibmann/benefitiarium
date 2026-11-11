@@ -1,7 +1,13 @@
-# Backlog pointer
+# Backlog pointer / Указатель backlog
 
-Канонический технический backlog: [`docs/TECHNICAL_BACKLOG.md`](docs/TECHNICAL_BACKLOG.md) (**v1.2**)
+**RU.** Канонический технический backlog: [`docs/TECHNICAL_BACKLOG.md`](docs/TECHNICAL_BACKLOG.md) (**v1.2**)
 
-Текущий статус задач: [`docs/STATUS.md`](docs/STATUS.md)
+**EN.** Canonical technical backlog: [`docs/TECHNICAL_BACKLOG.md`](docs/TECHNICAL_BACKLOG.md) (**v1.2**)
 
-Coverage matrix фьючерсов (BL-039): [`docs/FUTURES_HISTORY_COVERAGE.md`](docs/FUTURES_HISTORY_COVERAGE.md)
+**RU.** Текущий статус задач: [`docs/STATUS.md`](docs/STATUS.md)
+
+**EN.** Current task status: [`docs/STATUS.md`](docs/STATUS.md)
+
+**RU.** Матрица покрытия фьючерсов (BL-039): [`docs/FUTURES_HISTORY_COVERAGE.md`](docs/FUTURES_HISTORY_COVERAGE.md)
+
+**EN.** Futures coverage matrix (BL-039): [`docs/FUTURES_HISTORY_COVERAGE.md`](docs/FUTURES_HISTORY_COVERAGE.md)

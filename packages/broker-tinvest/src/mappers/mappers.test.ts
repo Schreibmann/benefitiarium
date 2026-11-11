@@ -10,7 +10,11 @@ import {
   mapShareToProviderInstrument,
 } from './instruments.js';
 import { mapTinvestLastPriceToDomain } from './market.js';
-import { deriveContractFamily, mapTinvestUnderlyingAssetType } from './underlying.js';
+import {
+  deriveContractFamily,
+  mapTinvestUnderlyingAssetType,
+  resolveFuturesListCategory,
+} from './underlying.js';
 
 describe('T-Invest mappers', () => {
   it('maps share, commodity/index futures and keeps indicatives separate', async () => {
@@ -41,6 +45,7 @@ describe('T-Invest mappers', () => {
     expect(commoditySpec.contractFamily).toBe('BR');
     expect(commoditySpec.priceType).toBe('points');
     expect(commoditySpec.raw.first1minCandleDate).toBe('2025-08-01T00:00:00.000Z');
+    expect(commoditySpec.raw.sector).toBe('commodity');
 
     const indexSpec = mapFutureToInstrumentSpecInput(indexFuture);
     expect(indexSpec.underlyingAssetType).toBe('equity_index');
@@ -68,17 +73,29 @@ describe('T-Invest mappers', () => {
   });
 
   it('maps underlying asset type labels and contract family', () => {
+    // Future.asset_type strings from InstrumentsService docs.
     expect(mapTinvestUnderlyingAssetType('commodity')).toBe('commodity');
-    expect(mapTinvestUnderlyingAssetType('TYPE_COMMODITY')).toBe('commodity');
-    expect(mapTinvestUnderlyingAssetType('index')).toBe('equity_index');
-    expect(mapTinvestUnderlyingAssetType('TYPE_INDEX')).toBe('equity_index');
     expect(mapTinvestUnderlyingAssetType('currency')).toBe('currency');
+    expect(mapTinvestUnderlyingAssetType('index')).toBe('equity_index');
+    expect(mapTinvestUnderlyingAssetType('security')).toBe('share');
+    // Live / enum-style labels.
+    expect(mapTinvestUnderlyingAssetType('TYPE_COMMODITY')).toBe('commodity');
+    expect(mapTinvestUnderlyingAssetType('ASSET_TYPE_COMMODITY')).toBe('commodity');
+    expect(mapTinvestUnderlyingAssetType('TYPE_INDEX')).toBe('equity_index');
+    expect(mapTinvestUnderlyingAssetType('ASSET_TYPE_SECURITY')).toBe('share');
     expect(mapTinvestUnderlyingAssetType('TYPE_CURRENCY')).toBe('currency');
+    expect(mapTinvestUnderlyingAssetType(2)).toBe('commodity');
+    expect(mapTinvestUnderlyingAssetType(4)).toBe('share');
     expect(mapTinvestUnderlyingAssetType('share')).toBe('share');
     expect(mapTinvestUnderlyingAssetType('weird')).toBe('other');
     expect(deriveContractFamily('BRH6')).toBe('BR');
     expect(deriveContractFamily('CRZ5')).toBe('CR');
     expect(deriveContractFamily('SiH6')).toBe('Si');
+    // sector preferred when it maps; otherwise assetType fallback.
+    expect(resolveFuturesListCategory('commodity', 'index')).toBe('commodity');
+    expect(resolveFuturesListCategory('energy', 'commodity')).toBe('commodity');
+    expect(resolveFuturesListCategory('', 'security')).toBe('share');
+    expect(resolveFuturesListCategory(null, 'index')).toBe('equity_index');
   });
 
   it('maps candles and last price', async () => {

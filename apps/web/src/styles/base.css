@@ -1,0 +1,61 @@
+/*
+  Starter CSS adapted from:
+  https://habr.com/ru/companies/ruvds/articles/1101388/
+*/
+
+:root {
+  color-scheme: light dark;
+
+  --main-mode-color: light-dark(#fff, #2e3444);
+  --accent-mode-color: light-dark(#222, #eee);
+
+  --bs-focus-outline-width: 2px;
+  --bs-focus-outline-style: solid;
+  --bs-focus-outline-color: currentColor;
+  --base-focus-outline-offset: 2px;
+
+  --bs-heading-text-wrap: balance;
+
+  --bs-img-aspect-ratio: auto;
+  --bs-img-object-fit: cover;
+  --bs-img-object-position: 50% 50%;
+}
+
+html,
+body {
+  scrollbar-gutter: stable;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--main-mode-color);
+  color: var(--accent-mode-color);
+}
+
+:focus-visible {
+  outline: var(--bs-focus-outline-width) var(--bs-focus-outline-style) var(--bs-focus-outline-color);
+  outline-offset: var(--base-focus-outline-offset);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: var(--bs-heading-text-wrap);
+}
+
+img {
+  aspect-ratio: var(--bs-img-aspect-ratio);
+  object-fit: var(--bs-img-object-fit);
+  object-position: var(--bs-img-object-position);
+  max-width: 100%;
+  height: auto;
+}

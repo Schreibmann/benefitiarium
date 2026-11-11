@@ -1,6 +1,10 @@
-# Architecture Decision Records
+# Architecture Decision Records / Архитектурные решения (ADR)
 
-| ADR                                         | Title                                     |
+**RU.** Индекс записей архитектурных решений (ADR) проекта.
+
+**EN.** Index of project Architecture Decision Records (ADR).
+
+| ADR                                         | Title / Название                          |
 | ------------------------------------------- | ----------------------------------------- |
 | [001](001-modular-monolith.md)              | Modular monolith instead of microservices |
 | [002](002-react-spa-fastify-api.md)         | React SPA + Fastify API                   |

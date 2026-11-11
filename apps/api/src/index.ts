@@ -1,5 +1,6 @@
 import { applyLocalEnvFile, loadEnv } from '@moex/config';
 import { createLogger } from '@moex/observability';
+import { composeMarketDataDeps } from './compose-market-data.js';
 import { composeSandboxAdminDeps } from './compose-sandbox-admin.js';
 import { createApp } from './create-app.js';
 
@@ -11,21 +12,35 @@ const port = Number.parseInt(process.env.PORT ?? '3000', 10);
 
 async function main(): Promise<void> {
   const adminConfigured = env.ADMIN_API_TOKEN.trim().length > 0;
-  if (!adminConfigured) {
-    const app = await createApp({ env });
-    await app.listen({ port, host: '0.0.0.0' });
-    logger.info('api listening', { port, sandboxAdminEnabled: false });
-    return;
+  const sandboxAdmin = adminConfigured
+    ? await composeSandboxAdminDeps(env).then(({ storeMode, ...deps }) => ({
+        deps,
+        storeMode,
+      }))
+    : null;
+
+  const market = await composeMarketDataDeps(env);
+
+  const app = await createApp({
+    env,
+    ...(sandboxAdmin !== null ? { sandboxAdmin: sandboxAdmin.deps } : {}),
+    ...(market !== null ? { marketData: market.chartDeps } : {}),
+    ...(market?.chartLive !== null && market?.chartLive !== undefined
+      ? { chartLive: market.chartLive }
+      : {}),
+  });
+  await app.listen({ port, host: '0.0.0.0' });
+
+  if (market?.chartLive !== null && market?.chartLive !== undefined) {
+    market.chartLive.attach(app.server);
   }
 
-  const composed = await composeSandboxAdminDeps(env);
-  const { storeMode, ...sandboxAdmin } = composed;
-  const app = await createApp({ env, sandboxAdmin });
-  await app.listen({ port, host: '0.0.0.0' });
   logger.info('api listening', {
     port,
-    sandboxAdminEnabled: true,
-    sandboxAdminStore: storeMode,
+    sandboxAdminEnabled: sandboxAdmin !== null,
+    sandboxAdminStore: sandboxAdmin?.storeMode ?? null,
+    marketDataEnabled: market !== null,
+    chartLiveEnabled: market?.chartLive !== null && market?.chartLive !== undefined,
   });
 }
 

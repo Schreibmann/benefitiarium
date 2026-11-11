@@ -1,17 +1,23 @@
-# ADR-007: Durable command workflow for broker writes
+# ADR-007: Durable command workflow for broker writes / Долговечный workflow команд записи к брокеру
 
-## Status
+## Status / Статус
 
-Accepted
+Accepted (принято)
 
-## Context
+## Context / Контекст
 
-Network timeouts after `PostOrder` make blind retries dangerous (duplicate orders).
+**RU.** Сетевые таймауты после `PostOrder` делают слепые повторы опасными (дублирование ордеров).
 
-## Decision
+**EN.** Network timeouts after `PostOrder` make blind retries dangerous (duplicate orders).
 
-Persist local order intent and unique `client_order_id` before network send. Pass that UID as T-Invest `order_id` per API contract. Timeout → local `UNKNOWN`; no automatic resubmit until reconciliation. Audit + correlation ID on every write command.
+## Decision / Решение
 
-## Consequences
+**RU.** Сохранять локальное намерение ордера и уникальный `client_order_id` до сетевой отправки. Передавать этот UID как `order_id` T-Invest по контракту API. Таймаут → локальный `UNKNOWN`; без автоматической повторной отправки до сверки. Аудит и correlation ID на каждой команде записи.
 
-Order state machine must include `UNKNOWN`. Reconciliation is mandatory after worker restart.
+**EN.** Persist local order intent and unique `client_order_id` before network send. Pass that UID as T-Invest `order_id` per API contract. Timeout → local `UNKNOWN`; no automatic resubmit until reconciliation. Audit + correlation ID on every write command.
+
+## Consequences / Последствия
+
+**RU.** Машина состояний ордера должна включать `UNKNOWN`. Сверка обязательна после перезапуска worker.
+
+**EN.** Order state machine must include `UNKNOWN`. Reconciliation is mandatory after worker restart.

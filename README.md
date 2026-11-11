@@ -1,25 +1,99 @@
-# MOEX Trading Platform (MTP[T-broker])
+# MOEX Trading Platform (MTP[T-broker]) / Торговая платформа MOEX (MTP[T-broker])
 
-Personal research and trading platform for MOEX instruments: market data, analytics, signals, backtesting, and **controlled** execution via T‑Invest API — with a hard safety path through Sandbox before any live trading.
+**RU.** Персональная исследовательская и торговая платформа по инструментам MOEX: рыночные данные, аналитика, сигналы, бэктестинг и **контролируемое** исполнение через T‑Invest API — с обязательным безопасным путём через Sandbox до любой live-торговли.
 
-> Not investment advice. Automated trading can lose capital. Tests, backtests, and Sandbox success do not prove profitability.
+**EN.** Personal research and trading platform for MOEX instruments: market data, analytics, signals, backtesting, and **controlled** execution via T‑Invest API — with a hard safety path through Sandbox before any live trading.
 
-## What this project is
+**RU.** > Не инвестиционная рекомендация. Автоматическая торговля может привести к потере капитала. Успех тестов, бэктестов и Sandbox не доказывает прибыльность.
 
-A TypeScript monorepo that separates four product contours:
+**EN.** > Not investment advice. Automated trading can lose capital. Tests, backtests, and Sandbox success do not prove profitability.
 
-| Contour                | Goal                                                       | Status today                                    |
-| ---------------------- | ---------------------------------------------------------- | ----------------------------------------------- |
-| **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial (E1 providers mostly done)              |
-| **Research**           | Indicators, strategy versions, exploration UI              | Scaffold only                                   |
-| **Signals & backtest** | Reproducible signals + event-driven simulation             | Packages exist as stubs                         |
-| **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** |
+## What this project is / Что это за проект
 
-The architectural rule is firm: **exchange data source ≠ broker execution channel**. Strategies talk to ports (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), not to SDK DTOs.
+**RU.** TypeScript-монорепозиторий с четырьмя продуктовыми контурами:
 
-## What works now (E7A Sandbox Admin)
+**EN.** A TypeScript monorepo that separates four product contours:
 
-You can run a protected **Sandbox Account Management** loop locally:
+| Contour / Контур       | Goal / Цель                                                | Status today / Статус сейчас                                                                  |
+| ---------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial + realtime MVP (`/ws/market-data`, chart auto-live) / Частично + realtime MVP         |
+| **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots + chart UX (`1m`/`5m`/`1h`, zoom/pan, futures picker)                        |
+| **Signals & backtest** | Reproducible signals + event-driven simulation             | Packages exist as stubs / Пакеты как заглушки                                                 |
+| **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** / **Рабочий вертикаль — Sandbox Admin (E7A)** |
+
+**RU.** Архитектурное правило жёсткое: **источник биржевых данных ≠ канал исполнения у брокера**. Стратегии общаются с портами (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), а не с DTO SDK.
+
+**EN.** The architectural rule is firm: **exchange data source ≠ broker execution channel**. Strategies talk to ports (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), not to SDK DTOs.
+
+## What works now (chart + Fibonacci pivots) / Что работает сейчас (график + Fibonacci pivots)
+
+**RU.** UI для **Fibonacci Pivot Points** (не retracement) на `/charts/:ticker`: выбор фьючерсов, multi-TF история, zoom/pan и auto-live. Спека: [docs/ADR/fibonacci-pivot-points-implementation-spec.md](docs/ADR/fibonacci-pivot-points-implementation-spec.md). Статус: [docs/STATUS.md](docs/STATUS.md).
+
+**EN.** UI for **Fibonacci Pivot Points** (not retracement) on `/charts/:ticker`, with futures picker, multi-TF history, zoom/pan, and auto-live. Spec: [docs/ADR/fibonacci-pivot-points-implementation-spec.md](docs/ADR/fibonacci-pivot-points-implementation-spec.md). Status: [docs/STATUS.md](docs/STATUS.md).
+
+**RU.**
+
+1. Задайте `TINVEST_READ_ONLY_TOKEN` (или sandbox token) в `.env`.
+2. Запустите API + web (`pnpm --filter @moex/api dev` и `pnpm --filter @moex/web dev`). Vite проксирует `/api` и `/ws` → `:3000`.
+3. Откройте `http://127.0.0.1:5173/charts` (или `/charts/:ticker`).
+4. Выберите фьючерсный контракт: категории (товарные / индексные / валютные / на акции) + family optgroups; каталог cache-first (`nanostores` + API snapshot).
+5. Переключайте **`1m` / `5m` / `1h`**; в шапке ticker · name и last close.
+6. История через REST; уровни Fibonacci `P/R1–R3/S1–S3` поверх свечей. Session X-scale; wheel zoom / drag pan; **Reset zoom**; viewport сохраняется при смене TF.
+7. **Live stream стартует автоматически** для выбранного инструмента (CHART lease). Candle upsert в серию; при REJECTED/error UI откатывается на исторический REST.
+8. Маршрут графика code-split; bootstrap без лишнего warm refresh.
+
+**EN.**
+
+1. Set `TINVEST_READ_ONLY_TOKEN` (or sandbox token) in `.env`.
+2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`). Vite proxies `/api` and `/ws` → `:3000`.
+3. Open `http://127.0.0.1:5173/charts` (or `/charts/:ticker`).
+4. Pick a futures contract: categories (товарные / индексные / валютные / на акции) + family optgroups; catalog is cache-first (`nanostores` + API snapshot).
+5. Switch **`1m` / `5m` / `1h`**; header shows ticker · name and last close.
+6. History loads via REST; Fibonacci levels `P/R1–R3/S1–S3` overlay candles. Session X-scale; wheel zoom / drag pan; **Reset zoom**; viewport is preserved across TF changes.
+7. **Live stream starts automatically** for the selected instrument (CHART lease). Candle upserts into the series; on REJECTED/error the UI falls back to historical REST.
+8. Chart route is code-split; bootstrap avoids an extra warm refresh.
+
+**RU.** API:
+
+**EN.** API:
+
+| Method | Path                                                                              | Notes / Примечания                                                                         |
+| ------ | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| GET    | `/api/v1/instruments/futures`                                                     | Full futures catalog; near+next per family / Полный каталог фьючерсов; near+next по family |
+| GET    | `/api/v1/instruments/by-ticker/:ticker`                                           | Resolve T-Invest UID / Разрешение T-Invest UID                                             |
+| GET    | `/api/v1/instruments/:uid/candles?interval=1m\|5m\|1h&from=&to=`                  | Chart candles / Свечи графика                                                              |
+| GET    | `/api/v1/instruments/:uid/indicators/fibonacci-pivots?timeframe=5m\|1h&from=&to=` | Pivot segments / Сегменты pivot                                                            |
+| WS     | `/ws/market-data`                                                                 | Realtime candle fan-out (chart auto-live)                                                  |
+
+**RU.** Pivots считаются **on read** (пока без persist/workers). Сигналы не реализованы.
+
+**EN.** Pivots are computed **on read** (no persist/workers yet). Signals are not implemented.
+
+## What works now (realtime) / Что работает сейчас (realtime)
+
+**RU.** MVP потока свечей для графика: stream manager + registry + WS fan-out + auto-live подписка. Детали: [docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md](docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md). Матрица и пробелы: [docs/STATUS.md](docs/STATUS.md) (M3 / RT-01…).
+
+**EN.** MVP candle stream for the chart: stream manager + registry + WS fan-out + auto-live subscription. Details: [docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md](docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md). Matrix and gaps: [docs/STATUS.md](docs/STATUS.md) (M3 / RT-01…).
+
+**RU.** Пока не сделано: durable DB upsert, gap fill, health endpoints, отдельный worker host.
+
+**EN.** Not done yet: durable DB upsert, gap fill, health endpoints, dedicated worker host.
+
+## What works now (E7A Sandbox Admin) / Что работает сейчас (E7A Sandbox Admin)
+
+**RU.** Локально можно прогнать защищённый цикл **Sandbox Account Management**:
+
+**EN.** You can run a protected **Sandbox Account Management** loop locally:
+
+**RU.**
+
+1. Разблокируйте Admin UI серверным bearer token (`ADMIN_API_TOKEN`).
+2. Создавайте / синхронизируйте / пополняйте / закрывайте **sandbox**-аккаунты через Admin API.
+3. Команды долговечные (operation journal + audit + outbox), не fire-and-forget из UI.
+4. Записи провайдера **не** выполняет процесс API — только enqueue; worker-execution — путь записи (composition готов; drain ещё развивается).
+5. Таймауты → `unknown` (без слепого retry). Close требует preview + confirmation. Funding не может списывать.
+
+**EN.**
 
 1. Unlock Admin UI with a server-side bearer token (`ADMIN_API_TOKEN`).
 2. Create / sync / fund / close **sandbox** accounts via Admin API.
@@ -27,22 +101,31 @@ You can run a protected **Sandbox Account Management** loop locally:
 4. Provider writes are **not** executed by the API process — API only enqueues; worker-execution is the write path (composition ready; drain still evolving).
 5. Timeouts become `unknown` (no blind retry). Close requires preview + confirmation. Funding cannot withdraw.
 
-### Admin UI routes
+### Admin UI routes / Маршруты Admin UI
+
+**RU.**
+
+- `/admin/sandbox` — обзор, создание аккаунта, sync all
+- `/admin/sandbox/accounts` — список / фильтр
+- `/admin/sandbox/accounts/:id` — деталь, fund, close preview
+- `/admin/sandbox/operations` — журнал операций
+
+**EN.**
 
 - `/admin/sandbox` — overview, create account, sync all
 - `/admin/sandbox/accounts` — list / filter
 - `/admin/sandbox/accounts/:id` — detail, fund, close preview
 - `/admin/sandbox/operations` — operation journal
 
-### Admin API (all require `Authorization: Bearer <ADMIN_API_TOKEN>`)
+### Admin API (all require `Authorization: Bearer <ADMIN_API_TOKEN>`) / Admin API (нужен `Authorization: Bearer <ADMIN_API_TOKEN>`)
 
-| Method | Path                                               | Notes                                    |
+| Method | Path                                               | Notes / Примечания                       |
 | ------ | -------------------------------------------------- | ---------------------------------------- |
-| GET    | `/api/v1/health`                                   | Public liveness                          |
+| GET    | `/api/v1/health`                                   | Public liveness / Публичный liveness     |
 | GET    | `/api/v1/admin/sandbox/overview`                   | Host, counters, fund policy notes        |
 | GET    | `/api/v1/admin/sandbox/accounts`                   | Optional `?status=`                      |
 | GET    | `/api/v1/admin/sandbox/accounts/:id`               | Account + portfolio/positions/orders     |
-| GET    | `/api/v1/admin/sandbox/operations`                 | Sanitized errors                         |
+| GET    | `/api/v1/admin/sandbox/operations`                 | Sanitized errors / Очищенные ошибки      |
 | GET    | `/api/v1/admin/sandbox/operations/:id`             | Polling target after POST                |
 | GET    | `/api/v1/admin/sandbox/accounts/:id/audit`         | Append-only audit trail                  |
 | POST   | `/api/v1/admin/sandbox/accounts`                   | Create (needs `Idempotency-Key`) → `202` |
@@ -52,10 +135,26 @@ You can run a protected **Sandbox Account Management** loop locally:
 | POST   | `/api/v1/admin/sandbox/accounts/:id/close/preview` | Open orders/positions snapshot           |
 | POST   | `/api/v1/admin/sandbox/accounts/:id/close`         | Preview + confirmation → `202`           |
 
-Production T‑Invest base URL is refused for Sandbox Admin. Tokens never appear in API responses.
+**RU.** Production T‑Invest base URL отклоняется для Sandbox Admin. Токены не попадают в ответы API.
 
-## Docs
+**EN.** Production T‑Invest base URL is refused for Sandbox Admin. Tokens never appear in API responses.
 
+## Docs / Документация
+
+**RU.**
+
+- [Язык документации (RU+EN)](docs/DOC_LANGUAGE.md)
+- [Technical backlog](docs/TECHNICAL_BACKLOG.md) (**v1.2**)
+- [Roadmap](docs/ROADMAP.md)
+- [Status](docs/STATUS.md) — источник истины DONE / TODO
+- [Futures history coverage](docs/FUTURES_HISTORY_COVERAGE.md)
+- [API contracts](docs/API_CONTRACTS.md)
+- [Security](docs/SECURITY.md)
+- [ADR index](docs/ADR/)
+
+**EN.**
+
+- [Documentation language (RU+EN)](docs/DOC_LANGUAGE.md)
 - [Technical backlog](docs/TECHNICAL_BACKLOG.md) (**v1.2**)
 - [Roadmap](docs/ROADMAP.md)
 - [Status](docs/STATUS.md) — source of truth for DONE / TODO
@@ -64,14 +163,23 @@ Production T‑Invest base URL is refused for Sandbox Admin. Tokens never appear
 - [Security](docs/SECURITY.md)
 - [ADR index](docs/ADR/)
 
-## Prerequisites
+## Prerequisites / Требования
+
+**RU.**
+
+- Node.js 22+ (см. `.node-version`)
+- pnpm 10.20+ (`packageManager` в корневом `package.json`)
+- Docker Desktop (локальный PostgreSQL)
+- Опционально: `psql` в PATH (миграции также через `docker compose exec`)
+
+**EN.**
 
 - Node.js 22+ (see `.node-version`)
 - pnpm 10.20+ (`packageManager` in root `package.json`)
 - Docker Desktop (local PostgreSQL)
 - Optional: `psql` on PATH (migrations also work via `docker compose exec`)
 
-## Setup
+## Setup / Установка
 
 ```bash
 pnpm install
@@ -81,20 +189,22 @@ docker compose up -d
 pnpm db:migrate
 ```
 
-Important env knobs (see `.env.example`):
+**RU.** Важные env (см. `.env.example`):
 
-| Variable                                                | Purpose                                                       |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| `DATABASE_URL`                                          | Postgres connection                                           |
-| `ADMIN_API_TOKEN`                                       | Bearer token for Admin API/UI (empty = admin routes disabled) |
-| `SANDBOX_ADMIN_STORE`                                   | `auto` (default) / `memory` / `postgres`                      |
-| `TINVEST_SANDBOX_TOKEN`                                 | Live sandbox SDK; empty → fixture provider                    |
-| `TINVEST_BASE_URL`                                      | Must stay on sandbox host for Admin                           |
-| `TINVEST_READ_ONLY_TOKEN` / `TINVEST_FULL_ACCESS_TOKEN` | Later milestones; never ship to browser                       |
+**EN.** Important env knobs (see `.env.example`):
 
-## Run locally
+| Variable                                                | Purpose / Назначение                                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                          | Postgres connection / Подключение Postgres                                                                       |
+| `ADMIN_API_TOKEN`                                       | Bearer token for Admin API/UI (empty = admin routes disabled) / Bearer для Admin API/UI (пусто = admin отключён) |
+| `SANDBOX_ADMIN_STORE`                                   | `auto` (default) / `memory` / `postgres`                                                                         |
+| `TINVEST_SANDBOX_TOKEN`                                 | Live sandbox SDK; empty → fixture provider / Пусто → fixture                                                     |
+| `TINVEST_BASE_URL`                                      | Must stay on sandbox host for Admin / Только sandbox host                                                        |
+| `TINVEST_READ_ONLY_TOKEN` / `TINVEST_FULL_ACCESS_TOKEN` | Later milestones; never ship to browser / Позже; не в browser                                                    |
 
-### Quality gate (same spirit as CI)
+## Run locally / Локальный запуск
+
+### Quality gate (same spirit as CI) / Quality gate (как в CI)
 
 ```bash
 pnpm lint
@@ -104,14 +214,18 @@ pnpm build
 pnpm --filter @moex/web test:e2e   # needs Playwright Chromium
 ```
 
-DB helpers:
+**RU.** Помощники по БД:
+
+**EN.** DB helpers:
 
 ```bash
 pnpm db:status
 pnpm db:migrate
 ```
 
-Reset local Postgres volume:
+**RU.** Сброс локального тома Postgres:
+
+**EN.** Reset local Postgres volume:
 
 ```bash
 docker compose down -v
@@ -119,19 +233,21 @@ docker compose up -d
 pnpm db:migrate
 ```
 
-### Dev servers
+### Dev servers / Dev-серверы
 
-`apps/api` loads root `.env` via `applyLocalEnvFile()` before `loadEnv`.
+**RU.** `apps/api` и workers загружают корневой `.env` через `applyLocalEnvFile()` до `loadEnv`. `pnpm dev` поднимает только API + web (воркеры опциональны).
+
+**EN.** `apps/api` and workers load root `.env` via `applyLocalEnvFile()` before `loadEnv`. `pnpm dev` starts API + web only (workers are optional).
 
 ```bash
-# API (port 3000) + workers + web via turbo
+# API (port 3000) + web via turbo (no workers)
 pnpm dev
 
 # or separately:
 pnpm --filter @moex/api dev
 pnpm --filter @moex/web dev   # Vite on http://127.0.0.1:5173
 
-# workers (scaffolds — optional):
+# workers (scaffolds — optional; need DATABASE_URL from .env):
 pnpm dev:worker-execution
 pnpm dev:worker-market-data
 pnpm dev:worker-strategy
@@ -139,40 +255,57 @@ pnpm dev:worker-backtest
 pnpm dev:workers              # all workers
 ```
 
-Then open `http://127.0.0.1:5173/admin/sandbox`, paste `ADMIN_API_TOKEN`, unlock.
+**RU.** Откройте `http://127.0.0.1:5173/admin/sandbox`, вставьте `ADMIN_API_TOKEN`, разблокируйте.
 
-Without `TINVEST_SANDBOX_TOKEN`, Admin uses an in-process **fixture** sandbox provider (no network). With a sandbox token, it uses the real T‑Invest sandbox SDK (still write-disabled in the API process).
+**EN.** Then open `http://127.0.0.1:5173/admin/sandbox`, paste `ADMIN_API_TOKEN`, unlock.
 
-`SANDBOX_ADMIN_STORE=auto` uses Postgres when reachable for journal/audit/outbox; otherwise memory (lost on restart).
+**RU.** Без `TINVEST_SANDBOX_TOKEN` Admin использует in-process **fixture** sandbox provider (без сети). С sandbox token — реальный T‑Invest sandbox SDK (запись в API-процессе всё ещё отключена).
 
-## Monorepo layout
+**EN.** Without `TINVEST_SANDBOX_TOKEN`, Admin uses an in-process **fixture** sandbox provider (no network). With a sandbox token, it uses the real T‑Invest sandbox SDK (still write-disabled in the API process).
 
-### Apps
+**RU.** `SANDBOX_ADMIN_STORE=auto` использует Postgres при доступности для journal/audit/outbox; иначе memory (теряется при рестарте).
 
-| App                       | Role                                             |
-| ------------------------- | ------------------------------------------------ |
-| `apps/api`                | Fastify HTTP + Sandbox Admin routes              |
-| `apps/web`                | React/Vite UI including `/admin/sandbox`         |
-| `apps/worker-execution`   | Intended sole writer for broker/sandbox commands |
-| `apps/worker-market-data` | Market data jobs (scaffold)                      |
-| `apps/worker-strategy`    | Strategy worker (scaffold)                       |
-| `apps/worker-backtest`    | Backtest worker (scaffold)                       |
+**EN.** `SANDBOX_ADMIN_STORE=auto` uses Postgres when reachable for journal/audit/outbox; otherwise memory (lost on restart).
 
-### Packages (selected)
+## Monorepo layout / Структура монорепозитория
 
-| Package                                                                                                   | Role                                                         |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `@moex/domain`                                                                                            | Zod-branded domain types (UUID, decimals, sandbox statuses)  |
-| `@moex/contracts`                                                                                         | Ports: providers/gateways, enqueue DTOs                      |
-| `@moex/decimal`                                                                                           | Decimal arithmetic helpers                                   |
-| `@moex/config`                                                                                            | Env schema (`loadEnv`)                                       |
-| `@moex/persistence`                                                                                       | SQL migrations, psql/docker `DbClient`, repos, outbox, audit |
-| `@moex/sandbox-management`                                                                                | SandboxAccountService, sync, close preview, funding rules    |
-| `@moex/broker-tinvest`                                                                                    | T‑Invest SDK adapters + sandbox-only client                  |
-| `@moex/marketdata` / `@moex/marketdata-moex-iss`                                                          | Spec versioning + MOEX ISS/AlgoPack path                     |
-| `@moex/risk-engine` / `@moex/execution` / `@moex/strategy-engine` / `@moex/backtest` / `@moex/indicators` | Later milestones (stubs / early scaffolding)                 |
+### Apps / Приложения
 
-## Safety model (short)
+| App                       | Role / Роль                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------- |
+| `apps/api`                | Fastify HTTP + Sandbox Admin routes                                                           |
+| `apps/web`                | React/Vite UI including `/admin/sandbox`                                                      |
+| `apps/worker-execution`   | Intended sole writer for broker/sandbox commands / Единственный writer команд брокера/sandbox |
+| `apps/worker-market-data` | Market data jobs (scaffold) / Задачи market data (каркас)                                     |
+| `apps/worker-strategy`    | Strategy worker (scaffold)                                                                    |
+| `apps/worker-backtest`    | Backtest worker (scaffold)                                                                    |
+
+### Packages (selected) / Пакеты (выборочно)
+
+| Package                                                                                                   | Role / Роль                                                     |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `@moex/domain`                                                                                            | Zod-branded domain types (UUID, decimals, sandbox statuses)     |
+| `@moex/contracts`                                                                                         | Ports: providers/gateways, enqueue DTOs                         |
+| `@moex/decimal`                                                                                           | Decimal arithmetic helpers                                      |
+| `@moex/config`                                                                                            | Env schema (`loadEnv`)                                          |
+| `@moex/persistence`                                                                                       | SQL migrations, psql/docker `DbClient`, repos, outbox, audit    |
+| `@moex/sandbox-management`                                                                                | SandboxAccountService, sync, close preview, funding rules       |
+| `@moex/broker-tinvest`                                                                                    | T‑Invest SDK adapters + sandbox-only client                     |
+| `@moex/marketdata` / `@moex/marketdata-moex-iss`                                                          | Spec versioning + MOEX ISS/AlgoPack path                        |
+| `@moex/risk-engine` / `@moex/execution` / `@moex/strategy-engine` / `@moex/backtest` / `@moex/indicators` | Later milestones (stubs / early scaffolding) / Позже (заглушки) |
+
+## Safety model (short) / Модель безопасности (кратко)
+
+**RU.**
+
+- Sandbox endpoint allowlist; production host отклоняется для Admin.
+- API никогда сам не делает sandbox writes (`allowProviderWrites: false`).
+- Idempotency-Key + request hash; конфликт → reject.
+- Timeout → operation `unknown`; reconcile перед retry.
+- Audit log append-only; секреты редиктятся до persist.
+- Kill switch / live trading flags по умолчанию **safe** (`GLOBAL_KILL_SWITCH=true`, `LIVE_TRADING_ENABLED=false`).
+
+**EN.**
 
 - Sandbox endpoint allowlist; production host rejected for Admin.
 - API never places sandbox writes itself (`allowProviderWrites: false`).
@@ -181,20 +314,23 @@ Without `TINVEST_SANDBOX_TOKEN`, Admin uses an in-process **fixture** sandbox pr
 - Audit log is append-only; secrets redacted before persist.
 - Kill switch / live trading flags default **safe** (`GLOBAL_KILL_SWITCH=true`, `LIVE_TRADING_ENABLED=false`).
 
-## Current milestone
+## Current milestone / Текущий milestone
 
-**M6 — Manual Sandbox (E7A)** is the active vertical (see `docs/STATUS.md`).  
+**RU.** **M6 — Manual Sandbox (E7A)** — активный вертикаль (см. `docs/STATUS.md`).  
+Ранее: M0 foundation готов; M1 providers в основном готов. Исторический импорт, realtime, сигналы, paper и guarded live — впереди по roadmap.
+
+**EN.** **M6 — Manual Sandbox (E7A)** is the active vertical (see `docs/STATUS.md`).  
 Earlier: M0 foundation done; M1 providers largely done. Historical import, realtime, signals, paper, and guarded live are still ahead on the roadmap.
 
-## Scripts reference
+## Scripts reference / Справочник скриптов
 
 ```bash
 pnpm lint          # Biome
 pnpm typecheck
 pnpm test          # Vitest across packages
 pnpm build
-pnpm dev
-pnpm dev:workers   # all workers
+pnpm dev           # API + web only
+pnpm dev:workers   # all workers (optional)
 pnpm dev:worker-execution
 pnpm dev:worker-market-data
 pnpm dev:worker-strategy

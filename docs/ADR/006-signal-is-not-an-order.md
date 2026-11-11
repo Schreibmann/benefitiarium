@@ -1,21 +1,31 @@
-# ADR-006: Signal is not an order
+# ADR-006: Signal is not an order / Сигнал — это не ордер
 
-## Status
+## Status / Статус
 
-Accepted
+Accepted (принято)
 
-## Context
+## Context / Контекст
 
-Strategies must not silently trade. Broker writes need independent risk validation.
+**RU.** Стратегии не должны торговать молча. Запись к брокеру требует независимой проверки рисков.
 
-## Decision
+**EN.** Strategies must not silently trade. Broker writes need independent risk validation.
 
-Strict chain:
+## Decision / Решение
+
+**RU.** Строгая цепочка:
+
+`Market Event → Feature/Indicator → Strategy → Signal → Trade Proposal → Risk Check → Order Command → Broker → Order/Fill Events`
+
+У Strategy Worker нет учётных данных на запись к брокеру; он не может вызывать `PostOrder`. Execution Worker сам проверяет предложения и режим торговли.
+
+**EN.** Strict chain:
 
 `Market Event → Feature/Indicator → Strategy → Signal → Trade Proposal → Risk Check → Order Command → Broker → Order/Fill Events`
 
 Strategy Worker has no broker write credentials and cannot call `PostOrder`. Execution Worker validates proposals and trading mode itself.
 
-## Consequences
+## Consequences / Последствия
 
-Clear process/package boundaries; safer automation path later.
+**RU.** Чёткие границы процессов и пакетов; более безопасный путь к автоматизации позже.
+
+**EN.** Clear process/package boundaries; safer automation path later.

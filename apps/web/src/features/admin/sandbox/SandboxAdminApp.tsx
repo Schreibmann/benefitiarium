@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { type AdminApiClient, type CommandAccepted, createAdminApiClient } from './api-client.js';
+import './sandbox-admin.css';
 import { createSessionTokenStore } from './token-store.js';
 import { newIdempotencyKey, parseAdminRoute, validateFundAmountInput } from './validation.js';
 
