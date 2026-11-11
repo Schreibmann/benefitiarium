@@ -1,3 +1,4 @@
+import { BacktestingPage } from '../../features/backtesting/BacktestingPage.js';
 import { SignalsPage } from '../../features/signals/SignalsPage.js';
 import { StrategiesPage } from '../../features/strategies/StrategiesPage.js';
 import { AppShell } from '../../widgets/app-shell/AppShell.js';
@@ -19,6 +20,9 @@ function sectionBody(pathname: string) {
   }
   if (item.id === 'strategies') {
     return <StrategiesPage />;
+  }
+  if (item.id === 'backtesting') {
+    return <BacktestingPage />;
   }
   if (item.id === 'sandbox') {
     return (
