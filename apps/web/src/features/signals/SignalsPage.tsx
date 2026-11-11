@@ -1,4 +1,5 @@
-import { useId, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, useId, useState } from 'react';
+import { nextTabIndex, tabKeyDirection } from '../../shared/a11y/tab-keyboard.js';
 import { Badge } from '../../shared/ui/Badge.js';
 import { Button } from '../../shared/ui/Button.js';
 import { Card, CardBody, CardHeader } from '../../shared/ui/Card.js';
@@ -16,6 +17,8 @@ import {
   signalLifecycleTone,
 } from './signal-types.js';
 import './signals-page.css';
+
+const SIGNAL_TABS: SignalsListTab[] = ['active', 'history'];
 
 type Props = {
   items?: readonly SignalListItem[];
@@ -308,11 +311,37 @@ export function SignalsPage(props: Props) {
             }
           />
           <CardBody>
-            <div className="signals-page__tabs" role="tablist" aria-label="Сигналы">
+            <div
+              className="signals-page__tabs"
+              role="tablist"
+              aria-label="Сигналы"
+              onKeyDown={(event: ReactKeyboardEvent<HTMLDivElement>) => {
+                const direction = tabKeyDirection(event.key);
+                if (direction === 'none') {
+                  return;
+                }
+                event.preventDefault();
+                const current = SIGNAL_TABS.indexOf(tab);
+                const next = SIGNAL_TABS[nextTabIndex(current, SIGNAL_TABS.length, direction)];
+                if (next === undefined) {
+                  return;
+                }
+                setTab(next);
+                setSelectedId(null);
+                const target = event.currentTarget.querySelector<HTMLElement>(
+                  `[data-signals-tab="${next}"]`,
+                );
+                target?.focus();
+              }}
+            >
               <button
                 type="button"
                 role="tab"
+                id="signals-tab-active"
+                data-signals-tab="active"
                 aria-selected={tab === 'active'}
+                aria-controls="signals-tabpanel"
+                tabIndex={tab === 'active' ? 0 : -1}
                 className={
                   tab === 'active'
                     ? 'signals-page__tab signals-page__tab--active'
@@ -328,7 +357,11 @@ export function SignalsPage(props: Props) {
               <button
                 type="button"
                 role="tab"
+                id="signals-tab-history"
+                data-signals-tab="history"
                 aria-selected={tab === 'history'}
+                aria-controls="signals-tabpanel"
+                tabIndex={tab === 'history' ? 0 : -1}
                 className={
                   tab === 'history'
                     ? 'signals-page__tab signals-page__tab--active'
@@ -343,29 +376,35 @@ export function SignalsPage(props: Props) {
               </button>
             </div>
 
-            {visible.length === 0 ? (
-              <EmptyState
-                title={emptyTitle}
-                description={emptyDescription}
-                action={<Button href="/app/strategies">Открыть стратегии</Button>}
-                secondaryAction={
-                  <Button href="/app" variant="ghost">
-                    К обзору
-                  </Button>
-                }
-              />
-            ) : (
-              <ul className="signals-page__list">
-                {visible.map((item) => (
-                  <SignalListRow
-                    key={item.id}
-                    item={item}
-                    selected={selectedId === item.id}
-                    onSelect={setSelectedId}
-                  />
-                ))}
-              </ul>
-            )}
+            <div
+              role="tabpanel"
+              id="signals-tabpanel"
+              aria-labelledby={tab === 'active' ? 'signals-tab-active' : 'signals-tab-history'}
+            >
+              {visible.length === 0 ? (
+                <EmptyState
+                  title={emptyTitle}
+                  description={emptyDescription}
+                  action={<Button href="/app/strategies">Открыть стратегии</Button>}
+                  secondaryAction={
+                    <Button href="/app" variant="ghost">
+                      К обзору
+                    </Button>
+                  }
+                />
+              ) : (
+                <ul className="signals-page__list">
+                  {visible.map((item) => (
+                    <SignalListRow
+                      key={item.id}
+                      item={item}
+                      selected={selectedId === item.id}
+                      onSelect={setSelectedId}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
           </CardBody>
         </Card>
 

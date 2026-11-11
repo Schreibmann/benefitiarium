@@ -1,17 +1,22 @@
 type Props = {
   title: string;
-  onOpenMobileNav: () => void;
+  mobileNavOpen?: boolean;
+  onToggleMobileNav: () => void;
 };
 
 export function AppTopbar(props: Props) {
+  const menuExpanded = props.mobileNavOpen === true;
+
   return (
     <header className="app-topbar">
       <div className="app-topbar__left">
         <button
           type="button"
           className="app-topbar__menu"
-          aria-label="Open navigation"
-          onClick={props.onOpenMobileNav}
+          aria-label={menuExpanded ? 'Close navigation' : 'Open navigation'}
+          aria-expanded={menuExpanded}
+          aria-controls="app-sidebar-nav"
+          onClick={props.onToggleMobileNav}
         >
           <span className="app-topbar__menu-icon" aria-hidden="true">
             <span />

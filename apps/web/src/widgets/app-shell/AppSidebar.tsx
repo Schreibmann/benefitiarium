@@ -7,6 +7,7 @@ type Props = {
   pathname: string;
   collapsed: boolean;
   mobileOpen: boolean;
+  inert?: boolean;
   onToggleCollapsed: () => void;
   onNavigate: () => void;
   onCloseMobile: () => void;
@@ -34,7 +35,11 @@ export function AppSidebar(props: Props) {
           onClick={props.onCloseMobile}
         />
       ) : null}
-      <aside className={classNames} aria-label="Primary">
+      <aside
+        className={classNames}
+        aria-label="Primary"
+        {...(props.inert === true ? { inert: true } : {})}
+      >
         <div className="app-sidebar__brand">
           <BrandMark compact={props.collapsed} />
           <button
@@ -48,7 +53,7 @@ export function AppSidebar(props: Props) {
           </button>
         </div>
 
-        <nav className="app-sidebar__nav">
+        <nav className="app-sidebar__nav" id="app-sidebar-nav">
           {APP_NAV_ITEMS.map((item) => {
             const isActive = activeId === item.id;
             const linkClass = isActive
