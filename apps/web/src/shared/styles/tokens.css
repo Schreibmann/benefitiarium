@@ -31,6 +31,8 @@
   --content-max-landing: 1280px;
   --content-pad-desktop: 24px;
   --content-pad-compact: 16px;
+  /* Breakpoints (UI-015 / visual concept §13): use in @media as px literals —
+     mobile ≤767, tablet ≤1279, desktop ≥1280. QA widths: 375, 768, 1024, 1440. */
 
   /* Motion */
   --motion-fast: 140ms;

@@ -116,12 +116,49 @@
   border-radius: var(--radius-card);
 }
 
-@media (max-width: 1024px) {
+.portfolio-page__mode-field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 9rem;
+}
+
+.portfolio-page__mode-field span {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 1279px) {
+  .trading-page__layout,
+  .portfolio-page__layout {
+    grid-template-columns: 1fr;
+  }
+
   .trading-page__modes,
   .portfolio-page__summary,
-  .trading-page__layout,
-  .portfolio-page__layout,
+  .trading-page__form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trading-page__modes > :last-child,
+  .portfolio-page__summary > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .trading-page__modes,
+  .portfolio-page__summary,
   .trading-page__form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .trading-page__modes > :last-child,
+  .portfolio-page__summary > :last-child {
+    grid-column: auto;
+  }
+
+  .trading-page__heading,
+  .portfolio-page__heading {
+    font-size: var(--font-size-xl);
   }
 }

@@ -157,11 +157,26 @@
   background: var(--brand-primary);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1279px) {
+  .backtesting-page__layout {
+    grid-template-columns: 1fr;
+  }
+
   .backtesting-page__params,
   .backtesting-page__filters,
-  .backtesting-page__layout,
+  .backtesting-page__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .backtesting-page__params,
+  .backtesting-page__filters,
   .backtesting-page__metrics {
     grid-template-columns: 1fr;
+  }
+
+  .backtesting-page__heading {
+    font-size: var(--font-size-xl);
   }
 }

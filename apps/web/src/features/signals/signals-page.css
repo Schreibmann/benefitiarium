@@ -144,10 +144,29 @@
   font-size: var(--font-size-sm);
 }
 
-@media (max-width: 1024px) {
-  .signals-page__filters,
-  .signals-page__distinction,
+@media (max-width: 1279px) {
   .signals-page__layout {
     grid-template-columns: 1fr;
+  }
+
+  .signals-page__filters,
+  .signals-page__distinction {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .signals-page__filters,
+  .signals-page__distinction {
+    grid-template-columns: 1fr;
+  }
+
+  .signals-page__heading {
+    font-size: var(--font-size-xl);
+  }
+
+  .signals-page__detail-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
   }
 }

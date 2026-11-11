@@ -132,13 +132,8 @@
   gap: var(--space-3);
 }
 
-@media (max-width: 900px) {
-  .dash-snapshot {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (min-width: 1024px) {
+/* Desktop (≥1280): 12-column overview */
+@media (min-width: 1280px) {
   .dash-panel--span-12 {
     grid-column: span 12;
   }
@@ -149,5 +144,23 @@
 
   .dash-panel--span-4 {
     grid-column: span 4;
+  }
+}
+
+/* Tablet (768–1279): snapshot 3-up, panels full width */
+@media (max-width: 1279px) and (min-width: 768px) {
+  .dash-snapshot {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Mobile (≤767): single column */
+@media (max-width: 767px) {
+  .dash-snapshot {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-overview__heading {
+    font-size: var(--font-size-xl);
   }
 }

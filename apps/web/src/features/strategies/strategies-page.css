@@ -138,11 +138,31 @@
   gap: var(--space-2);
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1279px) {
+  .strategies-page__layout {
+    grid-template-columns: 1fr;
+  }
+
   .strategies-page__modes,
   .strategies-page__filters,
-  .strategies-page__layout,
+  .strategies-page__form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .strategies-page__modes,
+  .strategies-page__filters,
   .strategies-page__form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .strategies-page__heading {
+    font-size: var(--font-size-xl);
+  }
+
+  .strategies-page__detail-row {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
   }
 }

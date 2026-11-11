@@ -288,7 +288,8 @@
   border: 0;
 }
 
-@media (max-width: 1024px) {
+/* Tablet + mobile (≤1279): drawer navigation */
+@media (max-width: 1279px) {
   .app-shell,
   .app-shell--collapsed {
     --app-sidebar-current: 0px;
@@ -338,7 +339,8 @@
   }
 }
 
-@media (max-width: 640px) {
+/* Mobile (≤767): compact topbar */
+@media (max-width: 767px) {
   .app-topbar__search {
     display: none;
   }

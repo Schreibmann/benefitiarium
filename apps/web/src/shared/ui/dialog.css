@@ -35,3 +35,26 @@
   flex-wrap: wrap;
   gap: var(--space-3);
 }
+
+@media (max-width: 767px) {
+  .ui-dialog-backdrop {
+    place-items: end center;
+    padding: var(--space-3);
+  }
+
+  .ui-dialog {
+    width: 100%;
+    max-height: min(90vh, 100%);
+    overflow: auto;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .ui-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .ui-dialog__actions .ui-btn {
+    width: 100%;
+  }
+}

@@ -40,8 +40,8 @@ export function PortfolioPage(props: Props) {
         </div>
         <div className="portfolio-page__actions">
           <Badge tone={tradingModeTone(mode)}>{tradingModeLabel(mode)}</Badge>
-          <label className="portfolio-page__note" htmlFor="portfolio-mode">
-            Режим
+          <label className="portfolio-page__mode-field" htmlFor="portfolio-mode">
+            <span>Режим</span>
             <select
               id="portfolio-mode"
               className="ui-input"
