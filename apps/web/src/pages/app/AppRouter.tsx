@@ -1,4 +1,5 @@
 import { SignalsPage } from '../../features/signals/SignalsPage.js';
+import { StrategiesPage } from '../../features/strategies/StrategiesPage.js';
 import { AppShell } from '../../widgets/app-shell/AppShell.js';
 import { matchNavItem } from '../../widgets/app-shell/nav-items.js';
 import { DashboardOverviewPage } from '../dashboard/DashboardOverviewPage.js';
@@ -15,6 +16,9 @@ function sectionBody(pathname: string) {
   }
   if (item.id === 'signals') {
     return <SignalsPage />;
+  }
+  if (item.id === 'strategies') {
+    return <StrategiesPage />;
   }
   if (item.id === 'sandbox') {
     return (
