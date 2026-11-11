@@ -1,3 +1,4 @@
+import { SignalsPage } from '../../features/signals/SignalsPage.js';
 import { AppShell } from '../../widgets/app-shell/AppShell.js';
 import { matchNavItem } from '../../widgets/app-shell/nav-items.js';
 import { DashboardOverviewPage } from '../dashboard/DashboardOverviewPage.js';
@@ -11,6 +12,9 @@ function sectionBody(pathname: string) {
   const item = matchNavItem(pathname);
   if (item === null || item.id === 'overview') {
     return <DashboardOverviewPage />;
+  }
+  if (item.id === 'signals') {
+    return <SignalsPage />;
   }
   if (item.id === 'sandbox') {
     return (
