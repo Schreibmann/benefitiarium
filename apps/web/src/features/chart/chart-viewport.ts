@@ -1,4 +1,6 @@
+import { futurePadBars } from './chart-time.js';
 import type { SessionCandleRow } from './session-scale.js';
+import type { ChartTimeframe } from './types.js';
 
 export type ChartXWindow = {
   start: number;
@@ -10,39 +12,56 @@ export type ChartTimeRange = {
   toMs: number;
 };
 
+/** Packed session axis bounds: candles stop at candleEnd; timeline continues to contentEnd. */
+export type ChartXExtent = {
+  start: number;
+  candleEnd: number;
+  contentEnd: number;
+};
+
 const DEFAULT_SCALE_EXTENT: readonly [number, number] = [1, 64];
 
-export function sessionXExtent(candlesLength: number): readonly [number, number] {
-  if (candlesLength > 1) {
-    return [0, candlesLength - 1];
+export function sessionXExtent(
+  candles: readonly SessionCandleRow[],
+  timeframe: ChartTimeframe,
+): ChartXExtent {
+  if (candles.length === 0) {
+    return { start: -0.5, candleEnd: 0.5, contentEnd: 0.5 };
   }
-  return [-0.5, 0.5];
+  const candleEnd = candles.length - 1;
+  const pad = futurePadBars(candles, timeframe);
+  return {
+    start: 0,
+    candleEnd,
+    contentEnd: candleEnd + pad,
+  };
 }
 
 /**
- * Default view window.
- * Pass `Number.POSITIVE_INFINITY` (or omit a finite cap) to show the full series.
+ * Default view window through mid-next-day padding.
+ * Pass a finite `visibleBars` to crop to the latest window ending at contentEnd.
  */
 export function defaultSessionXWindow(
-  candlesLength: number,
+  extent: ChartXExtent,
   visibleBars: number = Number.POSITIVE_INFINITY,
 ): ChartXWindow {
-  const extent = sessionXExtent(candlesLength);
-  const span = extent[1] - extent[0];
+  const span = extent.contentEnd - extent.start;
   if (!Number.isFinite(visibleBars) || span <= visibleBars) {
-    return { start: extent[0], end: extent[1] };
+    return { start: extent.start, end: extent.contentEnd };
   }
-  return { start: extent[1] - visibleBars, end: extent[1] };
+  return { start: extent.contentEnd - visibleBars, end: extent.contentEnd };
 }
 
 export function clampXWindow(
   window: ChartXWindow,
-  extent: readonly [number, number],
+  extent: ChartXExtent,
   scaleExtent: readonly [number, number] = DEFAULT_SCALE_EXTENT,
 ): ChartXWindow {
-  const extentSpan = Math.max(extent[1] - extent[0], 1e-9);
-  const minSpan = extentSpan / scaleExtent[1];
-  const maxSpan = extentSpan / scaleExtent[0];
+  // Zoom limits follow the candle series; contentEnd only extends the right pad.
+  const candleSpan = Math.max(extent.candleEnd - extent.start, 1e-9);
+  const contentSpan = Math.max(extent.contentEnd - extent.start, 1e-9);
+  const minSpan = candleSpan / scaleExtent[1];
+  const maxSpan = contentSpan / scaleExtent[0];
 
   let start = Math.min(window.start, window.end);
   let end = Math.max(window.start, window.end);
@@ -60,15 +79,15 @@ export function clampXWindow(
   end = mid + span / 2;
 
   // Left edge: do not scroll past the first candle.
-  if (start < extent[0]) {
-    start = extent[0];
+  if (start < extent.start) {
+    start = extent.start;
     end = start + span;
   }
 
-  // Right edge: allow empty "future" space so the last candle can leave the
-  // right border (drag chart left). Stop when the last candle reaches the left edge.
-  if (start > extent[1]) {
-    start = extent[1];
+  // Right pan: last candle may leave the right edge into the future pad, but
+  // the last candle itself must stay on-screen (cannot pass the left edge).
+  if (start > extent.candleEnd) {
+    start = extent.candleEnd;
     end = start + span;
   }
 
@@ -78,7 +97,7 @@ export function clampXWindow(
 /** Zoom around an anchor in [0, 1] within the current window (0 = left, 1 = right). */
 export function zoomXWindowAt(
   window: ChartXWindow,
-  extent: readonly [number, number],
+  extent: ChartXExtent,
   factor: number,
   anchorRatio: number,
 ): ChartXWindow {
@@ -99,7 +118,7 @@ export function zoomXWindowAt(
 
 export function panXWindow(
   window: ChartXWindow,
-  extent: readonly [number, number],
+  extent: ChartXExtent,
   delta: number,
 ): ChartXWindow {
   return clampXWindow(
@@ -144,6 +163,7 @@ export function timeRangeFromXWindow(
 export function xWindowFromTimeRange(
   candles: readonly SessionCandleRow[],
   range: ChartTimeRange,
+  timeframe: ChartTimeframe,
 ): ChartXWindow | null {
   if (candles.length === 0) {
     return null;
@@ -164,5 +184,5 @@ export function xWindowFromTimeRange(
   if (start === null || end === null) {
     return null;
   }
-  return clampXWindow({ start, end }, sessionXExtent(candles.length));
+  return clampXWindow({ start, end }, sessionXExtent(candles, timeframe));
 }

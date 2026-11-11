@@ -1,10 +1,15 @@
 import { type RefObject, useEffect, useEffectEvent, useRef } from 'react';
-import { type ChartXWindow, panXWindow, zoomXWindowAt } from './chart-viewport.js';
+import {
+  type ChartXExtent,
+  type ChartXWindow,
+  panXWindow,
+  zoomXWindowAt,
+} from './chart-viewport.js';
 
 type Args = {
   enabled: boolean;
   xWindow: ChartXWindow;
-  xExtent: readonly [number, number];
+  xExtent: ChartXExtent;
   onXWindowChange: (next: ChartXWindow) => void;
 };
 

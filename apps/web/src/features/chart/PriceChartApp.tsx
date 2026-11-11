@@ -141,7 +141,7 @@ export function PriceChartApp(props: Props) {
       ]);
       setCandles(candleRows);
       const sessionCandles = toSessionCandles(candleRows);
-      setPivots(toPivotSegments(pivotResponse, sessionCandles));
+      setPivots(toPivotSegments(pivotResponse, sessionCandles, nextTimeframe));
     },
   );
 
@@ -228,7 +228,10 @@ export function PriceChartApp(props: Props) {
   }, [client, initialTicker]);
 
   const sessionCandles = useMemo(() => toSessionCandles(candles), [candles]);
-  const xExtent = useMemo(() => sessionXExtent(sessionCandles.length), [sessionCandles.length]);
+  const xExtent = useMemo(
+    () => sessionXExtent(sessionCandles, timeframe),
+    [sessionCandles, timeframe],
+  );
 
   useEffect(() => {
     if (sessionCandles.length === 0) {
@@ -238,20 +241,18 @@ export function PriceChartApp(props: Props) {
     if (owner !== viewportOwnerRef.current) {
       viewportOwnerRef.current = owner;
       pendingTimeRangeRef.current = null;
-      setXWindow(defaultSessionXWindow(sessionCandles.length, Number.POSITIVE_INFINITY));
+      setXWindow(defaultSessionXWindow(xExtent));
       return;
     }
     const pending = pendingTimeRangeRef.current;
     if (pending !== null) {
       pendingTimeRangeRef.current = null;
-      const remapped = xWindowFromTimeRange(sessionCandles, pending);
-      setXWindow(
-        remapped ?? defaultSessionXWindow(sessionCandles.length, Number.POSITIVE_INFINITY),
-      );
+      const remapped = xWindowFromTimeRange(sessionCandles, pending, timeframe);
+      setXWindow(remapped ?? defaultSessionXWindow(xExtent));
       return;
     }
     setXWindow((prev) => clampXWindow(prev, xExtent));
-  }, [sessionCandles, instrument?.instrumentUid, xExtent]);
+  }, [sessionCandles, instrument?.instrumentUid, xExtent, timeframe]);
 
   useEffect(() => {
     const el = plotRef.current;
@@ -320,8 +321,10 @@ export function PriceChartApp(props: Props) {
         candles: sessionCandles,
         pivots,
         xWindow,
+        xExtent,
+        timeframe,
       }),
-    [sessionCandles, pivots, xWindow],
+    [sessionCandles, pivots, xWindow, xExtent, timeframe],
   );
 
   const selectedInstrumentValue =
@@ -434,9 +437,7 @@ export function PriceChartApp(props: Props) {
           <button
             type="button"
             disabled={sessionCandles.length === 0}
-            onClick={() =>
-              setXWindow(defaultSessionXWindow(sessionCandles.length, Number.POSITIVE_INFINITY))
-            }
+            onClick={() => setXWindow(defaultSessionXWindow(xExtent))}
           >
             Reset zoom
           </button>
