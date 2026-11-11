@@ -1,5 +1,8 @@
 import { ThemeSwitch } from '../../features/theme-switch/ThemeSwitch.js';
+import { Badge } from '../../shared/ui/Badge.js';
 import { BrandMark } from '../../shared/ui/BrandMark.js';
+import { Button } from '../../shared/ui/Button.js';
+import { Card, CardBody, CardHeader } from '../../shared/ui/Card.js';
 import './home-page.css';
 
 export function HomePage() {
@@ -15,38 +18,44 @@ export function HomePage() {
         <h1 id="home-hero-title">BENEFITIARIUM</h1>
         <p className="home-page__tagline">Аналитика. Стратегии. Возможности.</p>
         <p className="home-page__lede">
-          Design tokens and theme switching are live. Landing sections and App Shell land in the
-          next UI stages — without fabricated quotes or portfolio figures.
+          Design tokens, App Shell and shared UI primitives are live. Full Landing sections land in
+          UI-005 — without fabricated quotes or portfolio figures.
         </p>
         <div className="home-page__actions">
-          <a className="home-page__btn home-page__btn--primary" href="/app">
-            Открыть платформу
-          </a>
-          <a className="home-page__btn home-page__btn--ghost" href="/admin/sandbox">
+          <Button href="/app">Открыть платформу</Button>
+          <Button href="/admin/sandbox" variant="ghost">
             Sandbox Admin
-          </a>
+          </Button>
         </div>
       </section>
 
       <section id="status" className="home-page__status" aria-labelledby="home-status-title">
-        <h2 id="home-status-title">Foundation status</h2>
-        <ul className="home-page__status-list">
-          <li>
-            <span className="home-page__pill home-page__pill--ok">UI-002</span>
-            Design tokens Dark/Light
-          </li>
-          <li>
-            <span className="home-page__pill home-page__pill--ok">UI-003</span>
-            App Shell sidebar / topbar
-          </li>
-          <li>
-            <span className="home-page__pill">UI-005</span>
-            Full Landing — later
-          </li>
-        </ul>
-        <p className="home-page__note">
-          Market widgets stay empty until real backend feeds are connected. No demo prices.
-        </p>
+        <Card>
+          <CardHeader title="Foundation status" titleId="home-status-title" />
+          <CardBody>
+            <ul className="home-page__status-list">
+              <li>
+                <Badge tone="brand">UI-002</Badge>
+                Design tokens Dark/Light
+              </li>
+              <li>
+                <Badge tone="brand">UI-003</Badge>
+                App Shell sidebar / topbar
+              </li>
+              <li>
+                <Badge tone="brand">UI-004</Badge>
+                Shared UI primitives
+              </li>
+              <li>
+                <Badge>UI-005</Badge>
+                Full Landing — next
+              </li>
+            </ul>
+            <p className="home-page__note">
+              Market widgets stay empty until real backend feeds are connected. No demo prices.
+            </p>
+          </CardBody>
+        </Card>
       </section>
     </main>
   );

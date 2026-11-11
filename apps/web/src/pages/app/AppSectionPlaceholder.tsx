@@ -1,3 +1,6 @@
+import { Card, CardBody, CardHeader } from '../../shared/ui/Card.js';
+import { EmptyState } from '../../shared/ui/EmptyState.js';
+
 type Props = {
   title: string;
   description: string;
@@ -5,9 +8,11 @@ type Props = {
 
 export function AppSectionPlaceholder(props: Props) {
   return (
-    <section className="dash-panel" aria-labelledby="app-section-title">
-      <h2 id="app-section-title">{props.title}</h2>
-      <p className="dash-panel__empty">{props.description}</p>
-    </section>
+    <Card>
+      <CardHeader title={props.title} titleId="app-section-title" />
+      <CardBody>
+        <EmptyState title={props.title} description={props.description} />
+      </CardBody>
+    </Card>
   );
 }

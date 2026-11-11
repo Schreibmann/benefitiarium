@@ -1,3 +1,8 @@
+import { Badge } from '../../shared/ui/Badge.js';
+import { Button } from '../../shared/ui/Button.js';
+import { Card, CardBody, CardHeader } from '../../shared/ui/Card.js';
+import { EmptyState } from '../../shared/ui/EmptyState.js';
+import { MarketStatusBadge } from '../../shared/ui/MarketStatusBadge.js';
 import './dashboard-overview.css';
 
 export function DashboardOverviewPage() {
@@ -8,49 +13,87 @@ export function DashboardOverviewPage() {
           Market overview
         </h2>
         <p>
-          App Shell is ready. Market cards, charts, signals and portfolio widgets stay empty until
-          real backend feeds are connected — no fabricated quotes.
+          Shared UI primitives power this empty overview. Connect market data before any quotes or
+          portfolio figures appear.
         </p>
       </div>
 
       <div className="dash-overview__grid">
-        <article className="dash-panel dash-panel--span-8">
-          <h3>Рыночный снимок</h3>
-          <p className="dash-panel__empty">Нет подключения к рыночным данным</p>
-          <a className="dash-panel__cta" href="/app/settings">
-            Подключить источник
-          </a>
-        </article>
+        <Card className="dash-panel--span-8">
+          <CardHeader title="Рыночный снимок" action={<MarketStatusBadge status="offline" />} />
+          <CardBody>
+            <EmptyState
+              title="Нет подключения к рыночным данным"
+              description="Подключите источник и выберите инструменты наблюдения. Пустые графики без фиктивных кривых."
+              action={<Button href="/app/settings">Подключить источник</Button>}
+              secondaryAction={
+                <Button href="/app/market" variant="ghost">
+                  Открыть рынок
+                </Button>
+              }
+            />
+          </CardBody>
+        </Card>
 
-        <article className="dash-panel dash-panel--span-4">
-          <h3>Watchlist</h3>
-          <p className="dash-panel__empty">Список инструментов пока пуст</p>
-        </article>
+        <Card className="dash-panel--span-4">
+          <CardHeader title="Watchlist" />
+          <CardBody>
+            <EmptyState
+              title="Список инструментов пуст"
+              description="Добавьте тикеры в watchlist после подключения каталога."
+              action={
+                <Button href="/app/market" variant="secondary" size="sm">
+                  Выбрать инструменты
+                </Button>
+              }
+            />
+          </CardBody>
+        </Card>
 
-        <article className="dash-panel dash-panel--span-4">
-          <h3>Активные сигналы</h3>
-          <p className="dash-panel__empty">Нет активных сигналов</p>
-        </article>
+        <Card className="dash-panel--span-4">
+          <CardHeader title="Активные сигналы" />
+          <CardBody>
+            <EmptyState
+              title="Нет активных сигналов"
+              description="Сигналы появятся после настройки стратегии. Сигнал ≠ заявка."
+            />
+          </CardBody>
+        </Card>
 
-        <article className="dash-panel dash-panel--span-4">
-          <h3>Мои стратегии</h3>
-          <p className="dash-panel__empty">Стратегии ещё не созданы</p>
-        </article>
+        <Card className="dash-panel--span-4">
+          <CardHeader title="Мои стратегии" />
+          <CardBody>
+            <EmptyState
+              title="Стратегии ещё не созданы"
+              description="Создайте первую стратегию или откройте пример на следующем этапе."
+              action={
+                <Button href="/app/strategies" variant="secondary" size="sm">
+                  К стратегиям
+                </Button>
+              }
+            />
+          </CardBody>
+        </Card>
 
-        <article className="dash-panel dash-panel--span-4">
-          <h3>Состояние системы</h3>
-          <ul className="dash-panel__status">
-            <li>
-              <span className="dash-dot dash-dot--warn" /> Market data — offline
-            </li>
-            <li>
-              <span className="dash-dot dash-dot--warn" /> Stream — not subscribed
-            </li>
-            <li>
-              <span className="dash-dot dash-dot--ok" /> App shell — ready
-            </li>
-          </ul>
-        </article>
+        <Card className="dash-panel--span-4">
+          <CardHeader title="Состояние системы" />
+          <CardBody>
+            <ul className="dash-panel__status">
+              <li>
+                <MarketStatusBadge status="offline" />
+                <span>Market data</span>
+              </li>
+              <li>
+                <MarketStatusBadge status="offline" />
+                <span>Stream subscription</span>
+              </li>
+              <li>
+                <Badge tone="brand">READY</Badge>
+                <span>App shell / primitives</span>
+              </li>
+            </ul>
+          </CardBody>
+        </Card>
       </div>
     </section>
   );

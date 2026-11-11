@@ -1,7 +1,7 @@
 # Project Status / Статус проекта
 
-**RU.** **Обновлено:** 2026-11-10  
-**EN.** **Updated:** 2026-11-10
+**RU.** **Обновлено:** 2026-11-11  
+**EN.** **Updated:** 2026-11-11
 
 **RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
 **EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
@@ -9,11 +9,11 @@
 **RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE на main) · UI foundation (visual concept)  
 **EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE on main) · UI foundation (visual concept)
 
-**RU.** **Активная задача:** `cursor/ui-003-app-shell` — DONE (этот коммит)  
-**EN.** **Active task:** `cursor/ui-003-app-shell` — DONE (this commit)
+**RU.** **Активная задача:** `cursor/ui-004-shared-primitives` — DONE (этот коммит)  
+**EN.** **Active task:** `cursor/ui-004-shared-primitives` — DONE (this commit)
 
-**RU.** **Следующая задача:** UI-004 Shared UI primitives (`cursor/ui-004-shared-primitives`)  
-**EN.** **Next task:** UI-004 Shared UI primitives (`cursor/ui-004-shared-primitives`)
+**RU.** **Следующая задача:** UI-005 Landing Page (`cursor/ui-005-landing-page`)  
+**EN.** **Next task:** UI-005 Landing Page (`cursor/ui-005-landing-page`)
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
@@ -31,7 +31,7 @@
 | M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                        |
 | M7 — Paper           | TODO            | —                                         |
 | M8 — Guarded Live    | TODO            | —                                         |
-| UI foundation        | IN_PROGRESS     | UI-001…003 done; next primitives (UI-004) |
+| UI foundation        | IN_PROGRESS     | UI-001…004 done; next Landing (UI-005)    |
 
 ## EPIC E7A (v1.2) / EPIC E7A (v1.2)
 
@@ -45,15 +45,15 @@
 
 ## UI design backlog / UI design backlog
 
-**RU.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)  
-**EN.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md)
+**RU.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md) · Primitives: [`docs/ui/SHARED_PRIMITIVES.md`](ui/SHARED_PRIMITIVES.md)  
+**EN.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md) · Primitives: [`docs/ui/SHARED_PRIMITIVES.md`](ui/SHARED_PRIMITIVES.md)
 
 | ID     | Status / Статус | Notes / Примечания                       |
 | ------ | --------------- | ---------------------------------------- |
 | UI-001 | DONE            | Frontend audit; no duplicate UI kit      |
 | UI-002 | DONE            | Tokens + ThemeProvider + FOUC bootstrap  |
 | UI-003 | DONE            | App shell sidebar/topbar + `/app` routes |
-| UI-004 | TODO            | Shared UI primitives                     |
+| UI-004 | DONE            | Shared Button/Card/Badge/Empty/Dialog    |
 | UI-005 | TODO            | Landing Page                             |
 | UI-006 | TODO            | Dashboard Overview                       |
 | UI-007 | TODO            | Empty/onboarding Dashboard               |
@@ -76,12 +76,12 @@
 
 **RU.**
 
-1. UI-004 — shared primitives (Button, Card, Badge, Empty/Loading/Error)
-2. UI-005 — full Landing Page
-3. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
+1. UI-005 — full Landing Page (hero, features, how-it-works, trust, CTA)
+2. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
+3. UI-008 — Instrument page (after market chart on main)
 
 **EN.**
 
-1. UI-004 — shared primitives (Button, Card, Badge, Empty/Loading/Error)
-2. UI-005 — full Landing Page
-3. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
+1. UI-005 — full Landing Page (hero, features, how-it-works, trust, CTA)
+2. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
+3. UI-008 — Instrument page (after market chart on main)
