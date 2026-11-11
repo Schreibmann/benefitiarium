@@ -1,0 +1,164 @@
+.trading-page,
+.portfolio-page {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.trading-page__toolbar,
+.portfolio-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.trading-page__heading,
+.portfolio-page__heading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-2xl);
+}
+
+.trading-page__lede,
+.portfolio-page__lede {
+  margin: 0;
+  max-width: 44rem;
+  color: var(--text-secondary);
+}
+
+.trading-page__modes,
+.portfolio-page__summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.trading-page__mode-copy,
+.portfolio-page__summary-value,
+.trading-page__note,
+.portfolio-page__note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.trading-page__layout,
+.portfolio-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.trading-page__form,
+.trading-page__list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.trading-page__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.trading-page__actions,
+.portfolio-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.trading-page__orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.trading-page__order {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.trading-page__row,
+.portfolio-page__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.trading-page__name,
+.portfolio-page__name {
+  margin: 0;
+  font-weight: var(--font-weight-semibold);
+}
+
+.portfolio-page__positions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.portfolio-page__position {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.portfolio-page__mode-field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 9rem;
+}
+
+.portfolio-page__mode-field span {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 1279px) {
+  .trading-page__layout,
+  .portfolio-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .trading-page__modes,
+  .portfolio-page__summary,
+  .trading-page__form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trading-page__modes > :last-child,
+  .portfolio-page__summary > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 767px) {
+  .trading-page__modes,
+  .portfolio-page__summary,
+  .trading-page__form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .trading-page__modes > :last-child,
+  .portfolio-page__summary > :last-child {
+    grid-column: auto;
+  }
+
+  .trading-page__heading,
+  .portfolio-page__heading {
+    font-size: var(--font-size-xl);
+  }
+}

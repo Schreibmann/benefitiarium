@@ -130,6 +130,13 @@ pnpm dev
 # or separately:
 pnpm --filter @moex/api dev
 pnpm --filter @moex/web dev   # Vite on http://127.0.0.1:5173
+
+# workers (scaffolds — optional):
+pnpm dev:worker-execution
+pnpm dev:worker-market-data
+pnpm dev:worker-strategy
+pnpm dev:worker-backtest
+pnpm dev:workers              # all workers
 ```
 
 Then open `http://127.0.0.1:5173/admin/sandbox`, paste `ADMIN_API_TOKEN`, unlock.
@@ -187,6 +194,11 @@ pnpm typecheck
 pnpm test          # Vitest across packages
 pnpm build
 pnpm dev
+pnpm dev:workers   # all workers
+pnpm dev:worker-execution
+pnpm dev:worker-market-data
+pnpm dev:worker-strategy
+pnpm dev:worker-backtest
 pnpm precommit     # Biome --staged + typecheck (git hook)
 pnpm db:migrate
 pnpm --filter @moex/web test:e2e

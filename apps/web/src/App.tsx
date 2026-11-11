@@ -1,22 +1,46 @@
-import { SandboxAdminApp } from './features/admin/sandbox/SandboxAdminApp';
-import './features/admin/sandbox/sandbox-admin.css';
+import { lazy, Suspense } from 'react';
+import { AppProviders } from './app/providers/AppProviders.js';
+import { AppRouter } from './pages/app/AppRouter.js';
+import { LandingPage } from './pages/landing/LandingPage.js';
+import { isAppPath } from './widgets/app-shell/nav-items.js';
+
+const SandboxAdminApp = lazy(async () => {
+  const module = await import('./features/admin/sandbox/SandboxAdminApp.js');
+  return { default: module.SandboxAdminApp };
+});
 
 function isAdminPath(pathname: string): boolean {
   return pathname === '/admin/sandbox' || pathname.startsWith('/admin/sandbox/');
 }
 
+function RouteFallback() {
+  return <main className="route-fallback">Loading…</main>;
+}
+
 export function App() {
-  if (isAdminPath(window.location.pathname)) {
-    return <SandboxAdminApp />;
+  const pathname = window.location.pathname;
+
+  if (isAdminPath(pathname)) {
+    return (
+      <AppProviders>
+        <Suspense fallback={<RouteFallback />}>
+          <SandboxAdminApp />
+        </Suspense>
+      </AppProviders>
+    );
+  }
+
+  if (isAppPath(pathname)) {
+    return (
+      <AppProviders>
+        <AppRouter pathname={pathname} />
+      </AppProviders>
+    );
   }
 
   return (
-    <main>
-      <h1>MOEX Trading Platform</h1>
-      <p>M0 foundation skeleton. Market data and trading UI arrive in later milestones.</p>
-      <p>
-        <a href="/admin/sandbox">Admin → Sandbox</a> (requires server-side ADMIN token)
-      </p>
-    </main>
+    <AppProviders>
+      <LandingPage />
+    </AppProviders>
   );
 }

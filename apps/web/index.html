@@ -1,9 +1,28 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MOEX Trading Platform</title>
+    <meta name="color-scheme" content="dark light" />
+    <title>BENEFITIARIUM</title>
+    <script>
+      (() => {
+        try {
+          const key = 'benefitiarium.theme';
+          const raw = window.localStorage.getItem(key);
+          const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const mode =
+            raw === 'light' || raw === 'dark'
+              ? raw
+              : systemDark
+                ? 'dark'
+                : 'light';
+          document.documentElement.dataset.theme = mode;
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

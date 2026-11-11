@@ -1,0 +1,26 @@
+.ui-error {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--negative);
+  border-radius: var(--radius-card);
+  background: var(--bg-surface);
+}
+
+.ui-error__title {
+  margin: 0;
+  color: var(--negative);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.ui-error__description {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.ui-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}

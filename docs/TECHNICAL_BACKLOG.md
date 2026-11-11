@@ -299,6 +299,11 @@ Each package must expose `src/index.ts` and have scripts `build`, `typecheck`, `
 {
   "scripts": {
     "dev": "turbo run dev --parallel",
+    "dev:worker-execution": "pnpm --filter @moex/worker-execution dev",
+    "dev:worker-market-data": "pnpm --filter @moex/worker-market-data dev",
+    "dev:worker-strategy": "pnpm --filter @moex/worker-strategy dev",
+    "dev:worker-backtest": "pnpm --filter @moex/worker-backtest dev",
+    "dev:workers": "turbo run dev --parallel --filter=@moex/worker-*",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
@@ -311,7 +316,9 @@ Each package must expose `src/index.ts` and have scripts `build`, `typecheck`, `
 }
 ```
 
-Команды адаптировать под реальную структуру пакетов. Не добавлять фиктивные scripts: каждая команда должна реально работать.
+**RU.** Команды адаптировать под реальную структуру пакетов. Не добавлять фиктивные scripts: каждая команда должна реально работать.
+
+**EN.** Adapt commands to the actual package structure. Don't add dummy scripts: each command must actually work.
 
 ---
 

@@ -1,46 +1,95 @@
-# Project Status
+# Project Status / Статус проекта
 
-**Updated:** 2026-11-09  
-**Backlog version:** TECHNICAL_BACKLOG **v1.2**  
-**Current milestone:** M6 — Manual Sandbox (E7A)  
-**Active task:** E7A locally verified; next is PR / merge to main  
-**Next task:** Open PR / merge E7A stack to main; then worker outbox drain
+**RU.** **Обновлено:** 2026-11-11  
+**EN.** **Updated:** 2026-11-11
 
-Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
+**RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
+**EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
 
-## Milestone
+**RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE на main) · UI foundation (visual concept)  
+**EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE on main) · UI foundation (visual concept)
 
-| Milestone            | Status      | Notes                                |
-| -------------------- | ----------- | ------------------------------------ |
-| M0 — Foundation      | DONE        | EPIC E0 verified locally             |
-| M1 — Providers       | IN_PROGRESS | E1 nearly complete; BL-017 done      |
-| M2 — Historical Data | TODO        | needs BL-039 live matrix + BL-031    |
-| M3 — Realtime        | TODO        |                                      |
-| M4 — Signals         | TODO        |                                      |
-| M5 — Backtesting     | TODO        |                                      |
-| M6 — Manual Sandbox  | IN_PROGRESS | E7A Admin API + UI + e2e in progress |
-| M7 — Paper           | TODO        |                                      |
-| M8 — Guarded Live    | TODO        |                                      |
+**RU.** **Активная задача:** `cursor/ui-016-a11y-pass` — DONE (этот коммит)  
+**EN.** **Active task:** `cursor/ui-016-a11y-pass` — DONE (this commit)
 
-## EPIC E7A (v1.2)
+**RU.** **Следующая задача:** UI-017 visual regression или UI-008 после chart на main  
+**EN.** **Next task:** UI-017 visual regression or UI-008 after chart on main
 
-| ID     | Status | Notes                                                               |
-| ------ | ------ | ------------------------------------------------------------------- |
-| BL-078 | DONE   | Durable command request bodies                                      |
-| BL-079 | DONE   | Discovery sync + ACCOUNT_STATUS_ALL                                 |
-| BL-087 | DONE   | Safe fund/close                                                     |
-| BL-088 | DONE   | Admin API + Postgres durable stores (auto/memory fallback)          |
-| BL-089 | DONE   | Admin UI + Playwright e2e (auth gate, create queued, no optimistic) |
+**RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
+**EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
-## Notes
+## Milestone / Вехи
+
+| Milestone            | Status / Статус | Notes / Примечания                                         |
+| -------------------- | --------------- | ---------------------------------------------------------- |
+| M0 — Foundation      | DONE            | EPIC E0 verified locally                                   |
+| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                            |
+| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                          |
+| M3 — Realtime        | TODO on main    | Work continues on realtime feature branch                  |
+| M4 — Signals         | TODO            | —                                                          |
+| M5 — Backtesting     | TODO            | —                                                          |
+| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                         |
+| M7 — Paper           | TODO            | —                                                          |
+| M8 — Guarded Live    | TODO            | —                                                          |
+| UI foundation        | IN_PROGRESS     | UI-001…007, UI-010…013, UI-015…016 done; next chart/UI-017 |
+
+## EPIC E7A (v1.2) / EPIC E7A (v1.2)
+
+| ID     | Status / Статус | Notes / Примечания                                                  |
+| ------ | --------------- | ------------------------------------------------------------------- |
+| BL-078 | DONE            | Durable command request bodies                                      |
+| BL-079 | DONE            | Discovery sync + ACCOUNT_STATUS_ALL                                 |
+| BL-087 | DONE            | Safe fund/close                                                     |
+| BL-088 | DONE            | Admin API + Postgres durable stores (auto/memory fallback)          |
+| BL-089 | DONE            | Admin UI + Playwright e2e (auth gate, create queued, no optimistic) |
+
+## UI design backlog / UI design backlog
+
+**RU.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md) · Primitives: [`docs/ui/SHARED_PRIMITIVES.md`](ui/SHARED_PRIMITIVES.md) · Responsive: [`docs/ui/RESPONSIVE_PASS.md`](ui/RESPONSIVE_PASS.md) · A11y: [`docs/ui/A11Y_PASS.md`](ui/A11Y_PASS.md)  
+**EN.** Spec: [`docs/benefitiarium_visual_concept.md`](benefitiarium_visual_concept.md) · Audit: [`docs/ui/FRONTEND_AUDIT.md`](ui/FRONTEND_AUDIT.md) · Primitives: [`docs/ui/SHARED_PRIMITIVES.md`](ui/SHARED_PRIMITIVES.md) · Responsive: [`docs/ui/RESPONSIVE_PASS.md`](ui/RESPONSIVE_PASS.md) · A11y: [`docs/ui/A11Y_PASS.md`](ui/A11Y_PASS.md)
+
+| ID     | Status / Статус | Notes / Примечания                            |
+| ------ | --------------- | --------------------------------------------- |
+| UI-001 | DONE            | Frontend audit; no duplicate UI kit           |
+| UI-002 | DONE            | Tokens + ThemeProvider + FOUC bootstrap       |
+| UI-003 | DONE            | App shell sidebar/topbar + `/app` routes      |
+| UI-004 | DONE            | Shared Button/Card/Badge/Empty/Dialog         |
+| UI-005 | DONE            | Landing Page sections + risk disclaimer       |
+| UI-006 | DONE            | Dashboard overview empty widgets + layout     |
+| UI-007 | DONE            | Welcome + onboarding checklist (localStorage) |
+| UI-010 | DONE            | Signals filters/list/detail; signal ≠ order   |
+| UI-011 | DONE            | Strategies create/settings/mode/status shells |
+| UI-012 | DONE            | Backtesting params/progress/metrics/compare   |
+| UI-013 | DONE            | Trading+Portfolio modes; LIVE confirm; empty  |
+| UI-015 | DONE            | Breakpoints 767/1279/1280; QA 375–1440        |
+| UI-016 | DONE            | Skip links, drawer inert, tabs keyboard       |
+
+## Notes / Заметки
+
+**RU.**
 
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
-- Local verify 2026-11-09: `docker compose` Postgres healthy; migrations 000–002 applied; `pnpm lint` (warnings only), `typecheck`, `test`, `build`, Playwright e2e 3/3; API health smoke OK (`ADMIN_API_TOKEN` empty → admin routes off)
+- Web: `/` Landing · `/app` overview · `/app/signals` · `/app/strategies` · `/app/backtesting` · `/app/trading` · `/app/portfolio` · `/admin/sandbox` Admin
 
-## Next
+**EN.**
 
-1. Set `ADMIN_API_TOKEN` in `.env` for full Admin UI loop
-2. Merge stage branches / open PR to main
-3. Worker outbox drain for sandbox commands
+- E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
+- Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
+- Quality: Biome + `pnpm precommit`
+- Web: `/` Landing · `/app` overview · `/app/signals` · `/app/strategies` · `/app/backtesting` · `/app/trading` · `/app/portfolio` · `/admin/sandbox` Admin
+
+## Next / Дальше
+
+**RU.**
+
+1. UI-008 / UI-009 — Instrument page + realtime lease UI (нужен chart на main)
+2. UI-017 visual regression (Landing/Dashboard Dark/Light)
+3. UI-014 уже покрыт Admin; UI-018 dashboard customization — позже
+
+**EN.**
+
+1. UI-008 / UI-009 — Instrument page + realtime lease UI (needs chart on main)
+2. UI-017 visual regression (Landing/Dashboard Dark/Light)
+3. UI-014 already covered by Admin; UI-018 dashboard customization — later
