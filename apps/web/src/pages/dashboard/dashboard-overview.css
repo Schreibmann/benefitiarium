@@ -3,7 +3,42 @@
   gap: var(--space-5);
 }
 
-.dash-overview__intro {
+.dash-overview__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.dash-overview__heading {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-size-2xl);
+}
+
+.dash-overview__date {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.dash-overview__toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dash-welcome__eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--brand-primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dash-welcome__text {
+  margin: 0;
   max-width: 48rem;
   color: var(--text-secondary);
 }
@@ -14,9 +49,71 @@
   gap: var(--space-5);
 }
 
+.dash-panel--span-12,
 .dash-panel--span-8,
 .dash-panel--span-4 {
   grid-column: span 12;
+}
+
+.dash-snapshot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.dash-snapshot__slot {
+  min-height: 88px;
+  padding: var(--space-3);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
+  background: var(--bg-elevated);
+}
+
+.dash-snapshot__label {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dash-snapshot__empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.dash-chart-empty {
+  position: relative;
+  height: 160px;
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-control);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.dash-chart-empty__grid {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent 31px,
+      color-mix(in srgb, var(--border-subtle) 80%, transparent) 31px,
+      color-mix(in srgb, var(--border-subtle) 80%, transparent) 32px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0,
+      transparent 31px,
+      color-mix(in srgb, var(--border-subtle) 80%, transparent) 31px,
+      color-mix(in srgb, var(--border-subtle) 80%, transparent) 32px
+    );
+  opacity: 0.7;
 }
 
 .dash-panel__status {
@@ -35,7 +132,17 @@
   gap: var(--space-3);
 }
 
+@media (max-width: 900px) {
+  .dash-snapshot {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (min-width: 1024px) {
+  .dash-panel--span-12 {
+    grid-column: span 12;
+  }
+
   .dash-panel--span-8 {
     grid-column: span 8;
   }
