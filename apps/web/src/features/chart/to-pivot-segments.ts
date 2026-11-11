@@ -1,5 +1,11 @@
-import { type SessionCandleRow, sessionIndexRange } from './session-scale.js';
-import type { FibonacciPivotApiResponse, PivotLevelName, PivotSegment } from './types.js';
+import { pivotLineDurationMs, sessionIndexAtTime } from './chart-time.js';
+import type { SessionCandleRow } from './session-scale.js';
+import type {
+  ChartTimeframe,
+  FibonacciPivotApiResponse,
+  PivotLevelName,
+  PivotSegment,
+} from './types.js';
 
 const LEVELS: Array<{
   level: PivotLevelName;
@@ -17,16 +23,19 @@ const LEVELS: Array<{
 export function toPivotSegments(
   response: FibonacciPivotApiResponse,
   candles: readonly SessionCandleRow[],
+  timeframe: ChartTimeframe = response.chartTimeframe,
 ): PivotSegment[] {
+  const durationMs = pivotLineDurationMs(timeframe);
   const segments: PivotSegment[] = [];
   for (const period of response.periods) {
     const startMs = Date.parse(period.validPeriod.start);
-    const endMs = Date.parse(period.validPeriod.end);
-    if (!Number.isFinite(startMs) || !Number.isFinite(endMs)) {
+    if (!Number.isFinite(startMs)) {
       continue;
     }
-    const range = sessionIndexRange(candles, startMs, endMs);
-    if (range === null) {
+    const endMs = startMs + durationMs;
+    const x1 = sessionIndexAtTime(candles, startMs, timeframe);
+    const x2 = sessionIndexAtTime(candles, endMs, timeframe);
+    if (x1 === null || x2 === null) {
       continue;
     }
     for (const { level, key } of LEVELS) {
@@ -39,8 +48,8 @@ export function toPivotSegments(
         id: `${response.instrumentUid}:${response.chartTimeframe}:${period.validPeriod.id}:${level}:${period.algorithm.version}`,
         periodId: period.validPeriod.id,
         level,
-        x1: range.x1,
-        x2: range.x2,
+        x1,
+        x2: Math.max(x2, x1),
         y1: y,
         y2: y,
       });
@@ -49,6 +58,7 @@ export function toPivotSegments(
   return segments;
 }
 
+/** Latest period's levels — used for right-axis price labels. */
 export function pivotLabelRows(segments: readonly PivotSegment[]): PivotSegment[] {
   if (segments.length === 0) {
     return [];

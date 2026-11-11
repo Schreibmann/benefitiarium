@@ -20,6 +20,17 @@
   font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
 }
 
+.price-chart,
+.price-chart * {
+  outline: none;
+}
+
+.price-chart *:focus,
+.price-chart *:focus-visible,
+.price-chart *:active {
+  outline: none;
+}
+
 .price-chart h1 {
   margin: 0 0 0.35rem;
   font-family: "IBM Plex Serif", Georgia, serif;
@@ -69,8 +80,10 @@
 .price-chart button {
   padding: 0.4rem 0.55rem;
   border: 1px solid var(--chart-line);
+  border-radius: 4px;
   background: light-dark(#fffdf8, #222836);
   color: inherit;
+  outline: none;
 }
 
 .price-chart button {

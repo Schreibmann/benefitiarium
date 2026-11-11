@@ -1,11 +1,12 @@
 import { barY, defineChart, link, text } from '@tanstack/charts';
 import { scaleLinear } from 'd3-scale';
-import type { ChartXWindow } from './chart-viewport.js';
+import { dateAtSessionIndex } from './chart-time.js';
+import type { ChartXExtent, ChartXWindow } from './chart-viewport.js';
 import { candlePriceDomain, type SessionCandleRow } from './session-scale.js';
 import { pivotLabelRows } from './to-pivot-segments.js';
-import type { PivotSegment } from './types.js';
+import type { ChartTimeframe, PivotSegment } from './types.js';
 
-export type { ChartTimeRange, ChartXWindow } from './chart-viewport.js';
+export type { ChartTimeRange, ChartXExtent, ChartXWindow } from './chart-viewport.js';
 export {
   clampXWindow,
   defaultSessionXWindow,
@@ -47,16 +48,20 @@ function pad2(value: number): string {
   return value < 10 ? `0${value}` : String(value);
 }
 
-/** Local clock time as HH:mm for the session axis. */
-export function formatSessionTick(candles: readonly SessionCandleRow[], index: number): string {
-  const candle = candles.find((row) => row.index === Math.round(index));
-  if (candle === undefined) {
+/** Local clock time as HH:mm; extrapolates into the future pad. */
+export function formatSessionTick(
+  candles: readonly SessionCandleRow[],
+  index: number,
+  timeframe: ChartTimeframe = '5m',
+): string {
+  const date = dateAtSessionIndex(candles, index, timeframe);
+  if (date === null) {
     return '';
   }
-  return `${pad2(candle.Date.getHours())}:${pad2(candle.Date.getMinutes())}`;
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-function formatPriceTick(value: number): string {
+export function formatPriceTick(value: number): string {
   if (!Number.isFinite(value)) {
     return '';
   }
@@ -83,24 +88,55 @@ export function visibleCandles(
   return candles.filter((candle) => candle.index >= start && candle.index <= end);
 }
 
+function priceDomainWithPivots(
+  candles: readonly SessionCandleRow[],
+  pivots: readonly PivotSegment[],
+): { min: number; max: number } | null {
+  const base = candlePriceDomain(candles);
+  if (base === null) {
+    return null;
+  }
+  let min = base.min;
+  let max = base.max;
+  for (const pivot of pivots) {
+    if (pivot.y1 < min) {
+      min = pivot.y1;
+    }
+    if (pivot.y1 > max) {
+      max = pivot.y1;
+    }
+  }
+  return { min, max };
+}
+
 export function buildPriceChartDefinition(input: {
   candles: readonly SessionCandleRow[];
   pivots: readonly PivotSegment[];
   xWindow: ChartXWindow;
+  xExtent: ChartXExtent;
+  timeframe: ChartTimeframe;
 }) {
   const candles = [...input.candles];
-  // Keep the full series in marks so pan can reveal off-window bars.
-  // Only the price domain follows the visible window.
   const visible = visibleCandles(candles, input.xWindow);
   const gains = toBodyRows(candles.filter((row) => row.Close >= row.Open));
   const losses = toBodyRows(candles.filter((row) => row.Close < row.Open));
   const pivots = [...input.pivots];
-  const labels = pivotLabelRows(pivots);
-  const priceDomain = candlePriceDomain(visible.length > 0 ? visible : candles);
+  const axisLevels = pivotLabelRows(pivots);
+  const priceDomain = priceDomainWithPivots(visible.length > 0 ? visible : candles, axisLevels);
   const yScale =
     priceDomain === null
       ? scaleLinear()
       : scaleLinear().domain([priceDomain.min, priceDomain.max]).nice(8);
+
+  const axisPriceRows = axisLevels.map((row) => ({
+    ...row,
+    label: formatPriceTick(row.y1),
+    axisX: input.xWindow.end,
+  }));
+
+  const regularTicks = yScale.ticks(6);
+  const fibTicks = axisLevels.map((row) => row.y1);
+  const yTickValues = [...new Set([...regularTicks, ...fibTicks])].sort((a, b) => a - b);
 
   return defineChart({
     marks: [
@@ -157,7 +193,21 @@ export function buildPriceChartDefinition(input: {
         strokeWidth: 1,
         maxThickness: 14,
       }),
-      text(labels, {
+      text(axisPriceRows, {
+        id: 'pivot-price-axis',
+        x: 'axisX',
+        y: 'y1',
+        text: 'label',
+        key: (d) => `axis-price:${d.id}`,
+        fill: (d) => PIVOT_STROKE[d.level],
+        fontSize: 11,
+        fontWeight: 600,
+        // Sit just inside the right plot edge so the clip does not hide them.
+        dx: -4,
+        dy: 3,
+        anchor: 'end',
+      }),
+      text(axisLevels, {
         id: 'pivot-labels',
         x: 'x2',
         y: 'y1',
@@ -173,14 +223,13 @@ export function buildPriceChartDefinition(input: {
     ],
     scales: {
       x: {
-        // Content domain is inferred from candle indices; viewport is the zoom/pan window.
-        scale: scaleLinear,
+        scale: scaleLinear().domain([input.xExtent.start, input.xExtent.contentEnd]),
         viewport: { domain: [input.xWindow.start, input.xWindow.end] },
         grid: false,
         axis: {
           ticks: {
             count: 8,
-            format: (value: number) => formatSessionTick(candles, value),
+            format: (value: number) => formatSessionTick(candles, value, input.timeframe),
           },
         },
       },
@@ -190,9 +239,15 @@ export function buildPriceChartDefinition(input: {
         side: 'right',
         axis: {
           ticks: {
-            count: 8,
+            values: yTickValues,
             size: 6,
-            format: formatPriceTick,
+            format: (value: number) => {
+              const fib = axisLevels.find((row) => Math.abs(row.y1 - value) < 1e-9);
+              if (fib !== undefined) {
+                return '';
+              }
+              return formatPriceTick(value);
+            },
           },
         },
       },
