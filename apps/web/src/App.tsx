@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { AppProviders } from './app/providers/AppProviders.js';
 import { AppRouter } from './pages/app/AppRouter.js';
-import { HomePage } from './pages/home/HomePage.js';
+import { LandingPage } from './pages/landing/LandingPage.js';
 import { isAppPath } from './widgets/app-shell/nav-items.js';
 
 const SandboxAdminApp = lazy(async () => {
@@ -40,7 +40,7 @@ export function App() {
 
   return (
     <AppProviders>
-      <HomePage />
+      <LandingPage />
     </AppProviders>
   );
 }

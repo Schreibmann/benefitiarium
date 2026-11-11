@@ -9,11 +9,11 @@
 **RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE на main) · UI foundation (visual concept)  
 **EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE on main) · UI foundation (visual concept)
 
-**RU.** **Активная задача:** `cursor/ui-004-shared-primitives` — DONE (этот коммит)  
-**EN.** **Active task:** `cursor/ui-004-shared-primitives` — DONE (this commit)
+**RU.** **Активная задача:** `cursor/ui-005-landing-page` — DONE (этот коммит)  
+**EN.** **Active task:** `cursor/ui-005-landing-page` — DONE (this commit)
 
-**RU.** **Следующая задача:** UI-005 Landing Page (`cursor/ui-005-landing-page`)  
-**EN.** **Next task:** UI-005 Landing Page (`cursor/ui-005-landing-page`)
+**RU.** **Следующая задача:** UI-006 / UI-007 Dashboard overview + onboarding empties  
+**EN.** **Next task:** UI-006 / UI-007 Dashboard overview + onboarding empties
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
@@ -31,7 +31,7 @@
 | M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                        |
 | M7 — Paper           | TODO            | —                                         |
 | M8 — Guarded Live    | TODO            | —                                         |
-| UI foundation        | IN_PROGRESS     | UI-001…004 done; next Landing (UI-005)    |
+| UI foundation        | IN_PROGRESS     | UI-001…005 done; next Dashboard (UI-006)  |
 
 ## EPIC E7A (v1.2) / EPIC E7A (v1.2)
 
@@ -54,7 +54,7 @@
 | UI-002 | DONE            | Tokens + ThemeProvider + FOUC bootstrap  |
 | UI-003 | DONE            | App shell sidebar/topbar + `/app` routes |
 | UI-004 | DONE            | Shared Button/Card/Badge/Empty/Dialog    |
-| UI-005 | TODO            | Landing Page                             |
+| UI-005 | DONE            | Landing Page sections + risk disclaimer  |
 | UI-006 | TODO            | Dashboard Overview                       |
 | UI-007 | TODO            | Empty/onboarding Dashboard               |
 
@@ -65,23 +65,25 @@
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
+- Web: `/` Landing · `/app` shell overview · `/admin/sandbox` Admin
 
 **EN.**
 
 - E2E: `pnpm --filter @moex/web test:e2e` (CI installs Chromium)
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
+- Web: `/` Landing · `/app` shell overview · `/admin/sandbox` Admin
 
 ## Next / Дальше
 
 **RU.**
 
-1. UI-005 — full Landing Page (hero, features, how-it-works, trust, CTA)
-2. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
-3. UI-008 — Instrument page (after market chart on main)
+1. UI-006 / UI-007 — Dashboard overview polish + onboarding checklist
+2. UI-008 — Instrument page (after market chart on main)
+3. UI-015 / UI-016 — responsive + a11y pass
 
 **EN.**
 
-1. UI-005 — full Landing Page (hero, features, how-it-works, trust, CTA)
-2. UI-006 / UI-007 — Dashboard overview polish + onboarding empties
-3. UI-008 — Instrument page (after market chart on main)
+1. UI-006 / UI-007 — Dashboard overview polish + onboarding checklist
+2. UI-008 — Instrument page (after market chart on main)
+3. UI-015 / UI-016 — responsive + a11y pass
