@@ -1,6 +1,8 @@
 import { BacktestingPage } from '../../features/backtesting/BacktestingPage.js';
 import { SignalsPage } from '../../features/signals/SignalsPage.js';
 import { StrategiesPage } from '../../features/strategies/StrategiesPage.js';
+import { PortfolioPage } from '../../features/trading/PortfolioPage.js';
+import { TradingPage } from '../../features/trading/TradingPage.js';
 import { AppShell } from '../../widgets/app-shell/AppShell.js';
 import { matchNavItem } from '../../widgets/app-shell/nav-items.js';
 import { DashboardOverviewPage } from '../dashboard/DashboardOverviewPage.js';
@@ -23,6 +25,12 @@ function sectionBody(pathname: string) {
   }
   if (item.id === 'backtesting') {
     return <BacktestingPage />;
+  }
+  if (item.id === 'trading') {
+    return <TradingPage />;
+  }
+  if (item.id === 'portfolio') {
+    return <PortfolioPage />;
   }
   if (item.id === 'sandbox') {
     return (
