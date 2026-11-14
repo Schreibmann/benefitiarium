@@ -99,8 +99,8 @@
 
 | ID     | Status / Статус | Notes / Примечания                                                           |
 | ------ | --------------- | ---------------------------------------------------------------------------- |
-| BL-106 | IN_PROGRESS     | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
-| BL-107 | TODO            | `market_signals` + `notifications` migration and repos                       |
+| BL-106 | DONE            | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
+| BL-107 | DONE            | `market_signals` + `notifications` migration and repos                       |
 | BL-108 | TODO            | `apps/worker-signals` favorites 5m/1h evaluator                              |
 | BL-109 | TODO            | `apps/worker-notifier` Telegram via Grammy + forum topics                    |
 
