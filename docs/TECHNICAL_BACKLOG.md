@@ -1761,6 +1761,15 @@ FAILED`.
 | BL-104 | P3 / XL | ML regime classifier / anomaly detector | BL-024, BL-066 | Есть time-based validation, leakage audit, baseline comparison, model versioning; ML не обходит risk engine |
 | BL-105 | P3 / M | Notifications (Telegram/email) | BL-023, BL-093 | Retry, dedupe, delivery status, no credentials in payload; alerts имеют severity и action hint |
 
+### EPIC E5B — Market trigger alerts + Telegram / Рыночные триггер-алерты + Telegram
+
+| ID | Приоритет / размер | Task / Task / Задача | Dependencies / Dependencies / Зависимости | Acceptance criteria / Acceptance criteria / Критерии приёмки |
+|---|---|---|---|---|
+| BL-106 | P1 / M | Signal trigger framework + Fibonacci approach/cross | indicators fib pivots | `@moex/signal-triggers` registry; fib approach/cross with hysteresis; exact decimal math; unit tests; ADR-011 / Реестр триггеров; fib approach/cross с гистерезисом; точная decimal-арифметика; unit tests; ADR-011 |
+| BL-107 | P1 / M | market_signals + notifications persistence | BL-106, BL-020 | Migration 004; atomic insert signal+notification; UNIQUE dedupe_key; claimDue SKIP LOCKED; memory + pg tests / Миграция 004; атомарная запись; UNIQUE dedupe_key; claimDue SKIP LOCKED; memory + pg tests |
+| BL-108 | P1 / L | worker-signals favorites 5m/1h evaluator | BL-107, favorites stream sync | Separate stream; close (default) or intrabar eval; PivotLevelCache; Telegram HTML text; graceful shutdown / Отдельный stream; close (default) или intrabar; PivotLevelCache; HTML-текст; graceful shutdown |
+| BL-109 | P1 / M | worker-notifier Telegram delivery | BL-107 | fetch Bot API; 429/5xx retry; 4xx dead; poll + throttle; no token in logs/payload / fetch Bot API; retry 429/5xx; dead на 4xx; poll + throttle; токен не в логах/payload |
+
 ---
 
 ## 8. Milestones, dependencies и release gates

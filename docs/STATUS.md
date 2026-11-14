@@ -6,14 +6,14 @@
 **RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
 **EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
 
-**RU.** **Текущий milestone:** M3 realtime + independent Live Runtime (API MVP) · M4 signals · UI foundation  
-**EN.** **Current milestone:** M3 realtime + independent Live Runtime (API MVP) · M4 signals · UI foundation
+**RU.** **Текущий milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation  
+**EN.** **Current milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation
 
-**RU.** **Активная задача:** Independent Live Runtime + shared `MarketStreamHub` (ADR-011); TSE Phase 0–6 on main  
-**EN.** **Active task:** Independent Live Runtime + shared `MarketStreamHub` (ADR-011); TSE Phase 0–6 on main
+**RU.** **Активная задача:** BL-106…109 Grammy Telegram forum topics + Live notifications wire (ADR-012)  
+**EN.** **Active task:** BL-106…109 Grammy Telegram forum topics + Live notifications wire (ADR-012)
 
-**RU.** **Следующая задача:** Wire TSE `confirmSignal`/paper into Live evaluator; Phase 7; UI-017; RT-05…07; worker split  
-**EN.** **Next task:** Wire TSE `confirmSignal`/paper into Live evaluator; Phase 7; UI-017; RT-05…07; worker split
+**RU.** **Следующая задача:** Phase 7 TSE; UI-017; RT-05…07; worker split  
+**EN.** **Next task:** Phase 7 TSE; UI-017; RT-05…07; worker split
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
@@ -26,7 +26,7 @@
 | M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                                      |
 | M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                                    |
 | M3 — Realtime        | IN_PROGRESS     | Shared `MarketStreamHub` + chart CHART leases (API MVP)              |
-| M4 — Signals         | IN_PROGRESS     | Benefit TSE Phase 0–6 + LiveRuntime STRATEGY leases / live_signals   |
+| M4 — Signals         | IN_PROGRESS     | TSE Phase 0–6 + LiveRuntime + BL-106…109 market triggers / Telegram  |
 | M5 — Backtesting     | TODO            | —                                                                    |
 | M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                                   |
 | M7 — Paper           | TODO            | Paper loop in `@moex/strategy-engine` Phase 6; runtime wiring next   |
@@ -79,8 +79,8 @@
 | Chart realtime + history REST fallback | DONE            | Chart CHART leases (display only); REJECTED/error → REST          |
 | Independent Live Mode                  | DONE (MVP)      | Futures GetFavorites + live level alerts + TSE closed-bar confirm |
 | Chart route code-split + bootstrap     | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
-| Signals                                | DEFERRED        | Out of scope for this slice                                       |
-| Persist table / workers                | DEFERRED        | Next stage after UI                                               |
+| Signals                                | IN_PROGRESS     | BL-106…109 market trigger alerts (not trading signals)            |
+| Persist table / workers                | IN_PROGRESS     | BL-107 tables; BL-108/109 workers                                 |
 
 ## Horizontal volume (trades VP) / Горизонтальный объём (VP по сделкам)
 
@@ -94,6 +94,15 @@
 
 **RU.** GetTechAnalysis не отдаёт volume profile. API строит профиль из анонимизированных сделок History MD (дневные архивы за неделю/месяц) плюс опциональный фрагмент `GetLastTrades` за текущий UTC-день. Нужен production read-only токен.  
 **EN.** GetTechAnalysis has no volume profile. The API builds VP from History MD anonymized day-trade archives (week/month) plus an optional `GetLastTrades` fragment for the current UTC day. Requires a production read-only token.
+
+## Market trigger signals (BL-106…109) / Рыночные триггер-сигналы (BL-106…109)
+
+| ID     | Status / Статус | Notes / Примечания                                                           |
+| ------ | --------------- | ---------------------------------------------------------------------------- |
+| BL-106 | IN_PROGRESS     | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
+| BL-107 | TODO            | `market_signals` + `notifications` migration and repos                       |
+| BL-108 | TODO            | `apps/worker-signals` favorites 5m/1h evaluator                              |
+| BL-109 | TODO            | `apps/worker-notifier` Telegram via Grammy + forum topics                    |
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 
@@ -143,16 +152,14 @@
 
 **RU.**
 
-1. Plug TSE `confirmSignal` / paper loop into Live `ClosedBarEvaluator`
+1. Finish BL-106…109 Grammy Telegram (alerts/logs/errors topics) + Live queue wiring
 2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-3. Telegram bot token / channel id settings (BL-105); autostart after deploy
-4. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
-5. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+3. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+4. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
 
 **EN.**
 
-1. Plug TSE `confirmSignal` / paper loop into Live `ClosedBarEvaluator`
+1. Finish BL-106…109 Grammy Telegram (alerts/logs/errors topics) + Live queue wiring
 2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-3. Telegram bot token / channel id settings (BL-105); autostart after deploy
-4. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
-5. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+3. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+4. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence

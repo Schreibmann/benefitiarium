@@ -5,6 +5,11 @@ export {
   generateHistoricalPivots,
 } from './fibonacci-pivots/generate.js';
 export {
+  referencePeriodsFromCandles,
+  type TradingPeriodsOptions,
+  tradingPeriodsFromReference,
+} from './fibonacci-pivots/reference-periods.js';
+export {
   type CalculatedPivotPeriod,
   type ChartTimeframe,
   FIBONACCI_PIVOT_ALGORITHM_ID,

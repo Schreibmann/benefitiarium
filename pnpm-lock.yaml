@@ -304,6 +304,18 @@ importers:
         specifier: ^22.20.5
         version: 22.20.5
 
+  packages/signal-triggers:
+    dependencies:
+      '@moex/decimal':
+        specifier: workspace:*
+        version: link:../decimal
+      '@moex/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@moex/indicators':
+        specifier: workspace:*
+        version: link:../indicators
+
   packages/strategy-engine:
     dependencies:
       '@moex/decimal':
