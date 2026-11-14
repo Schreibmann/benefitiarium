@@ -12,6 +12,8 @@
     "dev:worker-market-data": "pnpm --filter @moex/worker-market-data dev",
     "dev:worker-strategy": "pnpm --filter @moex/worker-strategy dev",
     "dev:worker-backtest": "pnpm --filter @moex/worker-backtest dev",
+    "dev:worker-signals": "pnpm --filter @moex/worker-signals dev",
+    "dev:worker-notifier": "pnpm --filter @moex/worker-notifier dev",
     "dev:workers": "turbo run dev --parallel --filter=@moex/worker-*",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",

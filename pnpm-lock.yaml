@@ -149,6 +149,37 @@ importers:
         specifier: ^4.20.6
         version: 4.23.15
 
+  apps/worker-signals:
+    dependencies:
+      '@moex/broker-tinvest':
+        specifier: workspace:*
+        version: link:../../packages/broker-tinvest
+      '@moex/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@moex/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@moex/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@moex/indicators':
+        specifier: workspace:*
+        version: link:../../packages/indicators
+      '@moex/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
+      '@moex/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@moex/signal-triggers':
+        specifier: workspace:*
+        version: link:../../packages/signal-triggers
+    devDependencies:
+      tsx:
+        specifier: ^4.20.6
+        version: 4.23.15
+
   apps/worker-strategy:
     dependencies:
       '@moex/config':

@@ -22,6 +22,9 @@ describe('loadEnv', () => {
     expect(env.MOEX_ISS_TOKEN).toBe('');
     expect(env.TINVEST_SANDBOX_TOKEN).toBe('');
     expect(env.TINVEST_READ_ONLY_TOKEN).toBe('');
+    expect(env.SIGNALS_TIMEFRAMES).toBe('5m,1h');
+    expect(env.SIGNALS_EVAL_MODE).toBe('close');
+    expect(env.TELEGRAM_BOT_TOKEN).toBe('');
   });
 
   it('fails when DATABASE_URL is missing', () => {

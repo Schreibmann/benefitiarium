@@ -101,7 +101,7 @@
 | ------ | --------------- | ---------------------------------------------------------------------------- |
 | BL-106 | DONE            | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
 | BL-107 | DONE            | `market_signals` + `notifications` migration and repos                       |
-| BL-108 | TODO            | `apps/worker-signals` favorites 5m/1h evaluator                              |
+| BL-108 | DONE            | `apps/worker-signals` favorites 5m/1h evaluator                              |
 | BL-109 | TODO            | `apps/worker-notifier` Telegram via Grammy + forum topics                    |
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)

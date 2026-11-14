@@ -68,6 +68,20 @@ export const envSchema = z.object({
    * `auto` uses Postgres when reachable, otherwise in-memory.
    */
   SANDBOX_ADMIN_STORE: z.enum(['auto', 'memory', 'postgres']).default('auto'),
+  /** Comma-separated candle intervals for worker-signals (e.g. 5m,1h). */
+  SIGNALS_TIMEFRAMES: z.string().default('5m,1h'),
+  /** close = waitingClose stream; intrabar = live updates. */
+  SIGNALS_EVAL_MODE: z.enum(['close', 'intrabar']).default('close'),
+  /** Comma-separated trigger ids enabled in worker-signals. */
+  SIGNALS_TRIGGERS: z.string().default('fib_pivot_approach,fib_pivot_cross'),
+  SIGNALS_APPROACH_PCT_5M: z.string().default('0.15'),
+  SIGNALS_APPROACH_PCT_1H: z.string().default('0.4'),
+  SIGNALS_FAVORITES_POLL_MS: z.coerce.number().int().positive().default(300_000),
+  /** Telegram Bot API token for worker-notifier. Never log. */
+  TELEGRAM_BOT_TOKEN: z.string().default(''),
+  /** Telegram channel/chat id (e.g. -100…). */
+  TELEGRAM_CHANNEL_ID: z.string().default(''),
+  NOTIFIER_POLL_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

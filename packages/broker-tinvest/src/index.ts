@@ -6,6 +6,15 @@ export type { CreateTinvestStreamClientInput } from './create-stream-client.js';
 export { createTinvestStreamClient } from './create-stream-client.js';
 export { createFixtureTinvestReadApi } from './fixture-read-api.js';
 export { createFixtureSandboxAccountProvider } from './fixture-sandbox-provider.js';
+export type {
+  GetFavoritesFn,
+  GetFavoritesInput,
+  GetFavoritesInstrumentsClient,
+} from './get-favorites.js';
+export {
+  createGetFavorites,
+  resolveFavoriteStreamInstrumentId,
+} from './get-favorites.js';
 export type { TinvestFavoriteRaw } from './get-favorites-command.js';
 export {
   buildGetFavoritesCommand,
@@ -55,6 +64,15 @@ export {
 } from './sdk-read-api.js';
 export type { SandboxSdkSender } from './sdk-sandbox-account-provider.js';
 export { createSdkSandboxAccountProvider } from './sdk-sandbox-account-provider.js';
+export type {
+  FavoritesCandleStreamSyncOptions,
+  FavoritesCandleStreamSyncResult,
+  FavoritesStreamManager,
+} from './stream/favorites-candle-stream-sync.js';
+export {
+  FavoritesCandleStreamSync,
+  favoritesToProviderSubscriptionKeys,
+} from './stream/favorites-candle-stream-sync.js';
 export type {
   CanonicalStreamCandle,
   RealtimeBarState,

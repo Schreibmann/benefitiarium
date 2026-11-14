@@ -1,0 +1,27 @@
+{
+  "name": "@moex/worker-signals",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check ./src",
+    "test": "vitest run --config ../../vitest.config.ts",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@moex/broker-tinvest": "workspace:*",
+    "@moex/config": "workspace:*",
+    "@moex/contracts": "workspace:*",
+    "@moex/domain": "workspace:*",
+    "@moex/indicators": "workspace:*",
+    "@moex/observability": "workspace:*",
+    "@moex/persistence": "workspace:*",
+    "@moex/signal-triggers": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.6"
+  }
+}
