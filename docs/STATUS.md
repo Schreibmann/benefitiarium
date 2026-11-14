@@ -9,8 +9,8 @@
 **RU.** **Текущий milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation  
 **EN.** **Current milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation
 
-**RU.** **Активная задача:** BL-106…109 Grammy Telegram forum topics + Live notifications wire (ADR-012)  
-**EN.** **Active task:** BL-106…109 Grammy Telegram forum topics + Live notifications wire (ADR-012)
+**RU.** **Активная задача:** Grammy forum topics (alerts/logs/errors) + Live notifications wire (ADR-012)  
+**EN.** **Active task:** Grammy forum topics (alerts/logs/errors) + Live notifications wire (ADR-012)
 
 **RU.** **Следующая задача:** Phase 7 TSE; UI-017; RT-05…07; worker split  
 **EN.** **Next task:** Phase 7 TSE; UI-017; RT-05…07; worker split
@@ -79,8 +79,8 @@
 | Chart realtime + history REST fallback | DONE            | Chart CHART leases (display only); REJECTED/error → REST          |
 | Independent Live Mode                  | DONE (MVP)      | Futures GetFavorites + live level alerts + TSE closed-bar confirm |
 | Chart route code-split + bootstrap     | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
-| Signals                                | IN_PROGRESS     | BL-106…109 market trigger alerts (not trading signals)            |
-| Persist table / workers                | IN_PROGRESS     | BL-107 tables; BL-108/109 workers                                 |
+| Signals                                | DONE            | BL-106…109 market trigger alerts (not trading signals)            |
+| Persist table / workers                | DONE            | BL-107 tables; BL-108/109 workers                                 |
 
 ## Horizontal volume (trades VP) / Горизонтальный объём (VP по сделкам)
 
@@ -102,7 +102,7 @@
 | BL-106 | DONE            | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
 | BL-107 | DONE            | `market_signals` + `notifications` migration and repos                       |
 | BL-108 | DONE            | `apps/worker-signals` favorites 5m/1h evaluator                              |
-| BL-109 | TODO            | `apps/worker-notifier` Telegram via Grammy + forum topics                    |
+| BL-109 | DONE            | `apps/worker-notifier` Telegram (fetch baseline; Grammy + topics next)       |
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

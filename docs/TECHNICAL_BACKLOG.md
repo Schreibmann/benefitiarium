@@ -1759,7 +1759,7 @@ FAILED`.
 | BL-102 | P2 / L | Corporate actions adjustment | BL-030 | Raw и adjusted series хранятся отдельно; метод корректировки воспроизводим; backtest использует выбранный режим явно |
 | BL-103 | P2 / XL | Portfolio-level risk | BL-070, BL-083 | Учитываются корреляции, совместное exposure, концентрация и сценарные потери; deterministic tests |
 | BL-104 | P3 / XL | ML regime classifier / anomaly detector | BL-024, BL-066 | Есть time-based validation, leakage audit, baseline comparison, model versioning; ML не обходит risk engine |
-| BL-105 | P3 / M | Notifications (Telegram/email) | BL-023, BL-093 | Retry, dedupe, delivery status, no credentials in payload; alerts имеют severity и action hint |
+| BL-105 | P3 / M | Notifications (Telegram/email) | BL-023, BL-093 | Telegram delivery done in BL-109 (retry/dedupe/status, no credentials in payload). Email/severity still open / Telegram доставка в BL-109 (retry/dedupe/status, без credentials в payload). Email/severity ещё открыты |
 
 ### EPIC E5B — Market trigger alerts + Telegram / Рыночные триггер-алерты + Telegram
 
