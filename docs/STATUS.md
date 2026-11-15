@@ -91,8 +91,8 @@
 | Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                                         |
 | OHLCV uniform approximation                  | DONE (research) | Kept in `@moex/indicators` as `HORIZONTAL_VOLUME_OHLCV`; not used by the chart API route              |
 
-**RU.** GetTechAnalysis не отдаёт volume profile. API строит профиль из анонимизированных сделок History MD (дневные архивы за неделю/месяц) плюс опциональный фрагмент `GetLastTrades` за текущий UTC-день. Нужен production read-only токен.  
-**EN.** GetTechAnalysis has no volume profile. The API builds VP from History MD anonymized day-trade archives (week/month) plus an optional `GetLastTrades` fragment for the current UTC day. Requires a production read-only token.
+**RU.** GetTechAnalysis не отдаёт volume profile. Chart market-data / VP всегда идут через `TINVEST_READ_ONLY_TOKEN` на production hosts (не sandbox). History MD fetch использует CA Минцифры (иначе Node `fetch` падает с `SELF_SIGNED_CERT_IN_CHAIN`).  
+**EN.** GetTechAnalysis has no volume profile. Chart market-data / VP always use `TINVEST_READ_ONLY_TOKEN` against production hosts (not sandbox). History MD fetch installs the Mincifry CA (plain Node `fetch` otherwise fails with `SELF_SIGNED_CERT_IN_CHAIN`).
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

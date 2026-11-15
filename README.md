@@ -33,7 +33,7 @@
 
 **RU.**
 
-1. Задайте `TINVEST_READ_ONLY_TOKEN` (или sandbox token) в `.env`.
+1. Задайте `TINVEST_READ_ONLY_TOKEN` в `.env` (chart/VP идут только через production read-only; sandbox token — для Admin).
 2. Запустите API + web (`pnpm --filter @moex/api dev` и `pnpm --filter @moex/web dev`). Vite проксирует `/api` и `/ws` → `:3000`.
 3. Откройте `http://127.0.0.1:5173/charts` (или `/charts/:ticker`).
 4. Выберите фьючерсный контракт: категории (товарные / индексные / валютные / на акции) + family optgroups; каталог cache-first (`nanostores` + API snapshot).
@@ -44,7 +44,7 @@
 
 **EN.**
 
-1. Set `TINVEST_READ_ONLY_TOKEN` (or sandbox token) in `.env`.
+1. Set `TINVEST_READ_ONLY_TOKEN` in `.env` (chart/VP use production read-only only; sandbox token is for Admin).
 2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`). Vite proxies `/api` and `/ws` → `:3000`.
 3. Open `http://127.0.0.1:5173/charts` (or `/charts/:ticker`).
 4. Pick a futures contract: categories (товарные / индексные / валютные / на акции) + family optgroups; catalog is cache-first (`nanostores` + API snapshot).

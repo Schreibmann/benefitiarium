@@ -1,4 +1,5 @@
 import { gunzipSync, inflateRawSync } from 'node:zlib';
+import { createMincifryHttpsFetch } from './mincifry-https-fetch.js';
 import type { TinvestTradeDirection, TinvestTradeRaw } from './raw.js';
 
 export const HISTORY_TRADES_ARCHIVE_HOSTS = [
@@ -33,17 +34,34 @@ export type CreateHistoryTradesClientInput = {
  *
  * CSV header: TRADE_TS,TICKER_CC,DIRECTION,PRICE,QUANTITY,TRADE_SOURCE,INSTRUMENT_UID
  * Body may be plain CSV, gzip, or a ZIP of CSV files.
+ *
+ * Default transport uses Mincifry CA (Node plain `fetch` fails T-Invest TLS).
+ * Pass `TINVEST_READ_ONLY_TOKEN` — sandbox tokens are not valid for production archives.
  */
 export function createHistoryTradesClient(
   input: CreateHistoryTradesClientInput,
 ): HistoryTradesClient {
   const token = input.token.trim();
   if (token.length === 0) {
-    throw new Error('History trades client requires a non-empty token');
+    throw new Error('History trades client requires a non-empty TINVEST_READ_ONLY_TOKEN');
   }
-  const fetchImpl = input.fetchImpl ?? fetch;
   const hosts = input.hosts ?? HISTORY_TRADES_ARCHIVE_HOSTS;
   let pinnedHost: string | null = null;
+  let resolvedFetch: typeof fetch | null = input.fetchImpl ?? null;
+  let fetchInit: Promise<typeof fetch> | null = null;
+
+  async function getFetch(): Promise<typeof fetch> {
+    if (resolvedFetch !== null) {
+      return resolvedFetch;
+    }
+    if (fetchInit === null) {
+      fetchInit = createMincifryHttpsFetch().then((impl) => {
+        resolvedFetch = impl;
+        return impl;
+      });
+    }
+    return await fetchInit;
+  }
 
   return {
     fetchDayTrades: async ({ instrumentUid, date }) => {
@@ -56,6 +74,7 @@ export function createHistoryTradesClient(
           ? [...hosts]
           : [pinnedHost, ...hosts.filter((host) => host !== pinnedHost)];
 
+      const fetchImpl = await getFetch();
       const failures: string[] = [];
       for (const host of orderedHosts) {
         const url = `${host}${path}`;
@@ -66,8 +85,7 @@ export function createHistoryTradesClient(
               headers: { Authorization: `Bearer ${token}` },
             });
           } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : 'network error';
-            failures.push(`${url}: ${message}`);
+            failures.push(`${url}: ${formatFetchError(error)}`);
             break;
           }
 
@@ -90,10 +108,21 @@ export function createHistoryTradesClient(
         }
       }
       throw new Error(
-        `history-trades ${date} failed: ${failures.join('; ') || 'no hosts'} — production read token required (sandbox often has no archive access)`,
+        `history-trades ${date} failed: ${failures.join('; ') || 'no hosts'} — use TINVEST_READ_ONLY_TOKEN against production hosts (sandbox token/URL will not work)`,
       );
     },
   };
+}
+
+function formatFetchError(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return 'network error';
+  }
+  const cause = error.cause;
+  if (cause instanceof Error && cause.message.length > 0) {
+    return `${error.message} (${cause.message})`;
+  }
+  return error.message;
 }
 
 export function decodeArchiveToCsv(bytes: Uint8Array): string {

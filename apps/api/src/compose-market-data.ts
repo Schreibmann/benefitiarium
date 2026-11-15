@@ -7,6 +7,7 @@ import {
   createTinvestStreamClient,
   StreamConnectionManager,
   SubscriptionRegistry,
+  TINVEST_SDK_META,
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
 import { resolveTinvestToken } from '@moex/config';
@@ -45,35 +46,33 @@ export type ComposedMarketData = {
 };
 
 /**
- * Compose market-data deps for chart/pivot read routes and optional live stream gateway.
- * Prefers TINVEST_READ_ONLY_TOKEN; falls back to sandbox token for sandbox env.
- * When Postgres is reachable, attaches futures catalog cache for list fallback.
+ * Compose market-data deps for chart/pivot/VP read routes and optional live stream.
  *
+ * Chart market data (including History MD volume profile) always uses
+ * `TINVEST_READ_ONLY_TOKEN` against production hosts — never the sandbox token/URL.
+ * Sandbox token remains for Admin sandbox flows only (`composeSandboxAdminDeps`).
+ *
+ * When Postgres is reachable, attaches futures catalog cache for list fallback.
  * Live stream runs in-process with the API for MVP (worker-market-data will host later).
  */
 export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarketData | null> {
   const readOnly = resolveTinvestToken(env, 'read_only');
-  const sandbox = resolveTinvestToken(env, 'sandbox');
-  const token = readOnly ?? sandbox;
-  if (token === null) {
+  if (readOnly === null) {
     return null;
   }
 
-  const sdkEnv = readOnly !== null ? env.TINVEST_ENV : 'sandbox';
   const sdk = await createTinvestSdk({
-    token,
-    env: sdkEnv,
-    baseUrl: env.TINVEST_BASE_URL,
+    token: readOnly,
+    env: 'production',
+    baseUrl: TINVEST_SDK_META.productionUrl,
   });
   const api = createSdkTinvestReadApi(sdk);
-  // History MD trades archives need a production-capable token (sandbox often 401/403).
-  const historyTrades =
-    readOnly !== null ? createHistoryTradesClient({ token: readOnly }) : undefined;
+  const historyTrades = createHistoryTradesClient({ token: readOnly });
   const marketData = createTinvestMarketDataProvider({
     api,
     resolver: createIdentityInstrumentUidResolver(),
-    isSandbox: sdkEnv === 'sandbox',
-    ...(historyTrades !== undefined ? { historyTrades } : {}),
+    isSandbox: false,
+    historyTrades,
   });
   const futuresCatalogCache = await tryCreateFuturesCatalogCache();
   const chartDeps: ChartMarketDataDeps = {
@@ -84,9 +83,9 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
   let chartLive: ChartLiveGateway | null = null;
   try {
     const streamClient = await createTinvestStreamClient({
-      token,
-      env: sdkEnv,
-      baseUrl: env.TINVEST_BASE_URL,
+      token: readOnly,
+      env: 'production',
+      baseUrl: TINVEST_SDK_META.productionUrl,
     });
     const registry = new SubscriptionRegistry();
     // Gateway + manager are wired through shared mutable holder so callbacks close over gateway.
