@@ -5,7 +5,7 @@ export const HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID = 'HORIZONTAL_VOLUME_OHLCV' as
 /** True volume-at-price from anonymized trades (GetLastTrades). */
 export const HORIZONTAL_VOLUME_TRADES_ALGORITHM_ID = 'HORIZONTAL_VOLUME_TRADES' as const;
 
-export const HORIZONTAL_VOLUME_ALGORITHM_VERSION = '1.1.0' as const;
+export const HORIZONTAL_VOLUME_ALGORITHM_VERSION = '1.2.0' as const;
 
 export const HORIZONTAL_VOLUME_SOURCE_KIND = {
   ohlcvUniformApproximation: 'ohlcv_uniform_approximation',
@@ -22,7 +22,13 @@ export type HorizontalVolumeAlgorithmId =
 /** Classic value-area coverage of total volume. */
 export const HORIZONTAL_VOLUME_DEFAULT_VALUE_AREA_RATIO = '0.70' as const;
 
-/** Soft cap on histogram bins; row size grows when the range would exceed this. */
+/**
+ * TradingView-style default row count for auto binning
+ * (`rowSizeInTicks = ceil(tickSpan / targetRows)`).
+ */
+export const HORIZONTAL_VOLUME_DEFAULT_TARGET_ROWS = 100;
+
+/** Hard safety cap on histogram bins; never auto-exceed this. */
 export const HORIZONTAL_VOLUME_MAX_LEVELS = 2000;
 
 /** @deprecated Use HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID / TRADES. */
@@ -52,6 +58,8 @@ export type HorizontalVolumeQuality = 'ok' | 'EMPTY' | 'DEGENERATE';
 export type HorizontalVolumeCalculation = {
   levels: HorizontalVolumeLevel[];
   totalVolume: DecimalString;
+  totalBuyVolume: DecimalString;
+  totalSellVolume: DecimalString;
   /** Point of Control — price row with the highest volume. */
   poc: DecimalString | null;
   /** Value Area High. */
@@ -71,8 +79,10 @@ export type HorizontalVolumeCalculation = {
 export type CalculateHorizontalVolumeInput = {
   candles: readonly HorizontalVolumeCandle[];
   tickSize: DecimalString | string;
-  /** Optional fixed bin height in ticks; when omitted, auto-grows to stay ≤ MAX_LEVELS. */
+  /** Optional fixed bin height in ticks; when omitted, auto-bins toward targetRowCount. */
   rowSizeInTicks?: number;
+  /** Auto-binning target (default 100). Ignored when rowSizeInTicks is set. */
+  targetRowCount?: number;
   valueAreaRatio?: DecimalString | string;
 };
 
@@ -80,5 +90,6 @@ export type CalculateHorizontalVolumeFromTradesInput = {
   trades: readonly HorizontalVolumeTrade[];
   tickSize: DecimalString | string;
   rowSizeInTicks?: number;
+  targetRowCount?: number;
   valueAreaRatio?: DecimalString | string;
 };

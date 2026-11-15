@@ -1,4 +1,4 @@
-import { barY, defineChart, link, text } from '@tanstack/charts';
+import { barY, defineChart, link, rect, text } from '@tanstack/charts';
 import { scaleLinear } from 'd3-scale';
 import { dateAtSessionIndex } from './chart-time.js';
 import type { ChartXExtent, ChartXWindow } from './chart-viewport.js';
@@ -108,7 +108,7 @@ function priceDomainWithOverlays(
     }
   }
   for (const segment of volumeProfile) {
-    if (segment.kind === 'histogram') {
+    if (segment.kind === 'buy' || segment.kind === 'sell') {
       continue;
     }
     if (segment.y1 < min) {
@@ -121,8 +121,7 @@ function priceDomainWithOverlays(
   return { min, max };
 }
 
-const VOLUME_PROFILE_STROKE: Record<VolumeProfileSegment['kind'], string> = {
-  histogram: 'var(--chart-volume-bar)',
+const VOLUME_PROFILE_STROKE: Record<'poc' | 'vah' | 'val', string> = {
   poc: 'var(--chart-volume-poc)',
   vah: 'var(--chart-volume-va)',
   val: 'var(--chart-volume-va)',
@@ -142,8 +141,21 @@ export function buildPriceChartDefinition(input: {
   const losses = toBodyRows(candles.filter((row) => row.Close < row.Open));
   const pivots = [...input.pivots];
   const volumeProfile = [...(input.volumeProfile ?? [])];
-  const histogram = volumeProfile.filter((segment) => segment.kind === 'histogram');
-  const volumeGuides = volumeProfile.filter((segment) => segment.kind !== 'histogram');
+  const sellOutside = volumeProfile.filter(
+    (segment) => segment.kind === 'sell' && !segment.inValueArea,
+  );
+  const sellInside = volumeProfile.filter(
+    (segment) => segment.kind === 'sell' && segment.inValueArea,
+  );
+  const buyOutside = volumeProfile.filter(
+    (segment) => segment.kind === 'buy' && !segment.inValueArea,
+  );
+  const buyInside = volumeProfile.filter(
+    (segment) => segment.kind === 'buy' && segment.inValueArea,
+  );
+  const volumeGuides = volumeProfile.filter(
+    (segment) => segment.kind === 'poc' || segment.kind === 'vah' || segment.kind === 'val',
+  );
   const axisLevels = pivotLabelRows(pivots);
   const priceDomain = priceDomainWithOverlays(
     visible.length > 0 ? visible : candles,
@@ -167,16 +179,45 @@ export function buildPriceChartDefinition(input: {
 
   return defineChart({
     marks: [
-      link(histogram, {
-        id: 'horizontal-volume-bars',
+      rect(sellOutside, {
+        id: 'horizontal-volume-sell-outside',
         x1: 'x1',
-        y1: 'y1',
         x2: 'x2',
+        y1: 'y1',
         y2: 'y2',
         key: 'id',
-        stroke: VOLUME_PROFILE_STROKE.histogram,
-        strokeWidth: 4,
-        strokeOpacity: 0.35,
+        fill: 'var(--chart-volume-sell)',
+        fillOpacity: 0.35,
+      }),
+      rect(sellInside, {
+        id: 'horizontal-volume-sell-inside',
+        x1: 'x1',
+        x2: 'x2',
+        y1: 'y1',
+        y2: 'y2',
+        key: 'id',
+        fill: 'var(--chart-volume-sell)',
+        fillOpacity: 0.62,
+      }),
+      rect(buyOutside, {
+        id: 'horizontal-volume-buy-outside',
+        x1: 'x1',
+        x2: 'x2',
+        y1: 'y1',
+        y2: 'y2',
+        key: 'id',
+        fill: 'var(--chart-volume-buy)',
+        fillOpacity: 0.35,
+      }),
+      rect(buyInside, {
+        id: 'horizontal-volume-buy-inside',
+        x1: 'x1',
+        x2: 'x2',
+        y1: 'y1',
+        y2: 'y2',
+        key: 'id',
+        fill: 'var(--chart-volume-buy)',
+        fillOpacity: 0.62,
       }),
       link(volumeGuides, {
         id: 'horizontal-volume-guides',
@@ -185,9 +226,12 @@ export function buildPriceChartDefinition(input: {
         x2: 'x2',
         y2: 'y2',
         key: 'id',
-        stroke: (d) => VOLUME_PROFILE_STROKE[d.kind],
-        strokeWidth: (d) => (d.kind === 'poc' ? 1.6 : 1.1),
-        strokeOpacity: 0.85,
+        stroke: (d) =>
+          d.kind === 'poc' || d.kind === 'vah' || d.kind === 'val'
+            ? VOLUME_PROFILE_STROKE[d.kind]
+            : VOLUME_PROFILE_STROKE.vah,
+        strokeWidth: (d) => (d.kind === 'poc' ? 2 : 1.1),
+        strokeOpacity: (d) => (d.kind === 'poc' ? 0.95 : 0.7),
       }),
       link(pivots, {
         id: 'fibonacci-pivots',

@@ -8,8 +8,9 @@
   --chart-pivot-p: light-dark(#6b7280, #9ca3af);
   --chart-pivot-r: light-dark(#b42318, #f07167);
   --chart-pivot-s: light-dark(#2f7d4a, #6fbf86);
-  --chart-volume-bar: light-dark(#5b7c99, #7f9bb8);
-  --chart-volume-poc: light-dark(#b45309, #f0a202);
+  --chart-volume-buy: light-dark(#2962ff, #5b8def);
+  --chart-volume-sell: light-dark(#f0a202, #ffb74d);
+  --chart-volume-poc: light-dark(#d32f2f, #ef5350);
   --chart-volume-va: light-dark(#6b7280, #9aa3b5);
 
   min-height: 100vh;
@@ -103,6 +104,25 @@
   margin: 0.35rem 0 0.85rem;
   color: light-dark(#5c614f, #a7b0c2);
   font-size: 0.9rem;
+}
+
+.price-chart__vp-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-chart__vp-legend-buy {
+  color: var(--chart-volume-buy);
+  font-weight: 600;
+}
+
+.price-chart__vp-legend-sell {
+  color: var(--chart-volume-sell);
+  font-weight: 600;
 }
 
 .price-chart__error {

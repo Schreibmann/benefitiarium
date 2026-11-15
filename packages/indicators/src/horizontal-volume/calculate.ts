@@ -4,6 +4,7 @@ import {
   type CalculateHorizontalVolumeFromTradesInput,
   type CalculateHorizontalVolumeInput,
   HORIZONTAL_VOLUME_ALGORITHM_VERSION,
+  HORIZONTAL_VOLUME_DEFAULT_TARGET_ROWS,
   HORIZONTAL_VOLUME_DEFAULT_VALUE_AREA_RATIO,
   HORIZONTAL_VOLUME_MAX_LEVELS,
   HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID,
@@ -34,9 +35,12 @@ function emptyResult(input: {
   sourceKind: HorizontalVolumeSourceKind;
   algorithmId: HorizontalVolumeAlgorithmId;
 }): HorizontalVolumeCalculation {
+  const zero = parseDecimalString('0');
   return {
     levels: [],
-    totalVolume: parseDecimalString('0'),
+    totalVolume: zero,
+    totalBuyVolume: zero,
+    totalSellVolume: zero,
     poc: null,
     vah: null,
     val: null,
@@ -75,17 +79,33 @@ function nextPrice(price: DecimalString, step: DecimalString): DecimalString {
   return add(price, step);
 }
 
+function resolveTargetRowCount(requested: number | undefined): number {
+  if (requested === undefined) {
+    return HORIZONTAL_VOLUME_DEFAULT_TARGET_ROWS;
+  }
+  if (!Number.isInteger(requested) || requested < 1) {
+    throw new Error('targetRowCount must be a positive integer');
+  }
+  return Math.min(requested, HORIZONTAL_VOLUME_MAX_LEVELS);
+}
+
+/**
+ * Auto-bin like TradingView VPVR: aim for ~targetRows across the price span.
+ * Explicit `rowSizeInTicks` wins; otherwise ceil(tickSpan / targetRows), never below 1,
+ * and never producing more than MAX_LEVELS bins.
+ */
 function resolveRowSizeInTicksFromSpan(
   minLow: DecimalString | null,
   maxHigh: DecimalString | null,
   tickSize: DecimalString,
-  requested: number | undefined,
+  requestedRowSizeInTicks: number | undefined,
+  targetRowCount: number | undefined,
 ): number {
-  if (requested !== undefined) {
-    if (!Number.isInteger(requested) || requested < 1) {
+  if (requestedRowSizeInTicks !== undefined) {
+    if (!Number.isInteger(requestedRowSizeInTicks) || requestedRowSizeInTicks < 1) {
       throw new Error('rowSizeInTicks must be a positive integer');
     }
-    return requested;
+    return requestedRowSizeInTicks;
   }
   if (minLow === null || maxHigh === null) {
     return 1;
@@ -93,10 +113,10 @@ function resolveRowSizeInTicksFromSpan(
   const flooredLow = roundToTick(minLow, tickSize, 'roundFloor');
   const ceiledHigh = roundToTick(maxHigh, tickSize, 'roundCeil');
   const tickCount = ticksBetweenInclusive(flooredLow, ceiledHigh, tickSize);
-  if (tickCount <= HORIZONTAL_VOLUME_MAX_LEVELS) {
-    return 1;
-  }
-  return Math.ceil(tickCount / HORIZONTAL_VOLUME_MAX_LEVELS);
+  const targetRows = resolveTargetRowCount(targetRowCount);
+  const forTarget = Math.max(1, Math.ceil(tickCount / targetRows));
+  const forMaxCap = Math.max(1, Math.ceil(tickCount / HORIZONTAL_VOLUME_MAX_LEVELS));
+  return Math.max(forTarget, forMaxCap);
 }
 
 function buildValueArea(
@@ -154,6 +174,19 @@ type AccLevel = {
   sellVolume: DecimalString;
 };
 
+function sumSideVolumes(levels: readonly HorizontalVolumeLevel[]): {
+  totalBuyVolume: DecimalString;
+  totalSellVolume: DecimalString;
+} {
+  let totalBuyVolume = parseDecimalString('0');
+  let totalSellVolume = parseDecimalString('0');
+  for (const level of levels) {
+    totalBuyVolume = add(totalBuyVolume, level.buyVolume);
+    totalSellVolume = add(totalSellVolume, level.sellVolume);
+  }
+  return { totalBuyVolume, totalSellVolume };
+}
+
 function finalizeLevels(
   volumeByPrice: Map<string, AccLevel>,
   totalVolume: DecimalString,
@@ -179,6 +212,8 @@ function finalizeLevels(
     }))
     .sort((left, right) => compare(left.price, right.price));
 
+  const { totalBuyVolume, totalSellVolume } = sumSideVolumes(levels);
+
   if (levels.length === 1) {
     const only = levels[0];
     if (only === undefined) {
@@ -187,6 +222,8 @@ function finalizeLevels(
     return {
       levels,
       totalVolume,
+      totalBuyVolume,
+      totalSellVolume,
       poc: only.price,
       vah: only.price,
       val: only.price,
@@ -215,6 +252,8 @@ function finalizeLevels(
   return {
     levels,
     totalVolume,
+    totalBuyVolume,
+    totalSellVolume,
     poc,
     vah,
     val,
@@ -281,6 +320,7 @@ export function calculateHorizontalVolume(
     maxHigh,
     tickSize,
     input.rowSizeInTicks,
+    input.targetRowCount,
   );
   const rowSize = multiply(tickSize, String(rowSizeInTicks));
   const meta = {
@@ -378,6 +418,7 @@ export function calculateHorizontalVolumeFromTrades(
     maxPrice,
     tickSize,
     input.rowSizeInTicks,
+    input.targetRowCount,
   );
   const rowSize = multiply(tickSize, String(rowSizeInTicks));
   const meta = {

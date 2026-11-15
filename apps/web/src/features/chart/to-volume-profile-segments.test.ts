@@ -11,6 +11,8 @@ const sample: HorizontalVolumeApiResponse = {
     { price: '102', volume: '20', buyVolume: '12', sellVolume: '8' },
   ],
   totalVolume: '70',
+  totalBuyVolume: '41',
+  totalSellVolume: '29',
   volumeUnit: 'lots',
   poc: '101',
   vah: '102',
@@ -21,7 +23,7 @@ const sample: HorizontalVolumeApiResponse = {
   valueAreaRatio: '0.70',
   sourceKind: 'last_trades',
   quality: 'ok',
-  algorithm: { id: 'HORIZONTAL_VOLUME_TRADES', version: '1.1.0' },
+  algorithm: { id: 'HORIZONTAL_VOLUME_TRADES', version: '1.2.0' },
   meta: {
     requestedFrom: '2026-11-05T00:00:00.000Z',
     requestedTo: '2026-11-06T00:00:00.000Z',
@@ -37,15 +39,24 @@ const sample: HorizontalVolumeApiResponse = {
 };
 
 describe('toVolumeProfileSegments', () => {
-  it('anchors histogram bars to the right edge and adds POC/VA guides', () => {
+  it('builds right-anchored buy/sell rects with row height and POC guide', () => {
     const segments = toVolumeProfileSegments(sample, { start: 0, end: 100 });
-    const bars = segments.filter((segment) => segment.kind === 'histogram');
-    expect(bars).toHaveLength(3);
-    expect(bars.every((bar) => bar.x2 === 100)).toBe(true);
-    const pocBar = bars.find((bar) => bar.y1 === 101);
-    expect(pocBar?.x1).toBe(82);
+    const sells = segments.filter((segment) => segment.kind === 'sell');
+    const buys = segments.filter((segment) => segment.kind === 'buy');
+    expect(sells.length).toBe(3);
+    expect(buys.length).toBe(3);
+
+    const pocSell = sells.find((bar) => bar.y1 === 100.5 && bar.y2 === 101.5);
+    const pocBuy = buys.find((bar) => bar.y1 === 100.5 && bar.y2 === 101.5);
+    expect(pocSell?.x2).toBe(pocBuy?.x1);
+    expect(pocBuy?.x2).toBe(100);
+    // max volume 40 → full width 20; buy 25/40 of that = 12.5
+    expect(pocBuy?.x1).toBe(87.5);
+    expect(pocSell?.x1).toBe(80);
+
     expect(segments.some((segment) => segment.kind === 'poc' && segment.y1 === 101)).toBe(true);
     expect(segments.some((segment) => segment.kind === 'vah' && segment.y1 === 102)).toBe(true);
     expect(segments.some((segment) => segment.kind === 'val' && segment.y1 === 100)).toBe(true);
+    expect(pocBuy?.inValueArea).toBe(true);
   });
 });

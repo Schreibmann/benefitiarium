@@ -88,11 +88,11 @@
 | Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_TRADES` (+ OHLCV research fallback); POC / VAH / VAL                               |
 | History MD day archives                      | DONE            | `GET /history-trades/{YYYY-MM-DD}`; week/month ranges; ~30 files/min throttle                         |
 | On-read API `…/indicators/horizontal-volume` | DONE            | `MarketDataProvider.getTrades` → trades VP; meta: `historyTradeDays` / `tradesSource` / `missingDays` |
-| Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                                         |
+| Chart overlay                                | DONE            | VPVR-like buy/sell `rect` bars (~100 rows), red POC, Up/Down legend on `/charts/:ticker`              |
 | OHLCV uniform approximation                  | DONE (research) | Kept in `@moex/indicators` as `HORIZONTAL_VOLUME_OHLCV`; not used by the chart API route              |
 
-**RU.** GetTechAnalysis не отдаёт volume profile. Chart market-data / VP всегда идут через `TINVEST_READ_ONLY_TOKEN` на production hosts (не sandbox). History MD fetch использует CA Минцифры (иначе Node `fetch` падает с `SELF_SIGNED_CERT_IN_CHAIN`).  
-**EN.** GetTechAnalysis has no volume profile. Chart market-data / VP always use `TINVEST_READ_ONLY_TOKEN` against production hosts (not sandbox). History MD fetch installs the Mincifry CA (plain Node `fetch` otherwise fails with `SELF_SIGNED_CERT_IN_CHAIN`).
+**RU.** GetTechAnalysis не отдаёт volume profile. Chart VP: ~100 рядов, buy/sell (синий/жёлтый), красный POC, легенда Up/Down. Market-data через `TINVEST_READ_ONLY_TOKEN` + CA Минцифры для History MD.  
+**EN.** GetTechAnalysis has no volume profile. Chart VP: ~100 rows, buy/sell (blue/amber), red POC, Up/Down legend. Market-data via `TINVEST_READ_ONLY_TOKEN` + Mincifry CA for History MD.
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

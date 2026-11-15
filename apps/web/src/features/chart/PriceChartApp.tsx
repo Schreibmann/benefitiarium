@@ -103,6 +103,22 @@ function formatCurrentPrice(value: number): string {
   return value.toFixed(4);
 }
 
+/** Compact lots formatter for VPVR legend (e.g. 50.265K). */
+function formatVolumeLots(raw: string): string {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(3).replace(/\.?0+$/, '')}M`;
+  }
+  if (abs >= 1_000) {
+    return `${(value / 1_000).toFixed(3).replace(/\.?0+$/, '')}K`;
+  }
+  return value.toFixed(abs >= 10 ? 0 : 2);
+}
+
 export function PriceChartApp(props: Props) {
   const client = useMemo(() => props.client ?? createChartApiClient(), [props.client]);
   const initialTicker = props.initialTicker ?? 'NG-12.26';
@@ -376,6 +392,20 @@ export function PriceChartApp(props: Props) {
             {' · '}
             <a href="/admin/sandbox">Sandbox Admin</a>
           </p>
+          {horizontalVolume !== null && horizontalVolume.quality !== 'EMPTY' ? (
+            <div className="price-chart__vp-legend">
+              <span className="price-chart__vp-legend-buy">
+                Up {formatVolumeLots(horizontalVolume.totalBuyVolume)}
+              </span>
+              <span className="price-chart__vp-legend-sell">
+                Down {formatVolumeLots(horizontalVolume.totalSellVolume)}
+              </span>
+              <span>Total {formatVolumeLots(horizontalVolume.totalVolume)}</span>
+              <span className="price-chart__meta">
+                rows≈{horizontalVolume.levels.length} · tick {horizontalVolume.rowSize}
+              </span>
+            </div>
+          ) : null}
         </div>
         <div className="price-chart__controls">
           <label>

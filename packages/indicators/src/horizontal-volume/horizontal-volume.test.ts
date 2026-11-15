@@ -55,12 +55,34 @@ describe('calculateHorizontalVolumeFromTrades', () => {
     expect(result.sourceKind).toBe(HORIZONTAL_VOLUME_SOURCE_KIND.lastTrades);
     expect(result.algorithmId).toBe(HORIZONTAL_VOLUME_TRADES_ALGORITHM_ID);
     expect(result.totalVolume).toBe('80');
+    expect(result.totalBuyVolume).toBe('20');
+    expect(result.totalSellVolume).toBe('60');
     expect(result.poc).toBe('101');
 
     const level101 = result.levels.find((level) => level.price === '101');
     expect(level101?.volume).toBe('50');
     expect(level101?.buyVolume).toBe('10');
     expect(level101?.sellVolume).toBe('40');
+  });
+
+  it('auto-bins toward ~100 rows across a wide tick span', () => {
+    const trades = [];
+    for (let i = 0; i <= 999; i += 1) {
+      trades.push({
+        price: String(i),
+        quantity: '1',
+        direction: i % 2 === 0 ? ('buy' as const) : ('sell' as const),
+      });
+    }
+    const result = calculateHorizontalVolumeFromTrades({
+      trades,
+      tickSize: '1',
+    });
+    expect(result.rowSizeInTicks).toBe(10);
+    expect(result.levels.length).toBeGreaterThan(50);
+    expect(result.levels.length).toBeLessThanOrEqual(110);
+    expect(result.totalBuyVolume).toBe('500');
+    expect(result.totalSellVolume).toBe('500');
   });
 
   it('computes value area covering the configured ratio around POC', () => {

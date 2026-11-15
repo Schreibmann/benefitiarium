@@ -222,6 +222,8 @@ function parseHorizontalVolumeResponse(json: unknown): HorizontalVolumeApiRespon
     chartTimeframe: chartTimeframeRaw,
     levels,
     totalVolume: requiredString(json, 'totalVolume'),
+    totalBuyVolume: requiredString(json, 'totalBuyVolume'),
+    totalSellVolume: requiredString(json, 'totalSellVolume'),
     volumeUnit: requiredString(json, 'volumeUnit'),
     poc: optionalNullableString(json, 'poc'),
     vah: optionalNullableString(json, 'vah'),

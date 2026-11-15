@@ -19,6 +19,8 @@ export type HorizontalVolumeResponseDto = {
   chartTimeframe: '1m' | '5m' | '1h';
   levels: HorizontalVolumeLevelDto[];
   totalVolume: string;
+  totalBuyVolume: string;
+  totalSellVolume: string;
   volumeUnit: 'lots';
   poc: string | null;
   vah: string | null;
@@ -89,6 +91,8 @@ export async function getHorizontalVolume(
       sellVolume: level.sellVolume,
     })),
     totalVolume: calculated.totalVolume,
+    totalBuyVolume: calculated.totalBuyVolume,
+    totalSellVolume: calculated.totalSellVolume,
     volumeUnit: 'lots',
     poc: calculated.poc,
     vah: calculated.vah,

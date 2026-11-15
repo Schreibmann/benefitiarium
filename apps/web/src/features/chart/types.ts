@@ -106,6 +106,8 @@ export type HorizontalVolumeApiResponse = {
     sellVolume: string;
   }>;
   totalVolume: string;
+  totalBuyVolume: string;
+  totalSellVolume: string;
   volumeUnit: string;
   poc: string | null;
   vah: string | null;
@@ -134,7 +136,7 @@ export type HorizontalVolumeApiResponse = {
   };
 };
 
-export type VolumeProfileSegmentKind = 'histogram' | 'poc' | 'vah' | 'val';
+export type VolumeProfileSegmentKind = 'buy' | 'sell' | 'poc' | 'vah' | 'val';
 
 export type VolumeProfileSegment = {
   id: string;
@@ -143,4 +145,5 @@ export type VolumeProfileSegment = {
   x2: number;
   y1: number;
   y2: number;
+  inValueArea: boolean;
 };

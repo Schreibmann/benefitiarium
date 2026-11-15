@@ -194,6 +194,8 @@ describe('market routes', () => {
     expect(profile.levels.length).toBeGreaterThan(0);
     expect(profile.poc).toBe('3.1');
     expect(profile.volumeUnit).toBe('lots');
+    expect(profile.totalBuyVolume).toBe('15');
+    expect(profile.totalSellVolume).toBe('40');
     expect(profile.meta.tradeCount).toBe(3);
     expect(profile.meta.tradesSource).toBe('history_trades');
     expect(profile.meta.historyTradeDays).toEqual(['2026-11-05']);
