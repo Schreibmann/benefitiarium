@@ -31,6 +31,7 @@ export type ChartApiClient = {
     timeframe: ChartTimeframe;
     from: string;
     to: string;
+    signal?: AbortSignal;
   }) => Promise<HorizontalVolumeApiResponse>;
 };
 
@@ -60,8 +61,11 @@ export function createChartApiClient(
   const baseUrl = options.baseUrl ?? '';
   const fetchImpl = options.fetchImpl ?? fetch;
 
-  async function request(path: string): Promise<unknown> {
-    const response = await fetchImpl(`${baseUrl}${path}`);
+  async function request(path: string, init?: { signal?: AbortSignal }): Promise<unknown> {
+    const response = await fetchImpl(
+      `${baseUrl}${path}`,
+      init?.signal !== undefined ? { signal: init.signal } : undefined,
+    );
     if (!response.ok) {
       const body = await response.text();
       throw new Error(`API ${response.status}: ${body || response.statusText}`);
@@ -156,7 +160,10 @@ export function createChartApiClient(
         `?timeframe=${encodeURIComponent(input.timeframe)}` +
         `&from=${encodeURIComponent(input.from)}` +
         `&to=${encodeURIComponent(input.to)}`;
-      const json = await request(path);
+      const json = await request(
+        path,
+        input.signal !== undefined ? { signal: input.signal } : undefined,
+      );
       return parseHorizontalVolumeResponse(json);
     },
   };

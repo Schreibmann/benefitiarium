@@ -86,13 +86,14 @@
 | Piece / Компонент                            | Status / Статус | Notes / Примечания                                                                                    |
 | -------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
 | Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_TRADES` (+ OHLCV research fallback); POC / VAH / VAL                               |
-| History MD day archives                      | DONE            | `GET /history-trades/{YYYY-MM-DD}`; week/month ranges; ~30 files/min throttle                         |
+| History MD day archives                      | DONE            | `GET /history-trades/{YYYY-MM-DD}`; ~30 files/min throttle                                            |
 | On-read API `…/indicators/horizontal-volume` | DONE            | `MarketDataProvider.getTrades` → trades VP; meta: `historyTradeDays` / `tradesSource` / `missingDays` |
 | Chart overlay                                | DONE            | VPVR-like buy/sell `rect` bars (~100 rows), red POC, Up/Down legend on `/charts/:ticker`              |
+| Visible-range chart fetch                    | DONE            | Debounced (250ms) `from`/`to` from viewport; skip same UTC day set; abort in-flight                   |
 | OHLCV uniform approximation                  | DONE (research) | Kept in `@moex/indicators` as `HORIZONTAL_VOLUME_OHLCV`; not used by the chart API route              |
 
-**RU.** GetTechAnalysis не отдаёт volume profile. Chart VP: ~100 рядов, buy/sell (синий/жёлтый), красный POC, легенда Up/Down. Market-data через `TINVEST_READ_ONLY_TOKEN` + CA Минцифры для History MD.  
-**EN.** GetTechAnalysis has no volume profile. Chart VP: ~100 rows, buy/sell (blue/amber), red POC, Up/Down legend. Market-data via `TINVEST_READ_ONLY_TOKEN` + Mincifry CA for History MD.
+**RU.** GetTechAnalysis не отдаёт volume profile. Chart VP: ~100 рядов, buy/sell (синий/жёлтый), красный POC, легенда Up/Down; тики только за видимое окно (debounce 250 ms, skip тех же UTC-дней). Market-data через `TINVEST_READ_ONLY_TOKEN` + CA Минцифры для History MD.  
+**EN.** GetTechAnalysis has no volume profile. Chart VP: ~100 rows, buy/sell (blue/amber), red POC, Up/Down legend; trades only for the visible window (250 ms debounce, skip same UTC days). Market-data via `TINVEST_READ_ONLY_TOKEN` + Mincifry CA for History MD.
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

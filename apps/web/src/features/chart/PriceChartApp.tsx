@@ -34,7 +34,6 @@ import type {
   CandleRow,
   ChartTimeframe,
   FuturesListCategory,
-  HorizontalVolumeApiResponse,
   InstrumentLookup,
   PivotSegment,
 } from './types';
@@ -44,6 +43,7 @@ import {
   upsertLiveCandle,
   useLiveCandleSubscription,
 } from './use-live-candle-subscription';
+import { useVisibleHorizontalVolume } from './use-visible-horizontal-volume';
 
 type Props = {
   client?: ChartApiClient;
@@ -69,14 +69,6 @@ function defaultRange(timeframe: ChartTimeframe): { from: string; to: string } {
       : timeframe === '5m'
         ? 3 * 24 * 60 * 60 * 1000
         : 7 * 24 * 60 * 60 * 1000;
-  const from = new Date(to.getTime() - lookbackMs);
-  return { from: from.toISOString(), to: to.toISOString() };
-}
-
-/** VP uses History MD day archives — week on short TFs, month on 1h. */
-function volumeProfileRange(timeframe: ChartTimeframe): { from: string; to: string } {
-  const to = new Date();
-  const lookbackMs = timeframe === '1h' ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
   const from = new Date(to.getTime() - lookbackMs);
   return { from: from.toISOString(), to: to.toISOString() };
 }
@@ -130,9 +122,6 @@ export function PriceChartApp(props: Props) {
   const [instrument, setInstrument] = useState<InstrumentLookup | null>(null);
   const [candles, setCandles] = useState<CandleRow[]>([]);
   const [pivots, setPivots] = useState<PivotSegment[]>([]);
-  const [horizontalVolume, setHorizontalVolume] = useState<HorizontalVolumeApiResponse | null>(
-    null,
-  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [xWindow, setXWindow] = useState<ChartXWindow>({ start: -0.5, end: 0.5 });
@@ -154,8 +143,7 @@ export function PriceChartApp(props: Props) {
   const loadHistorical = useEffectEvent(
     async (lookedUp: InstrumentLookup, nextTimeframe: ChartTimeframe) => {
       const range = defaultRange(nextTimeframe);
-      const vpRange = volumeProfileRange(nextTimeframe);
-      const [candleRows, pivotResponse, volumeResponse] = await Promise.all([
+      const [candleRows, pivotResponse] = await Promise.all([
         client.getCandles({
           instrumentUid: lookedUp.instrumentUid,
           interval: nextTimeframe,
@@ -168,17 +156,10 @@ export function PriceChartApp(props: Props) {
           from: range.from,
           to: range.to,
         }),
-        client.getHorizontalVolume({
-          instrumentUid: lookedUp.instrumentUid,
-          timeframe: nextTimeframe,
-          from: vpRange.from,
-          to: vpRange.to,
-        }),
       ]);
       setCandles(candleRows);
-      const sessionCandles = toSessionCandles(candleRows);
-      setPivots(toPivotSegments(pivotResponse, sessionCandles, nextTimeframe));
-      setHorizontalVolume(volumeResponse);
+      const nextSessionCandles = toSessionCandles(candleRows);
+      setPivots(toPivotSegments(pivotResponse, nextSessionCandles, nextTimeframe));
     },
   );
 
@@ -215,12 +196,12 @@ export function PriceChartApp(props: Props) {
         }
         // Stream connects as soon as instrumentUid is set. Historical REST seeds
         // the chart and remains the fallback when the live subscription fails.
+        // VP loads separately for the visible xWindow after candles settle.
         await loadHistorical(lookedUp, nextTimeframe);
       } catch (err: unknown) {
         setInstrument(null);
         setCandles([]);
         setPivots([]);
-        setHorizontalVolume(null);
         setError(err instanceof Error ? err.message : 'Failed to load chart data');
       } finally {
         setLoading(false);
@@ -270,6 +251,13 @@ export function PriceChartApp(props: Props) {
     () => sessionXExtent(sessionCandles, timeframe),
     [sessionCandles, timeframe],
   );
+  const horizontalVolume = useVisibleHorizontalVolume({
+    client,
+    instrumentUid: instrument?.instrumentUid ?? null,
+    timeframe,
+    sessionCandles,
+    xWindow,
+  });
 
   useEffect(() => {
     if (sessionCandles.length === 0) {
