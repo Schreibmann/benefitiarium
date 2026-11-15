@@ -38,12 +38,29 @@ export {
   type SwingPoint,
 } from './analyzers/market-structure.js';
 export {
+  analyzePriceAction,
+  DEFAULT_PRICE_ACTION_CONFIG,
+  type PriceActionConfig,
+  type PriceActionEvidence,
+  type PriceActionPattern,
+  strongestDirectionalEvidence,
+} from './analyzers/price-action.js';
+export {
   parseTradingSignalEngineConfig,
   TRADING_SIGNAL_ENGINE_ALGORITHM_ID,
   TRADING_SIGNAL_ENGINE_ALGORITHM_VERSION,
   type TradingSignalEngineConfig,
   tradingSignalEngineConfigSchema,
 } from './config.js';
+export {
+  type ConfluenceConfig,
+  type ConfluenceZone,
+  clusterPriceLevels,
+  DEFAULT_CONFLUENCE_CONFIG,
+  type EvidenceFamily,
+  evidenceFamilyForSource,
+  levelsFromVolumeProfile,
+} from './confluence/confluence.js';
 export {
   type AtrPoint,
   computeConfirmedAtrSeries,
@@ -90,6 +107,25 @@ export {
   type BuildAnalysisSnapshotInput,
   buildAnalysisSnapshot,
 } from './snapshot/analysis-snapshot.js';
+export {
+  type BreakoutRetestConfig,
+  type BreakoutRetestInput,
+  type BreakoutRetestResult,
+  type BreakoutRetestState,
+  DEFAULT_BREAKOUT_RETEST_CONFIG,
+  updateBreakoutRetestSetup,
+} from './strategies/breakout-retest.js';
+export {
+  DEFAULT_TREND_PULLBACK_CONFIG,
+  type TrendPullbackConfig,
+  type TrendPullbackInput,
+  updateTrendPullbackSetup,
+} from './strategies/trend-pullback.js';
+export type {
+  SetupStatus,
+  SetupUpdateResult,
+  TradingSetup,
+} from './strategies/types.js';
 export {
   type CandleBarKey,
   candleBarKey,
