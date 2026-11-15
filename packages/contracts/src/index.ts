@@ -14,10 +14,16 @@ export type {
 export type {
   GetCandlesInput,
   GetCandlesResult,
+  GetLastTradesInput,
+  GetLastTradesResult,
+  GetTradesInput,
+  GetTradesResult,
   HistoricalMarketDataProvider,
   InstrumentSpecInput,
   LastPrice,
   MarketDataProvider,
+  MarketTrade,
+  MarketTradeDirection,
   ProviderInstrument,
 } from './market-data.js';
 

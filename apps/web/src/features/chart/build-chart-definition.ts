@@ -4,7 +4,7 @@ import { dateAtSessionIndex } from './chart-time.js';
 import type { ChartXExtent, ChartXWindow } from './chart-viewport.js';
 import { candlePriceDomain, type SessionCandleRow } from './session-scale.js';
 import { pivotLabelRows } from './to-pivot-segments.js';
-import type { ChartTimeframe, PivotSegment } from './types.js';
+import type { ChartTimeframe, PivotSegment, VolumeProfileSegment } from './types.js';
 
 export type { ChartTimeRange, ChartXExtent, ChartXWindow } from './chart-viewport.js';
 export {
@@ -88,9 +88,10 @@ export function visibleCandles(
   return candles.filter((candle) => candle.index >= start && candle.index <= end);
 }
 
-function priceDomainWithPivots(
+function priceDomainWithOverlays(
   candles: readonly SessionCandleRow[],
   pivots: readonly PivotSegment[],
+  volumeProfile: readonly VolumeProfileSegment[],
 ): { min: number; max: number } | null {
   const base = candlePriceDomain(candles);
   if (base === null) {
@@ -106,12 +107,31 @@ function priceDomainWithPivots(
       max = pivot.y1;
     }
   }
+  for (const segment of volumeProfile) {
+    if (segment.kind === 'histogram') {
+      continue;
+    }
+    if (segment.y1 < min) {
+      min = segment.y1;
+    }
+    if (segment.y1 > max) {
+      max = segment.y1;
+    }
+  }
   return { min, max };
 }
+
+const VOLUME_PROFILE_STROKE: Record<VolumeProfileSegment['kind'], string> = {
+  histogram: 'var(--chart-volume-bar)',
+  poc: 'var(--chart-volume-poc)',
+  vah: 'var(--chart-volume-va)',
+  val: 'var(--chart-volume-va)',
+};
 
 export function buildPriceChartDefinition(input: {
   candles: readonly SessionCandleRow[];
   pivots: readonly PivotSegment[];
+  volumeProfile?: readonly VolumeProfileSegment[];
   xWindow: ChartXWindow;
   xExtent: ChartXExtent;
   timeframe: ChartTimeframe;
@@ -121,8 +141,15 @@ export function buildPriceChartDefinition(input: {
   const gains = toBodyRows(candles.filter((row) => row.Close >= row.Open));
   const losses = toBodyRows(candles.filter((row) => row.Close < row.Open));
   const pivots = [...input.pivots];
+  const volumeProfile = [...(input.volumeProfile ?? [])];
+  const histogram = volumeProfile.filter((segment) => segment.kind === 'histogram');
+  const volumeGuides = volumeProfile.filter((segment) => segment.kind !== 'histogram');
   const axisLevels = pivotLabelRows(pivots);
-  const priceDomain = priceDomainWithPivots(visible.length > 0 ? visible : candles, axisLevels);
+  const priceDomain = priceDomainWithOverlays(
+    visible.length > 0 ? visible : candles,
+    axisLevels,
+    volumeGuides,
+  );
   const yScale =
     priceDomain === null
       ? scaleLinear()
@@ -140,6 +167,28 @@ export function buildPriceChartDefinition(input: {
 
   return defineChart({
     marks: [
+      link(histogram, {
+        id: 'horizontal-volume-bars',
+        x1: 'x1',
+        y1: 'y1',
+        x2: 'x2',
+        y2: 'y2',
+        key: 'id',
+        stroke: VOLUME_PROFILE_STROKE.histogram,
+        strokeWidth: 4,
+        strokeOpacity: 0.35,
+      }),
+      link(volumeGuides, {
+        id: 'horizontal-volume-guides',
+        x1: 'x1',
+        y1: 'y1',
+        x2: 'x2',
+        y2: 'y2',
+        key: 'id',
+        stroke: (d) => VOLUME_PROFILE_STROKE[d.kind],
+        strokeWidth: (d) => (d.kind === 'poc' ? 1.6 : 1.1),
+        strokeOpacity: 0.85,
+      }),
       link(pivots, {
         id: 'fibonacci-pivots',
         x1: 'x1',

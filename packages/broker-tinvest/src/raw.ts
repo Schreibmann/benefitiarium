@@ -127,6 +127,18 @@ export type TinvestLastPriceRaw = {
   time: string;
 };
 
+export type TinvestTradeDirection = 'buy' | 'sell' | 'unspecified';
+
+/** Anonymized trade from MarketDataService.GetLastTrades (last-hour window). */
+export type TinvestTradeRaw = {
+  instrumentUid: string;
+  price: string;
+  /** Lots. */
+  quantity: string;
+  direction: TinvestTradeDirection;
+  time: string;
+};
+
 export type TinvestAccountRaw = {
   id: string;
   type: string | null;

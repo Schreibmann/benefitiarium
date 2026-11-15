@@ -21,4 +21,27 @@ export {
   type TradingPeriod,
 } from './fibonacci-pivots/types.js';
 
+export {
+  calculateHorizontalVolume,
+  calculateHorizontalVolumeFromTrades,
+} from './horizontal-volume/calculate.js';
+export {
+  type CalculateHorizontalVolumeFromTradesInput,
+  type CalculateHorizontalVolumeInput,
+  HORIZONTAL_VOLUME_ALGORITHM_ID,
+  HORIZONTAL_VOLUME_ALGORITHM_VERSION,
+  HORIZONTAL_VOLUME_DEFAULT_VALUE_AREA_RATIO,
+  HORIZONTAL_VOLUME_MAX_LEVELS,
+  HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID,
+  HORIZONTAL_VOLUME_SOURCE_KIND,
+  HORIZONTAL_VOLUME_TRADES_ALGORITHM_ID,
+  type HorizontalVolumeAlgorithmId,
+  type HorizontalVolumeCalculation,
+  type HorizontalVolumeCandle,
+  type HorizontalVolumeLevel,
+  type HorizontalVolumeQuality,
+  type HorizontalVolumeSourceKind,
+  type HorizontalVolumeTrade,
+} from './horizontal-volume/types.js';
+
 export const packageName = '@moex/indicators' as const;

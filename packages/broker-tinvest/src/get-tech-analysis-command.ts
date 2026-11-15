@@ -235,4 +235,6 @@ export const TECH_ANALYSIS_API_GAPS = {
   fibonacci: 'not_in_gettechanalysis',
   horizontalVolume: 'not_in_gettechanalysis',
   localFibonacciPivots: 'apps/api fibonacci-pivots route — keep; not superseded',
+  localHorizontalVolume:
+    'apps/api horizontal-volume route — OHLCV approximation until GetLastTrades',
 } as const;

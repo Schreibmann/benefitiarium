@@ -7,6 +7,7 @@ import type {
   FuturesFamily,
   FuturesFamilyContract,
   FuturesListCategory,
+  HorizontalVolumeApiResponse,
   InstrumentLookup,
 } from './types.js';
 
@@ -25,6 +26,12 @@ export type ChartApiClient = {
     from: string;
     to: string;
   }) => Promise<FibonacciPivotApiResponse>;
+  getHorizontalVolume: (input: {
+    instrumentUid: string;
+    timeframe: ChartTimeframe;
+    from: string;
+    to: string;
+  }) => Promise<HorizontalVolumeApiResponse>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -142,7 +149,132 @@ export function createChartApiClient(
         meta: buildPivotMeta(json.meta),
       };
     },
+
+    getHorizontalVolume: async (input) => {
+      const path =
+        `/api/v1/instruments/${encodeURIComponent(input.instrumentUid)}/indicators/horizontal-volume` +
+        `?timeframe=${encodeURIComponent(input.timeframe)}` +
+        `&from=${encodeURIComponent(input.from)}` +
+        `&to=${encodeURIComponent(input.to)}`;
+      const json = await request(path);
+      return parseHorizontalVolumeResponse(json);
+    },
   };
+}
+
+function parseHorizontalVolumeResponse(json: unknown): HorizontalVolumeApiResponse {
+  if (!isRecord(json) || !Array.isArray(json.levels) || !isRecord(json.meta)) {
+    throw new Error('Invalid horizontal volume response');
+  }
+  if (!isRecord(json.algorithm)) {
+    throw new Error('Invalid horizontal volume algorithm');
+  }
+  const chartTimeframeRaw = requiredString(json, 'chartTimeframe');
+  if (chartTimeframeRaw !== '1m' && chartTimeframeRaw !== '5m' && chartTimeframeRaw !== '1h') {
+    throw new Error('Invalid chartTimeframe');
+  }
+  const sourceKindRaw = requiredString(json, 'sourceKind');
+  if (sourceKindRaw !== 'last_trades' && sourceKindRaw !== 'ohlcv_uniform_approximation') {
+    throw new Error('Invalid sourceKind');
+  }
+  const qualityRaw = requiredString(json, 'quality');
+  if (qualityRaw !== 'ok' && qualityRaw !== 'EMPTY' && qualityRaw !== 'DEGENERATE') {
+    throw new Error('Invalid quality');
+  }
+  const tradesSourceRaw = requiredString(json.meta, 'tradesSource');
+  if (
+    tradesSourceRaw !== 'history_trades' &&
+    tradesSourceRaw !== 'last_trades' &&
+    tradesSourceRaw !== 'mixed'
+  ) {
+    throw new Error('Invalid tradesSource');
+  }
+  const levels: HorizontalVolumeApiResponse['levels'] = [];
+  for (const level of json.levels) {
+    if (!isRecord(level)) {
+      throw new Error('Invalid horizontal volume level');
+    }
+    levels.push({
+      price: requiredString(level, 'price'),
+      volume: requiredString(level, 'volume'),
+      buyVolume: requiredString(level, 'buyVolume'),
+      sellVolume: requiredString(level, 'sellVolume'),
+    });
+  }
+  const tradeCountRaw = json.meta.tradeCount;
+  if (typeof tradeCountRaw !== 'number' || !Number.isInteger(tradeCountRaw) || tradeCountRaw < 0) {
+    throw new Error('Invalid tradeCount');
+  }
+  const lastTradesIncludedRaw = json.meta.lastTradesIncluded;
+  if (typeof lastTradesIncludedRaw !== 'boolean') {
+    throw new Error('Invalid lastTradesIncluded');
+  }
+  const rowSizeInTicksRaw = json.rowSizeInTicks;
+  if (
+    typeof rowSizeInTicksRaw !== 'number' ||
+    !Number.isInteger(rowSizeInTicksRaw) ||
+    rowSizeInTicksRaw < 1
+  ) {
+    throw new Error('Invalid rowSizeInTicks');
+  }
+  return {
+    instrumentUid: requiredString(json, 'instrumentUid'),
+    chartTimeframe: chartTimeframeRaw,
+    levels,
+    totalVolume: requiredString(json, 'totalVolume'),
+    volumeUnit: requiredString(json, 'volumeUnit'),
+    poc: optionalNullableString(json, 'poc'),
+    vah: optionalNullableString(json, 'vah'),
+    val: optionalNullableString(json, 'val'),
+    tickSize: requiredString(json, 'tickSize'),
+    rowSizeInTicks: rowSizeInTicksRaw,
+    rowSize: requiredString(json, 'rowSize'),
+    valueAreaRatio: requiredString(json, 'valueAreaRatio'),
+    sourceKind: sourceKindRaw,
+    quality: qualityRaw,
+    algorithm: {
+      id: requiredString(json.algorithm, 'id'),
+      version: requiredString(json.algorithm, 'version'),
+    },
+    meta: {
+      requestedFrom: requiredString(json.meta, 'requestedFrom'),
+      requestedTo: requiredString(json.meta, 'requestedTo'),
+      effectiveFrom: requiredString(json.meta, 'effectiveFrom'),
+      effectiveTo: requiredString(json.meta, 'effectiveTo'),
+      tradeCount: tradeCountRaw,
+      historyTradeDays: parseStringArray(json.meta, 'historyTradeDays'),
+      missingDays: parseStringArray(json.meta, 'missingDays'),
+      lastTradesIncluded: lastTradesIncludedRaw,
+      tradesSource: tradesSourceRaw,
+      calculatedAt: requiredString(json.meta, 'calculatedAt'),
+    },
+  };
+}
+
+function parseStringArray(record: Record<string, unknown>, key: string): string[] {
+  const value = record[key];
+  if (!Array.isArray(value)) {
+    throw new Error(`Expected string[] field ${key}`);
+  }
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      throw new Error(`Expected string[] field ${key}`);
+    }
+    result.push(item);
+  }
+  return result;
+}
+
+function optionalNullableString(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(`Expected string|null field ${key}`);
+  }
+  return value;
 }
 
 function parseFuturesListCategory(value: string): FuturesListCategory {

@@ -7,10 +7,30 @@ export { createTinvestStreamClient } from './create-stream-client.js';
 export { createFixtureTinvestReadApi } from './fixture-read-api.js';
 export { createFixtureSandboxAccountProvider } from './fixture-sandbox-provider.js';
 export {
+  buildGetLastTradesCommand,
+  clampLastTradesWindow,
+  mapLastTradesResponse,
+  TINVEST_LAST_TRADES_MAX_WINDOW_MS,
+} from './get-last-trades-command.js';
+export {
   buildGetTechAnalysisCommand,
   mapTechAnalysisResponse,
   TECH_ANALYSIS_API_GAPS,
 } from './get-tech-analysis-command.js';
+export type {
+  CreateHistoryTradesClientInput,
+  HistoryTradesClient,
+} from './history-trades-client.js';
+export {
+  createHistoryTradesClient,
+  decodeArchiveToCsv,
+  enumerateUtcDates,
+  formatUtcDate,
+  HISTORY_TRADES_ARCHIVE_HOSTS,
+  HISTORY_TRADES_THROTTLE_MS,
+  parseTradesCsv,
+  utcTodayString,
+} from './history-trades-client.js';
 export { mapTinvestUnderlyingAssetType, resolveFuturesListCategory } from './mappers/underlying.js';
 export type {
   TinvestGetTechAnalysisInput,

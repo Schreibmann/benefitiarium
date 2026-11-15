@@ -1,7 +1,7 @@
 # Project Status / Статус проекта
 
-**RU.** **Обновлено:** 2026-11-11  
-**EN.** **Updated:** 2026-11-11
+**RU.** **Обновлено:** 2026-11-15  
+**EN.** **Updated:** 2026-11-15
 
 **RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
 **EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
@@ -80,6 +80,19 @@
 | Chart route code-split + bootstrap   | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
 | Signals                              | DEFERRED        | Out of scope for this slice                                       |
 | Persist table / workers              | DEFERRED        | Next stage after UI                                               |
+
+## Horizontal volume (trades VP) / Горизонтальный объём (VP по сделкам)
+
+| Piece / Компонент                            | Status / Статус | Notes / Примечания                                                                                    |
+| -------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_TRADES` (+ OHLCV research fallback); POC / VAH / VAL                               |
+| History MD day archives                      | DONE            | `GET /history-trades/{YYYY-MM-DD}`; week/month ranges; ~30 files/min throttle                         |
+| On-read API `…/indicators/horizontal-volume` | DONE            | `MarketDataProvider.getTrades` → trades VP; meta: `historyTradeDays` / `tradesSource` / `missingDays` |
+| Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                                         |
+| OHLCV uniform approximation                  | DONE (research) | Kept in `@moex/indicators` as `HORIZONTAL_VOLUME_OHLCV`; not used by the chart API route              |
+
+**RU.** GetTechAnalysis не отдаёт volume profile. API строит профиль из анонимизированных сделок History MD (дневные архивы за неделю/месяц) плюс опциональный фрагмент `GetLastTrades` за текущий UTC-день. Нужен production read-only токен.  
+**EN.** GetTechAnalysis has no volume profile. The API builds VP from History MD anonymized day-trade archives (week/month) plus an optional `GetLastTrades` fragment for the current UTC day. Requires a production read-only token.
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

@@ -8,6 +8,9 @@
   --chart-pivot-p: light-dark(#6b7280, #9ca3af);
   --chart-pivot-r: light-dark(#b42318, #f07167);
   --chart-pivot-s: light-dark(#2f7d4a, #6fbf86);
+  --chart-volume-bar: light-dark(#5b7c99, #7f9bb8);
+  --chart-volume-poc: light-dark(#b45309, #f0a202);
+  --chart-volume-va: light-dark(#6b7280, #9aa3b5);
 
   min-height: 100vh;
   margin: 0 auto;

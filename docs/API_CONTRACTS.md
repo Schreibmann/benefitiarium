@@ -77,7 +77,12 @@
 
 - Official IndicatorType: **BB | EMA | RSI | MACD | SMA** only ([investAPI marketdata.proto](https://github.com/RussianInvestments/investAPI)).
 - **No Fibonacci** and **no horizontal volume / volume profile** in GetTechAnalysis. Local Fibonacci Pivot Points (`GET …/indicators/fibonacci-pivots`, `@moex/indicators`) remain the chart overlay and are **not** superseded.
+- **Local horizontal volume** (`GET …/indicators/horizontal-volume`, `@moex/indicators` `HORIZONTAL_VOLUME_TRADES`): true volume-at-price from anonymized trades via `MarketDataProvider.getTrades`. Data source: History MD daily archives `GET /history-trades/{YYYY-MM-DD}?instrumentId=` (week/month ranges; nightly; no current day; ~30 files/min) plus optional live `GetLastTrades` fragment for the current UTC day. `sourceKind: last_trades`; meta includes `tradesSource` (`history_trades` \| `last_trades` \| `mixed`), `historyTradeDays`, `missingDays`, `lastTradesIncluded`, `tradeCount`. Response: `levels[]` (with `buyVolume`/`sellVolume`), `poc` / `vah` / `val`, `volumeUnit`. OHLCV uniform approx remains in the indicators package as research-only. Requires `TINVEST_READ_ONLY_TOKEN` for archives (sandbox often cannot fetch History MD).
 - Adapter: `TinvestReadApi.getTechAnalysis` → raw bands/signal/macd strings. No HTTP route yet for BB/EMA/RSI/MACD/SMA (stop at adapter + fixtures).
+
+**RU.** Горизонтальный объём в T-Invest GetTechAnalysis отсутствует; локальный endpoint строит volume profile из дневных архивов History MD (неделя/месяц) и при необходимости добирает текущий UTC-день через `GetLastTrades` (окно ~1 час).
+
+**EN.** Horizontal volume is absent from T-Invest GetTechAnalysis; the local endpoint builds a volume profile from History MD day archives (week/month) and, when needed, tops up the current UTC day via `GetLastTrades` (~1h window).
 
 **RU.** Live probe: `pnpm --filter @moex/broker-tinvest spike` загружает repo `.env` и использует `TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` раздельно (значения токенов не логируются).
 

@@ -2,7 +2,12 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 const apiProxy = {
-  '/api': 'http://127.0.0.1:3000',
+  // History MD week/month VP can take ~15–70s (day archives throttled ~30/min).
+  '/api': {
+    target: 'http://127.0.0.1:3000',
+    timeout: 120_000,
+    proxyTimeout: 120_000,
+  },
   '/ws': {
     target: 'ws://127.0.0.1:3000',
     ws: true,

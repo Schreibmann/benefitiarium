@@ -10,6 +10,7 @@ import type {
   TinvestPositionRaw,
   TinvestShareRaw,
   TinvestTechAnalysisItemRaw,
+  TinvestTradeRaw,
 } from './raw.js';
 
 /**
@@ -33,6 +34,15 @@ export type TinvestReadApi = {
     to: Date;
   }) => Promise<TinvestCandleRaw[]>;
   getLastPrices: (instrumentUids: string[]) => Promise<TinvestLastPriceRaw[]>;
+  /**
+   * MarketDataService.GetLastTrades — anonymized trades for the last hour only.
+   * Required for true volume-at-price (horizontal volume); not a candle substitute.
+   */
+  getLastTrades: (input: {
+    instrumentUid: string;
+    from: Date;
+    to: Date;
+  }) => Promise<TinvestTradeRaw[]>;
   /**
    * MarketDataService.GetTechAnalysis — BB/EMA/RSI/MACD/SMA only.
    * No Fibonacci / horizontal volume in the broker API (see TECH_ANALYSIS_API_GAPS).

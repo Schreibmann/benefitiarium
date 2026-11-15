@@ -113,6 +113,15 @@ describe('listFuturesByCategory cache fallback', () => {
         return spec;
       },
       getLastPrices: async () => [],
+      getTrades: async () => ({
+        items: [],
+        effectiveFrom: parseIsoDateTime('2026-11-05T00:00:00.000Z'),
+        effectiveTo: parseIsoDateTime('2026-11-05T01:00:00.000Z'),
+        historyTradeDays: [],
+        missingDays: [],
+        lastTradesIncluded: false,
+        source: 'history_trades',
+      }),
       getCandles: async () => ({ items: [] }),
     };
 
@@ -138,6 +147,15 @@ describe('listFuturesByCategory cache fallback', () => {
         throw new Error('unused');
       },
       getLastPrices: async () => [],
+      getTrades: async () => ({
+        items: [],
+        effectiveFrom: parseIsoDateTime('2026-11-05T00:00:00.000Z'),
+        effectiveTo: parseIsoDateTime('2026-11-05T01:00:00.000Z'),
+        historyTradeDays: [],
+        missingDays: [],
+        lastTradesIncluded: false,
+        source: 'history_trades',
+      }),
       getCandles: async () => ({ items: [] }),
     };
     await expect(

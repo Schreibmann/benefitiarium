@@ -13,6 +13,7 @@ import {
   GetSharesCommand,
   type InvestNodeSDK,
 } from '@ttech-pub/invest-sdk-node';
+import { buildGetLastTradesCommand, mapLastTradesResponse } from './get-last-trades-command.js';
 import {
   buildGetTechAnalysisCommand,
   mapTechAnalysisResponse,
@@ -307,6 +308,10 @@ export function createSdkTinvestReadApi(sdk: InvestNodeSDK): TinvestReadApi {
         });
       }
       return mapped;
+    },
+    getLastTrades: async (input) => {
+      const response = await sdk.send(buildGetLastTradesCommand(input));
+      return mapLastTradesResponse(response.trades);
     },
     getTechAnalysis: async (input) => {
       const response = await sdk.send(buildGetTechAnalysisCommand(input));
