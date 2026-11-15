@@ -68,7 +68,7 @@ export function useVisibleHorizontalVolume(args: Args): HorizontalVolumeApiRespo
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
-      const iso = chartTimeRangeToIso(range);
+      const iso = chartTimeRangeToIso(range, timeframe);
 
       void (async () => {
         try {

@@ -70,15 +70,34 @@ describe('visibleVolumeFetchKey', () => {
 });
 
 describe('chartTimeRangeToIso', () => {
-  it('orders from/to ascending', () => {
+  it('orders from/to ascending and extends to through the last bar', () => {
     expect(
-      chartTimeRangeToIso({
-        fromMs: Date.UTC(2026, 10, 15, 18, 0, 0),
-        toMs: Date.UTC(2026, 10, 15, 8, 0, 0),
-      }),
+      chartTimeRangeToIso(
+        {
+          fromMs: Date.UTC(2026, 10, 15, 18, 0, 0),
+          toMs: Date.UTC(2026, 10, 15, 8, 0, 0),
+        },
+        '5m',
+      ),
     ).toEqual({
       from: '2026-11-15T08:00:00.000Z',
-      to: '2026-11-15T18:00:00.000Z',
+      to: '2026-11-15T18:05:00.000Z',
+    });
+  });
+
+  it('keeps from < to for a single visible candle', () => {
+    const open = Date.UTC(2026, 10, 15, 12, 0, 0);
+    expect(
+      chartTimeRangeToIso(
+        {
+          fromMs: open,
+          toMs: open,
+        },
+        '1m',
+      ),
+    ).toEqual({
+      from: '2026-11-15T12:00:00.000Z',
+      to: '2026-11-15T12:01:00.000Z',
     });
   });
 });

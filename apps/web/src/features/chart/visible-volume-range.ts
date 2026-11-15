@@ -1,3 +1,4 @@
+import { intervalMs } from './chart-time.js';
 import type { ChartTimeRange } from './chart-viewport.js';
 import type { ChartTimeframe } from './types.js';
 
@@ -26,9 +27,17 @@ export function visibleVolumeFetchKey(input: {
   return `${input.instrumentUid}|${input.timeframe}|${days.join(',')}`;
 }
 
-export function chartTimeRangeToIso(range: ChartTimeRange): { from: string; to: string } {
+/**
+ * API query bounds for visible VP. Candle `Date` is bar open; `to` is exclusive
+ * and must be strictly greater than `from`, so extend through the last bar.
+ */
+export function chartTimeRangeToIso(
+  range: ChartTimeRange,
+  timeframe: ChartTimeframe,
+): { from: string; to: string } {
   const fromMs = Math.min(range.fromMs, range.toMs);
-  const toMs = Math.max(range.fromMs, range.toMs);
+  const lastOpenMs = Math.max(range.fromMs, range.toMs);
+  const toMs = lastOpenMs + intervalMs(timeframe);
   return {
     from: new Date(fromMs).toISOString(),
     to: new Date(toMs).toISOString(),
