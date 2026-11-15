@@ -9,29 +9,29 @@
 **RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE) · UI foundation · M3 realtime chart slice  
 **EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE) · UI foundation · M3 realtime chart slice
 
-**RU.** **Активная задача:** BL-053 Trading Signal Engine Phase 3 (`@moex/strategy-engine` setups)  
-**EN.** **Active task:** BL-053 Trading Signal Engine Phase 3 (`@moex/strategy-engine` setups)
+**RU.** **Активная задача:** BL-053 Trading Signal Engine Phase 4 (`@moex/strategy-engine` scoring/risk)  
+**EN.** **Active task:** BL-053 Trading Signal Engine Phase 4 (`@moex/strategy-engine` scoring/risk)
 
-**RU.** **Следующая задача:** Signal Engine Phase 4 (scoring + risk gates + entry/SL/TP); UI-017; RT-05…07  
-**EN.** **Next task:** Signal Engine Phase 4 (scoring + risk gates + entry/SL/TP); UI-017; RT-05…07
+**RU.** **Следующая задача:** Signal Engine Phase 5 (live processing + persistence/outbox); UI-017; RT-05…07  
+**EN.** **Next task:** Signal Engine Phase 5 (live processing + persistence/outbox); UI-017; RT-05…07
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone / Вехи
 
-| Milestone            | Status / Статус | Notes / Примечания                                                    |
-| -------------------- | --------------- | --------------------------------------------------------------------- |
-| M0 — Foundation      | DONE            | EPIC E0 verified locally                                              |
-| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                                       |
-| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                                     |
-| M3 — Realtime        | IN_PROGRESS     | Stream manager + registry + chart WS Live button (API MVP)            |
-| M4 — Signals         | IN_PROGRESS     | Benefit TSE Phase 0–3 in `@moex/strategy-engine` (contracts → setups) |
-| M5 — Backtesting     | TODO            | —                                                                     |
-| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                                    |
-| M7 — Paper           | TODO            | —                                                                     |
-| M8 — Guarded Live    | TODO            | —                                                                     |
-| UI foundation        | IN_PROGRESS     | UI-001…007, UI-010…013, UI-015…016 done; next UI-017 / instrument UI  |
+| Milestone            | Status / Статус | Notes / Примечания                                                      |
+| -------------------- | --------------- | ----------------------------------------------------------------------- |
+| M0 — Foundation      | DONE            | EPIC E0 verified locally                                                |
+| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                                         |
+| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                                       |
+| M3 — Realtime        | IN_PROGRESS     | Stream manager + registry + chart WS Live button (API MVP)              |
+| M4 — Signals         | IN_PROGRESS     | Benefit TSE Phase 0–4 in `@moex/strategy-engine` (through scoring/risk) |
+| M5 — Backtesting     | TODO            | —                                                                       |
+| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                                      |
+| M7 — Paper           | TODO            | —                                                                       |
+| M8 — Guarded Live    | TODO            | —                                                                       |
+| UI foundation        | IN_PROGRESS     | UI-001…007, UI-010…013, UI-015…016 done; next UI-017 / instrument UI    |
 
 ## EPIC E7A (v1.2) / EPIC E7A (v1.2)
 
@@ -113,8 +113,8 @@
 
 ## Trading Signal Engine / Движок торговых сигналов
 
-**RU.** Spec: [`docs/BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md`](BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md) · Map: [`docs/trading-signal-engine/REPOSITORY_MAP.md`](trading-signal-engine/REPOSITORY_MAP.md) · Package: `@moex/strategy-engine` (Phase 1–3: contracts, analyzers, confluence, price action, `TREND_PULLBACK` / `BREAKOUT_RETEST`).  
-**EN.** Spec: [`docs/BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md`](BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md) · Map: [`docs/trading-signal-engine/REPOSITORY_MAP.md`](trading-signal-engine/REPOSITORY_MAP.md) · Package: `@moex/strategy-engine` (Phase 1–3: contracts, analyzers, confluence, price action, `TREND_PULLBACK` / `BREAKOUT_RETEST`).
+**RU.** Spec: [`docs/BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md`](BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md) · Map: [`docs/trading-signal-engine/REPOSITORY_MAP.md`](trading-signal-engine/REPOSITORY_MAP.md) · Package: `@moex/strategy-engine` (Phase 1–4: through scoring, hard gates, entry/SL/TP, `confirmSignal`).  
+**EN.** Spec: [`docs/BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md`](BENEFITIARIUM_TRADING_SIGNAL_ENGINE_SPEC.md) · Map: [`docs/trading-signal-engine/REPOSITORY_MAP.md`](trading-signal-engine/REPOSITORY_MAP.md) · Package: `@moex/strategy-engine` (Phase 1–4: through scoring, hard gates, entry/SL/TP, `confirmSignal`).
 
 ## Notes / Заметки
 
@@ -138,7 +138,7 @@
 
 **RU.**
 
-1. Signal Engine Phase 4 — scoring, hard eligibility gates, entry/SL/TP selection
+1. Signal Engine Phase 5 — live event processing, persistence/outbox, lifecycle events
 2. UI-017 visual regression (Landing/Dashboard Dark/Light)
 3. UI-008 / UI-009 — Instrument page + realtime lease UI
 4. Host stream in `worker-market-data` + IPC to API gateway
@@ -146,7 +146,7 @@
 
 **EN.**
 
-1. Signal Engine Phase 4 — scoring, hard eligibility gates, entry/SL/TP selection
+1. Signal Engine Phase 5 — live event processing, persistence/outbox, lifecycle events
 2. UI-017 visual regression (Landing/Dashboard Dark/Light)
 3. UI-008 / UI-009 — Instrument page + realtime lease UI
 4. Host stream in `worker-market-data` + IPC to API gateway

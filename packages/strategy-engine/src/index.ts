@@ -86,6 +86,22 @@ export {
   type StopRoundingSide,
 } from './features/distance.js';
 export {
+  type DataGateInput,
+  type DuplicateCooldownGateInput,
+  evaluateDataGates,
+  evaluateDuplicateCooldownGates,
+  evaluateHardGates,
+  evaluateMarketGates,
+  evaluateRewardRiskGate,
+  type GateResult,
+  type HardGateBundleInput,
+  type HardGateBundleResult,
+  isStopDistanceValid,
+  type MarketGateInput,
+  type RiskRewardGateInput,
+  stopDistanceTicks,
+} from './gates/eligibility.js';
+export {
   buildMtfContextSnapshot,
   candlesAsOf,
   type MtfAlignment,
@@ -102,6 +118,50 @@ export {
   normalizeMarketEvent,
 } from './normalizer.js';
 export { isReasonCode, REASON_CODES, type ReasonCode } from './reason-codes.js';
+export {
+  buildEntryReferences,
+  computeStructuralStop,
+  DEFAULT_ENTRY_RISK_CONFIG,
+  type EntryReferences,
+  type EntryRiskConfig,
+  type StopLossResult,
+  selectTakeProfitCandidates,
+  type TakeProfitCandidate,
+  type TakeProfitSelection,
+} from './risk/entry-stop-target.js';
+export {
+  DEFAULT_POSITION_SIZING_CONFIG,
+  type PositionSizingConfig,
+  type PositionSizingResult,
+  sizePosition,
+} from './risk/position-sizing.js';
+export {
+  type CategoryEvidenceInput,
+  type DirectionalEvidenceInput,
+  fibonacciEvidence,
+  mtfEvidence,
+  priceActionEvidence,
+  regimeEvidence,
+  type ScoreSignalInput,
+  scoreSignal,
+  volumeEvidence,
+  volumeProfileEvidence,
+} from './scoring/score-signal.js';
+export {
+  DEFAULT_SCORE_WEIGHTS,
+  DEFAULT_SCORING_THRESHOLDS,
+  type ScoreCategory,
+  type ScoreClassification,
+  type ScoreContribution,
+  type ScoreWeightConfig,
+  type ScoringThresholdConfig,
+  type SignalScore,
+} from './scoring/types.js';
+export {
+  type ConfirmedSignalDecision,
+  type ConfirmSignalInput,
+  confirmSignal,
+} from './signal/confirm-signal.js';
 export {
   type AnalysisSnapshot,
   type BuildAnalysisSnapshotInput,
