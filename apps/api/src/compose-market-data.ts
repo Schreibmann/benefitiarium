@@ -1,4 +1,5 @@
 import {
+  createHistoryTradesClient,
   createIdentityInstrumentUidResolver,
   createSdkTinvestReadApi,
   createTinvestMarketDataProvider,
@@ -65,10 +66,14 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     baseUrl: env.TINVEST_BASE_URL,
   });
   const api = createSdkTinvestReadApi(sdk);
+  // History MD trades archives need a production-capable token (sandbox often 401/403).
+  const historyTrades =
+    readOnly !== null ? createHistoryTradesClient({ token: readOnly }) : undefined;
   const marketData = createTinvestMarketDataProvider({
     api,
     resolver: createIdentityInstrumentUidResolver(),
     isSandbox: sdkEnv === 'sandbox',
+    ...(historyTrades !== undefined ? { historyTrades } : {}),
   });
   const futuresCatalogCache = await tryCreateFuturesCatalogCache();
   const chartDeps: ChartMarketDataDeps = {

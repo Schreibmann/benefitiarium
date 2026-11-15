@@ -174,12 +174,20 @@ function parseHorizontalVolumeResponse(json: unknown): HorizontalVolumeApiRespon
     throw new Error('Invalid chartTimeframe');
   }
   const sourceKindRaw = requiredString(json, 'sourceKind');
-  if (sourceKindRaw !== 'ohlcv_uniform_approximation') {
+  if (sourceKindRaw !== 'last_trades' && sourceKindRaw !== 'ohlcv_uniform_approximation') {
     throw new Error('Invalid sourceKind');
   }
   const qualityRaw = requiredString(json, 'quality');
   if (qualityRaw !== 'ok' && qualityRaw !== 'EMPTY' && qualityRaw !== 'DEGENERATE') {
     throw new Error('Invalid quality');
+  }
+  const tradesSourceRaw = requiredString(json.meta, 'tradesSource');
+  if (
+    tradesSourceRaw !== 'history_trades' &&
+    tradesSourceRaw !== 'last_trades' &&
+    tradesSourceRaw !== 'mixed'
+  ) {
+    throw new Error('Invalid tradesSource');
   }
   const levels: HorizontalVolumeApiResponse['levels'] = [];
   for (const level of json.levels) {
@@ -189,15 +197,17 @@ function parseHorizontalVolumeResponse(json: unknown): HorizontalVolumeApiRespon
     levels.push({
       price: requiredString(level, 'price'),
       volume: requiredString(level, 'volume'),
+      buyVolume: requiredString(level, 'buyVolume'),
+      sellVolume: requiredString(level, 'sellVolume'),
     });
   }
-  const candleCountRaw = json.meta.candleCount;
-  if (
-    typeof candleCountRaw !== 'number' ||
-    !Number.isInteger(candleCountRaw) ||
-    candleCountRaw < 0
-  ) {
-    throw new Error('Invalid candleCount');
+  const tradeCountRaw = json.meta.tradeCount;
+  if (typeof tradeCountRaw !== 'number' || !Number.isInteger(tradeCountRaw) || tradeCountRaw < 0) {
+    throw new Error('Invalid tradeCount');
+  }
+  const lastTradesIncludedRaw = json.meta.lastTradesIncluded;
+  if (typeof lastTradesIncludedRaw !== 'boolean') {
+    throw new Error('Invalid lastTradesIncluded');
   }
   const rowSizeInTicksRaw = json.rowSizeInTicks;
   if (
@@ -229,10 +239,31 @@ function parseHorizontalVolumeResponse(json: unknown): HorizontalVolumeApiRespon
     meta: {
       requestedFrom: requiredString(json.meta, 'requestedFrom'),
       requestedTo: requiredString(json.meta, 'requestedTo'),
-      candleCount: candleCountRaw,
+      effectiveFrom: requiredString(json.meta, 'effectiveFrom'),
+      effectiveTo: requiredString(json.meta, 'effectiveTo'),
+      tradeCount: tradeCountRaw,
+      historyTradeDays: parseStringArray(json.meta, 'historyTradeDays'),
+      missingDays: parseStringArray(json.meta, 'missingDays'),
+      lastTradesIncluded: lastTradesIncludedRaw,
+      tradesSource: tradesSourceRaw,
       calculatedAt: requiredString(json.meta, 'calculatedAt'),
     },
   };
+}
+
+function parseStringArray(record: Record<string, unknown>, key: string): string[] {
+  const value = record[key];
+  if (!Array.isArray(value)) {
+    throw new Error(`Expected string[] field ${key}`);
+  }
+  const result: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      throw new Error(`Expected string[] field ${key}`);
+    }
+    result.push(item);
+  }
+  return result;
 }
 
 function optionalNullableString(record: Record<string, unknown>, key: string): string | null {

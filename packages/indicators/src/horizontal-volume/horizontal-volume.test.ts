@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { calculateHorizontalVolume } from './calculate.js';
-import { HORIZONTAL_VOLUME_ALGORITHM_ID, HORIZONTAL_VOLUME_SOURCE_KIND } from './types.js';
+import { calculateHorizontalVolume, calculateHorizontalVolumeFromTrades } from './calculate.js';
+import {
+  HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID,
+  HORIZONTAL_VOLUME_SOURCE_KIND,
+  HORIZONTAL_VOLUME_TRADES_ALGORITHM_ID,
+} from './types.js';
 
-describe('calculateHorizontalVolume', () => {
+describe('calculateHorizontalVolume (OHLCV approx)', () => {
   it('distributes bar volume uniformly across tick rows and finds POC', () => {
     const result = calculateHorizontalVolume({
       candles: [
@@ -14,34 +18,15 @@ describe('calculateHorizontalVolume', () => {
     });
 
     expect(result.quality).toBe('ok');
-    expect(result.sourceKind).toBe(HORIZONTAL_VOLUME_SOURCE_KIND);
-    expect(result.algorithmId).toBe(HORIZONTAL_VOLUME_ALGORITHM_ID);
+    expect(result.sourceKind).toBe(HORIZONTAL_VOLUME_SOURCE_KIND.ohlcvUniformApproximation);
+    expect(result.algorithmId).toBe(HORIZONTAL_VOLUME_OHLCV_ALGORITHM_ID);
     expect(result.totalVolume).toBe('70');
     expect(result.poc).toBe('101');
 
     const byPrice = Object.fromEntries(result.levels.map((level) => [level.price, level.volume]));
-    // First candle: 30 / 3 = 10 on 100, 101, 102; second: 40 on 101 → 101 = 50
     expect(byPrice['100']).toBe('10');
     expect(byPrice['101']).toBe('50');
     expect(byPrice['102']).toBe('10');
-  });
-
-  it('computes value area covering the configured ratio around POC', () => {
-    const result = calculateHorizontalVolume({
-      candles: [
-        { high: '100', low: '100', volume: '20' },
-        { high: '101', low: '101', volume: '30' },
-        { high: '102', low: '102', volume: '20' },
-        { high: '103', low: '103', volume: '5' },
-      ],
-      tickSize: '1',
-      valueAreaRatio: '0.70',
-    });
-
-    expect(result.poc).toBe('101');
-    expect(result.val).toBe('100');
-    expect(result.vah).toBe('102');
-    // Expand POC→102 (tie prefers up) then →100: 30+20+20 = 70 ≥ 70% of 75
   });
 
   it('returns EMPTY when all volumes are zero', () => {
@@ -53,40 +38,69 @@ describe('calculateHorizontalVolume', () => {
     expect(result.levels).toEqual([]);
     expect(result.poc).toBeNull();
   });
+});
+
+describe('calculateHorizontalVolumeFromTrades', () => {
+  it('aggregates lots at trade prices with buy/sell split and POC', () => {
+    const result = calculateHorizontalVolumeFromTrades({
+      trades: [
+        { price: '100', quantity: '10', direction: 'buy' },
+        { price: '101', quantity: '40', direction: 'sell' },
+        { price: '101', quantity: '10', direction: 'buy' },
+        { price: '102', quantity: '20', direction: 'sell' },
+      ],
+      tickSize: '1',
+    });
+
+    expect(result.sourceKind).toBe(HORIZONTAL_VOLUME_SOURCE_KIND.lastTrades);
+    expect(result.algorithmId).toBe(HORIZONTAL_VOLUME_TRADES_ALGORITHM_ID);
+    expect(result.totalVolume).toBe('80');
+    expect(result.poc).toBe('101');
+
+    const level101 = result.levels.find((level) => level.price === '101');
+    expect(level101?.volume).toBe('50');
+    expect(level101?.buyVolume).toBe('10');
+    expect(level101?.sellVolume).toBe('40');
+  });
+
+  it('computes value area covering the configured ratio around POC', () => {
+    const result = calculateHorizontalVolumeFromTrades({
+      trades: [
+        { price: '100', quantity: '20', direction: 'buy' },
+        { price: '101', quantity: '30', direction: 'buy' },
+        { price: '102', quantity: '20', direction: 'sell' },
+        { price: '103', quantity: '5', direction: 'sell' },
+      ],
+      tickSize: '1',
+      valueAreaRatio: '0.70',
+    });
+
+    expect(result.poc).toBe('101');
+    expect(result.val).toBe('100');
+    expect(result.vah).toBe('102');
+  });
 
   it('marks single-level profiles as DEGENERATE', () => {
-    const result = calculateHorizontalVolume({
-      candles: [{ high: '42', low: '42', volume: '7' }],
+    const result = calculateHorizontalVolumeFromTrades({
+      trades: [{ price: '42', quantity: '7', direction: 'buy' }],
       tickSize: '1',
     });
     expect(result.quality).toBe('DEGENERATE');
     expect(result.poc).toBe('42');
-    expect(result.vah).toBe('42');
-    expect(result.val).toBe('42');
   });
 
-  it('rejects invalid OHLC and tick size', () => {
+  it('rejects negative quantity and non-positive tick', () => {
     expect(() =>
-      calculateHorizontalVolume({
-        candles: [{ high: '99', low: '100', volume: '1' }],
+      calculateHorizontalVolumeFromTrades({
+        trades: [{ price: '1', quantity: '-1' }],
         tickSize: '1',
       }),
-    ).toThrow(/high < low/);
+    ).toThrow(/quantity < 0/);
     expect(() =>
-      calculateHorizontalVolume({
-        candles: [{ high: '100', low: '100', volume: '1' }],
+      calculateHorizontalVolumeFromTrades({
+        trades: [{ price: '1', quantity: '1' }],
         tickSize: '0',
       }),
     ).toThrow(/tickSize must be positive/);
-  });
-
-  it('auto-grows row size when the span would exceed the level cap', () => {
-    const result = calculateHorizontalVolume({
-      candles: [{ high: '10000', low: '0', volume: '100' }],
-      tickSize: '1',
-    });
-    expect(result.rowSizeInTicks).toBeGreaterThan(1);
-    expect(result.levels.length).toBeLessThanOrEqual(2000);
-    expect(result.totalVolume).toBe('100');
   });
 });

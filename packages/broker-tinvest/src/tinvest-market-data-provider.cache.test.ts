@@ -1,3 +1,4 @@
+import { parseInstrumentId } from '@moex/domain';
 import { describe, expect, it } from 'vitest';
 import type { TinvestFutureRaw, TinvestIndicativeRaw, TinvestShareRaw } from './raw.js';
 import type { TinvestReadApi } from './read-api.js';
@@ -63,6 +64,7 @@ describe('createTinvestMarketDataProvider catalog/spec caching', () => {
       },
       getCandles: async () => [],
       getLastPrices: async () => [],
+      getLastTrades: async () => [],
       getTechAnalysis: async () => [],
       listAccounts: async () => {
         throw new Error('unused');
@@ -112,6 +114,7 @@ describe('createTinvestMarketDataProvider catalog/spec caching', () => {
       getIndicativeByUid: async () => null,
       getCandles: async () => [],
       getLastPrices: async () => [],
+      getLastTrades: async () => [],
       getTechAnalysis: async () => [],
       listAccounts: async () => {
         throw new Error('unused');
@@ -136,5 +139,67 @@ describe('createTinvestMarketDataProvider catalog/spec caching', () => {
       provider.getInstrumentSpec('uid-1'),
     ]);
     expect(listFuturesCalls).toBe(1);
+  });
+});
+
+describe('createTinvestMarketDataProvider getTrades', () => {
+  it('loads History MD day archives across a multi-day range', async () => {
+    const instrumentUid = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+    const fetchedDates: string[] = [];
+    const api: TinvestReadApi = {
+      listShares: async () => [],
+      listFutures: async () => [],
+      listIndicatives: async () => [],
+      getShareByUid: async () => null,
+      getFutureByUid: async () => null,
+      getIndicativeByUid: async () => null,
+      getCandles: async () => [],
+      getLastPrices: async () => [],
+      getLastTrades: async () => [],
+      getTechAnalysis: async () => [],
+      listAccounts: async () => {
+        throw new Error('unused');
+      },
+      getPositions: async () => {
+        throw new Error('unused');
+      },
+      getOrders: async () => {
+        throw new Error('unused');
+      },
+      getOrderById: async () => null,
+    };
+
+    const provider = createTinvestMarketDataProvider({
+      api,
+      resolver: createIdentityInstrumentUidResolver(),
+      now: () => new Date('2026-11-14T12:00:00.000Z'),
+      historyTradesThrottleMs: 0,
+      historyTrades: {
+        fetchDayTrades: async ({ date }) => {
+          fetchedDates.push(date);
+          return [
+            {
+              instrumentUid,
+              price: '10',
+              quantity: '2',
+              direction: 'buy',
+              time: `${date}T10:00:00.000Z`,
+            },
+          ];
+        },
+      },
+    });
+
+    const result = await provider.getTrades({
+      instrumentId: parseInstrumentId(instrumentUid),
+      from: new Date('2026-11-10T00:00:00.000Z'),
+      to: new Date('2026-11-13T00:00:00.000Z'),
+    });
+
+    expect(fetchedDates).toEqual(['2026-11-10', '2026-11-11', '2026-11-12']);
+    expect(result.historyTradeDays).toEqual(['2026-11-10', '2026-11-11', '2026-11-12']);
+    expect(result.items).toHaveLength(3);
+    expect(result.source).toBe('history_trades');
+    expect(result.lastTradesIncluded).toBe(false);
   });
 });

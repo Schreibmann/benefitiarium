@@ -1,18 +1,17 @@
-import type { CandleInterval } from '@moex/domain';
 import { parseInstrumentId } from '@moex/domain';
 import {
-  calculateHorizontalVolume,
-  type HORIZONTAL_VOLUME_ALGORITHM_ID,
-  type HORIZONTAL_VOLUME_ALGORITHM_VERSION,
-  type HORIZONTAL_VOLUME_SOURCE_KIND,
+  calculateHorizontalVolumeFromTrades,
+  type HorizontalVolumeAlgorithmId,
   type HorizontalVolumeCalculation,
+  type HorizontalVolumeSourceKind,
 } from '@moex/indicators';
 import type { ChartMarketDataDeps } from './fibonacci-pivot-service.js';
-import { getChartCandles } from './fibonacci-pivot-service.js';
 
 export type HorizontalVolumeLevelDto = {
   price: string;
   volume: string;
+  buyVolume: string;
+  sellVolume: string;
 };
 
 export type HorizontalVolumeResponseDto = {
@@ -20,7 +19,7 @@ export type HorizontalVolumeResponseDto = {
   chartTimeframe: '1m' | '5m' | '1h';
   levels: HorizontalVolumeLevelDto[];
   totalVolume: string;
-  volumeUnit: string;
+  volumeUnit: 'lots';
   poc: string | null;
   vah: string | null;
   val: string | null;
@@ -28,21 +27,25 @@ export type HorizontalVolumeResponseDto = {
   rowSizeInTicks: number;
   rowSize: string;
   valueAreaRatio: string;
-  sourceKind: typeof HORIZONTAL_VOLUME_SOURCE_KIND;
+  sourceKind: HorizontalVolumeSourceKind;
   quality: HorizontalVolumeCalculation['quality'];
   algorithm: {
-    id: typeof HORIZONTAL_VOLUME_ALGORITHM_ID;
-    version: typeof HORIZONTAL_VOLUME_ALGORITHM_VERSION;
+    id: HorizontalVolumeAlgorithmId;
+    version: string;
   };
   meta: {
     requestedFrom: string;
     requestedTo: string;
-    candleCount: number;
+    effectiveFrom: string;
+    effectiveTo: string;
+    tradeCount: number;
+    historyTradeDays: string[];
+    missingDays: string[];
+    lastTradesIncluded: boolean;
+    tradesSource: 'history_trades' | 'last_trades' | 'mixed';
     calculatedAt: string;
   };
 };
-
-const CHART_INTERVALS = new Set<CandleInterval>(['1m', '5m', '1h']);
 
 export async function getHorizontalVolume(
   deps: ChartMarketDataDeps,
@@ -55,27 +58,21 @@ export async function getHorizontalVolume(
     valueAreaRatio?: string;
   },
 ): Promise<HorizontalVolumeResponseDto> {
-  if (!CHART_INTERVALS.has(input.chartTimeframe)) {
-    throw new Error('timeframe must be 1m, 5m, or 1h');
-  }
-
-  parseInstrumentId(input.instrumentUid);
-  const [candles, spec] = await Promise.all([
-    getChartCandles(deps, {
-      instrumentUid: input.instrumentUid,
-      interval: input.chartTimeframe,
+  const instrumentId = parseInstrumentId(input.instrumentUid);
+  const [tradesResult, spec] = await Promise.all([
+    deps.marketData.getTrades({
+      instrumentId,
       from: input.from,
       to: input.to,
     }),
     deps.marketData.getInstrumentSpec(input.instrumentUid),
   ]);
 
-  const volumeUnit = candles[0]?.volumeUnit ?? 'lots';
-  const calculated = calculateHorizontalVolume({
-    candles: candles.map((candle) => ({
-      high: candle.high,
-      low: candle.low,
-      volume: candle.volume,
+  const calculated = calculateHorizontalVolumeFromTrades({
+    trades: tradesResult.items.map((trade) => ({
+      price: trade.price,
+      quantity: trade.quantity,
+      direction: trade.direction,
     })),
     tickSize: spec.minPriceIncrement,
     ...(input.rowSizeInTicks !== undefined ? { rowSizeInTicks: input.rowSizeInTicks } : {}),
@@ -88,9 +85,11 @@ export async function getHorizontalVolume(
     levels: calculated.levels.map((level) => ({
       price: level.price,
       volume: level.volume,
+      buyVolume: level.buyVolume,
+      sellVolume: level.sellVolume,
     })),
     totalVolume: calculated.totalVolume,
-    volumeUnit,
+    volumeUnit: 'lots',
     poc: calculated.poc,
     vah: calculated.vah,
     val: calculated.val,
@@ -107,7 +106,13 @@ export async function getHorizontalVolume(
     meta: {
       requestedFrom: input.from.toISOString(),
       requestedTo: input.to.toISOString(),
-      candleCount: candles.length,
+      effectiveFrom: tradesResult.effectiveFrom,
+      effectiveTo: tradesResult.effectiveTo,
+      tradeCount: tradesResult.items.length,
+      historyTradeDays: tradesResult.historyTradeDays,
+      missingDays: tradesResult.missingDays,
+      lastTradesIncluded: tradesResult.lastTradesIncluded,
+      tradesSource: tradesResult.source,
       calculatedAt: new Date().toISOString(),
     },
   };

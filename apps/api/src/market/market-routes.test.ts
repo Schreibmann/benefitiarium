@@ -68,6 +68,40 @@ describe('market routes', () => {
         raw: {},
       }),
       getLastPrices: async () => [],
+      getTrades: async () => ({
+        items: [
+          {
+            instrumentId,
+            provider: 't-invest',
+            price: parseDecimalString('3.0'),
+            quantity: parseDecimalString('10'),
+            direction: 'buy',
+            eventTime: parseIsoDateTime('2026-11-05T10:01:00.000Z'),
+          },
+          {
+            instrumentId,
+            provider: 't-invest',
+            price: parseDecimalString('3.1'),
+            quantity: parseDecimalString('40'),
+            direction: 'sell',
+            eventTime: parseIsoDateTime('2026-11-05T10:02:00.000Z'),
+          },
+          {
+            instrumentId,
+            provider: 't-invest',
+            price: parseDecimalString('3.2'),
+            quantity: parseDecimalString('5'),
+            direction: 'buy',
+            eventTime: parseIsoDateTime('2026-11-05T10:03:00.000Z'),
+          },
+        ],
+        effectiveFrom: parseIsoDateTime('2026-11-05T00:00:00.000Z'),
+        effectiveTo: parseIsoDateTime('2026-11-06T00:00:00.000Z'),
+        historyTradeDays: ['2026-11-05'],
+        missingDays: [],
+        lastTradesIncluded: false,
+        source: 'history_trades',
+      }),
       getCandles: async (input) => {
         if (input.interval === '5m') {
           return {
@@ -154,12 +188,18 @@ describe('market routes', () => {
     });
     expect(horizontalVolume.statusCode).toBe(200);
     const profile = horizontalVolume.json();
-    expect(profile.sourceKind).toBe('ohlcv_uniform_approximation');
-    expect(profile.algorithm.id).toBe('HORIZONTAL_VOLUME_OHLCV');
+    expect(profile.sourceKind).toBe('last_trades');
+    expect(profile.algorithm.id).toBe('HORIZONTAL_VOLUME_TRADES');
     expect(profile.tickSize).toBe('0.1');
     expect(profile.levels.length).toBeGreaterThan(0);
-    expect(profile.poc).toBeTruthy();
+    expect(profile.poc).toBe('3.1');
     expect(profile.volumeUnit).toBe('lots');
+    expect(profile.meta.tradeCount).toBe(3);
+    expect(profile.meta.tradesSource).toBe('history_trades');
+    expect(profile.meta.historyTradeDays).toEqual(['2026-11-05']);
+    expect(
+      profile.levels.find((level: { price: string }) => level.price === '3.1')?.sellVolume,
+    ).toBe('40');
   });
 });
 
@@ -278,6 +318,15 @@ describe('GET /api/v1/instruments/futures', () => {
         return spec;
       },
       getLastPrices: async () => [],
+      getTrades: async () => ({
+        items: [],
+        effectiveFrom: parseIsoDateTime('2026-11-05T00:00:00.000Z'),
+        effectiveTo: parseIsoDateTime('2026-11-05T01:00:00.000Z'),
+        historyTradeDays: [],
+        missingDays: [],
+        lastTradesIncluded: false,
+        source: 'history_trades',
+      }),
       getCandles: async () => ({ items: [] }),
     };
 
@@ -344,6 +393,15 @@ describe('GET /api/v1/instruments/futures', () => {
         throw new Error('unused');
       },
       getLastPrices: async () => [],
+      getTrades: async () => ({
+        items: [],
+        effectiveFrom: parseIsoDateTime('2026-11-05T00:00:00.000Z'),
+        effectiveTo: parseIsoDateTime('2026-11-05T01:00:00.000Z'),
+        historyTradeDays: [],
+        missingDays: [],
+        lastTradesIncluded: false,
+        source: 'history_trades',
+      }),
       getCandles: async () => ({ items: [] }),
     };
     const env = loadEnv({

@@ -81,17 +81,18 @@
 | Signals                              | DEFERRED        | Out of scope for this slice                                       |
 | Persist table / workers              | DEFERRED        | Next stage after UI                                               |
 
-## Horizontal volume (OHLCV approx) / Горизонтальный объём (аппроксимация OHLCV)
+## Horizontal volume (trades VP) / Горизонтальный объём (VP по сделкам)
 
-| Piece / Компонент                            | Status / Статус | Notes / Примечания                                                             |
-| -------------------------------------------- | --------------- | ------------------------------------------------------------------------------ |
-| Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_OHLCV` uniform H–L distribution; POC / VAH / VAL            |
-| On-read API `…/indicators/horizontal-volume` | DONE            | Candles + `minPriceIncrement`; `sourceKind: ohlcv_uniform_approximation`       |
-| Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                  |
-| True VP via `GetLastTrades`                  | TODO            | Not in adapter; replace approximation when trades are wired (BL-101 neighbour) |
+| Piece / Компонент                            | Status / Статус | Notes / Примечания                                                                                    |
+| -------------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_TRADES` (+ OHLCV research fallback); POC / VAH / VAL                               |
+| History MD day archives                      | DONE            | `GET /history-trades/{YYYY-MM-DD}`; week/month ranges; ~30 files/min throttle                         |
+| On-read API `…/indicators/horizontal-volume` | DONE            | `MarketDataProvider.getTrades` → trades VP; meta: `historyTradeDays` / `tradesSource` / `missingDays` |
+| Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                                         |
+| OHLCV uniform approximation                  | DONE (research) | Kept in `@moex/indicators` as `HORIZONTAL_VOLUME_OHLCV`; not used by the chart API route              |
 
-**RU.** GetTechAnalysis не отдаёт volume profile; локальный расчёт из OHLCV — временная аппроксимация.  
-**EN.** GetTechAnalysis has no volume profile; local OHLCV calculation is an interim approximation.
+**RU.** GetTechAnalysis не отдаёт volume profile. API строит профиль из анонимизированных сделок History MD (дневные архивы за неделю/месяц) плюс опциональный фрагмент `GetLastTrades` за текущий UTC-день. Нужен production read-only токен.  
+**EN.** GetTechAnalysis has no volume profile. The API builds VP from History MD anonymized day-trade archives (week/month) plus an optional `GetLastTrades` fragment for the current UTC day. Requires a production read-only token.
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

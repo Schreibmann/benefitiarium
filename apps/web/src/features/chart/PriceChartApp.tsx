@@ -73,6 +73,14 @@ function defaultRange(timeframe: ChartTimeframe): { from: string; to: string } {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
+/** VP uses History MD day archives — week on short TFs, month on 1h. */
+function volumeProfileRange(timeframe: ChartTimeframe): { from: string; to: string } {
+  const to = new Date();
+  const lookbackMs = timeframe === '1h' ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  const from = new Date(to.getTime() - lookbackMs);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
 function updateChartPath(ticker: string): void {
   const path = `/charts/${encodeURIComponent(ticker)}`;
   window.history.pushState({}, '', path);
@@ -130,6 +138,7 @@ export function PriceChartApp(props: Props) {
   const loadHistorical = useEffectEvent(
     async (lookedUp: InstrumentLookup, nextTimeframe: ChartTimeframe) => {
       const range = defaultRange(nextTimeframe);
+      const vpRange = volumeProfileRange(nextTimeframe);
       const [candleRows, pivotResponse, volumeResponse] = await Promise.all([
         client.getCandles({
           instrumentUid: lookedUp.instrumentUid,
@@ -146,8 +155,8 @@ export function PriceChartApp(props: Props) {
         client.getHorizontalVolume({
           instrumentUid: lookedUp.instrumentUid,
           timeframe: nextTimeframe,
-          from: range.from,
-          to: range.to,
+          from: vpRange.from,
+          to: vpRange.to,
         }),
       ]);
       setCandles(candleRows);

@@ -102,6 +102,8 @@ export type HorizontalVolumeApiResponse = {
   levels: Array<{
     price: string;
     volume: string;
+    buyVolume: string;
+    sellVolume: string;
   }>;
   totalVolume: string;
   volumeUnit: string;
@@ -112,7 +114,7 @@ export type HorizontalVolumeApiResponse = {
   rowSizeInTicks: number;
   rowSize: string;
   valueAreaRatio: string;
-  sourceKind: 'ohlcv_uniform_approximation';
+  sourceKind: 'last_trades' | 'ohlcv_uniform_approximation';
   quality: 'ok' | 'EMPTY' | 'DEGENERATE';
   algorithm: {
     id: string;
@@ -121,7 +123,13 @@ export type HorizontalVolumeApiResponse = {
   meta: {
     requestedFrom: string;
     requestedTo: string;
-    candleCount: number;
+    effectiveFrom: string;
+    effectiveTo: string;
+    tradeCount: number;
+    historyTradeDays: string[];
+    missingDays: string[];
+    lastTradesIncluded: boolean;
+    tradesSource: 'history_trades' | 'last_trades' | 'mixed';
     calculatedAt: string;
   };
 };

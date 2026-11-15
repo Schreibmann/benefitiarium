@@ -39,6 +39,15 @@ function createMarketDataMock(catalog: ProviderInstrument[]): MarketDataProvider
         quality: 'good',
       })),
     getCandles: async () => ({ items: [] }),
+    getTrades: async () => ({
+      items: [],
+      effectiveFrom: parseIsoDateTime('2026-11-08T11:00:00.000Z'),
+      effectiveTo: parseIsoDateTime('2026-11-08T12:00:00.000Z'),
+      historyTradeDays: [],
+      missingDays: [],
+      lastTradesIncluded: false,
+      source: 'history_trades',
+    }),
   };
 }
 
