@@ -1,7 +1,7 @@
 # Project Status / Статус проекта
 
-**RU.** **Обновлено:** 2026-11-11  
-**EN.** **Updated:** 2026-11-11
+**RU.** **Обновлено:** 2026-11-15  
+**EN.** **Updated:** 2026-11-15
 
 **RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
 **EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
@@ -80,6 +80,18 @@
 | Chart route code-split + bootstrap   | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
 | Signals                              | DEFERRED        | Out of scope for this slice                                       |
 | Persist table / workers              | DEFERRED        | Next stage after UI                                               |
+
+## Horizontal volume (OHLCV approx) / Горизонтальный объём (аппроксимация OHLCV)
+
+| Piece / Компонент                            | Status / Статус | Notes / Примечания                                                             |
+| -------------------------------------------- | --------------- | ------------------------------------------------------------------------------ |
+| Pure calculator `@moex/indicators`           | DONE            | `HORIZONTAL_VOLUME_OHLCV` uniform H–L distribution; POC / VAH / VAL            |
+| On-read API `…/indicators/horizontal-volume` | DONE            | Candles + `minPriceIncrement`; `sourceKind: ohlcv_uniform_approximation`       |
+| Chart overlay                                | DONE            | Right-anchored histogram + POC/VA guides on `/charts/:ticker`                  |
+| True VP via `GetLastTrades`                  | TODO            | Not in adapter; replace approximation when trades are wired (BL-101 neighbour) |
+
+**RU.** GetTechAnalysis не отдаёт volume profile; локальный расчёт из OHLCV — временная аппроксимация.  
+**EN.** GetTechAnalysis has no volume profile; local OHLCV calculation is an interim approximation.
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 

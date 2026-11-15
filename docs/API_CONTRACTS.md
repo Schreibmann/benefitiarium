@@ -77,7 +77,12 @@
 
 - Official IndicatorType: **BB | EMA | RSI | MACD | SMA** only ([investAPI marketdata.proto](https://github.com/RussianInvestments/investAPI)).
 - **No Fibonacci** and **no horizontal volume / volume profile** in GetTechAnalysis. Local Fibonacci Pivot Points (`GET …/indicators/fibonacci-pivots`, `@moex/indicators`) remain the chart overlay and are **not** superseded.
+- **Local horizontal volume** (`GET …/indicators/horizontal-volume`, `@moex/indicators` `HORIZONTAL_VOLUME_OHLCV`): OHLCV uniform approximation using `GetCandles` + `minPriceIncrement`. `sourceKind: ohlcv_uniform_approximation` — **not** exchange volume-at-price; true VP needs `GetLastTrades` / trades stream (not wired yet). Response includes `levels[]`, `poc` / `vah` / `val`, `volumeUnit`, tick/row sizing.
 - Adapter: `TinvestReadApi.getTechAnalysis` → raw bands/signal/macd strings. No HTTP route yet for BB/EMA/RSI/MACD/SMA (stop at adapter + fixtures).
+
+**RU.** Горизонтальный объём в T-Invest GetTechAnalysis отсутствует; локальный endpoint считает профиль из OHLCV (равномерное распределение объёма бара по тикам [low, high]). Это аппроксимация до появления `GetLastTrades`.
+
+**EN.** Horizontal volume is absent from T-Invest GetTechAnalysis; the local endpoint builds a profile from OHLCV (uniform bar-volume distribution across ticks in [low, high]). Approximation until `GetLastTrades` is wired.
 
 **RU.** Live probe: `pnpm --filter @moex/broker-tinvest spike` загружает repo `.env` и использует `TINVEST_SANDBOX_TOKEN` / `TINVEST_READ_ONLY_TOKEN` раздельно (значения токенов не логируются).
 

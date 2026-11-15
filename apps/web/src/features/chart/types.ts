@@ -95,3 +95,44 @@ export type FibonacciPivotApiResponse = {
     missingPeriodIds?: string[];
   };
 };
+
+export type HorizontalVolumeApiResponse = {
+  instrumentUid: string;
+  chartTimeframe: ChartTimeframe;
+  levels: Array<{
+    price: string;
+    volume: string;
+  }>;
+  totalVolume: string;
+  volumeUnit: string;
+  poc: string | null;
+  vah: string | null;
+  val: string | null;
+  tickSize: string;
+  rowSizeInTicks: number;
+  rowSize: string;
+  valueAreaRatio: string;
+  sourceKind: 'ohlcv_uniform_approximation';
+  quality: 'ok' | 'EMPTY' | 'DEGENERATE';
+  algorithm: {
+    id: string;
+    version: string;
+  };
+  meta: {
+    requestedFrom: string;
+    requestedTo: string;
+    candleCount: number;
+    calculatedAt: string;
+  };
+};
+
+export type VolumeProfileSegmentKind = 'histogram' | 'poc' | 'vah' | 'val';
+
+export type VolumeProfileSegment = {
+  id: string;
+  kind: VolumeProfileSegmentKind;
+  x1: number;
+  x2: number;
+  y1: number;
+  y2: number;
+};

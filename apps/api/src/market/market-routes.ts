@@ -7,6 +7,7 @@ import {
   lookupInstrumentByTicker,
   parseChartTimeframe,
 } from './fibonacci-pivot-service.js';
+import { getHorizontalVolume } from './horizontal-volume-service.js';
 import { listFuturesCatalog } from './list-futures-by-category.js';
 
 function isResourceExhaustedMessage(message: string): boolean {
@@ -152,6 +153,61 @@ export async function registerMarketRoutes(
         });
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'pivot request failed';
+        return reply.code(400).send({ error: message });
+      }
+    },
+  );
+
+  app.get(
+    '/api/v1/instruments/:instrumentUid/indicators/horizontal-volume',
+    async (request, reply) => {
+      try {
+        const params = request.params;
+        const query = request.query;
+        if (typeof params !== 'object' || params === null || !('instrumentUid' in params)) {
+          return reply.code(400).send({ error: 'instrumentUid is required' });
+        }
+        if (typeof query !== 'object' || query === null) {
+          return reply.code(400).send({ error: 'query is required' });
+        }
+        const instrumentUid = String(params.instrumentUid);
+        if (!isUuid(instrumentUid)) {
+          return reply.code(400).send({ error: 'instrumentUid must be a UUID' });
+        }
+        const timeframeRaw =
+          'timeframe' in query && typeof query.timeframe === 'string' ? query.timeframe : '';
+        const chartTimeframe = parseChartTimeframe(timeframeRaw);
+        const from = parseRequiredDate('from' in query ? query.from : undefined, 'from');
+        const to = parseRequiredDate('to' in query ? query.to : undefined, 'to');
+        if (!(from < to)) {
+          return reply.code(400).send({ error: 'from must be less than to' });
+        }
+
+        let rowSizeInTicks: number | undefined;
+        if ('rowSizeInTicks' in query && query.rowSizeInTicks !== undefined) {
+          const raw = String(query.rowSizeInTicks);
+          const parsed = Number(raw);
+          if (!Number.isInteger(parsed) || parsed < 1) {
+            return reply.code(400).send({ error: 'rowSizeInTicks must be a positive integer' });
+          }
+          rowSizeInTicks = parsed;
+        }
+
+        let valueAreaRatio: string | undefined;
+        if ('valueAreaRatio' in query && typeof query.valueAreaRatio === 'string') {
+          valueAreaRatio = query.valueAreaRatio;
+        }
+
+        return await getHorizontalVolume(deps, {
+          instrumentUid,
+          chartTimeframe,
+          from,
+          to,
+          ...(rowSizeInTicks !== undefined ? { rowSizeInTicks } : {}),
+          ...(valueAreaRatio !== undefined ? { valueAreaRatio } : {}),
+        });
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'horizontal volume request failed';
         return reply.code(400).send({ error: message });
       }
     },

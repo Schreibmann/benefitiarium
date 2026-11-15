@@ -29,10 +29,12 @@ import {
 } from './futures-catalog-store';
 import { toSessionCandles } from './session-scale';
 import { toPivotSegments } from './to-pivot-segments';
+import { toVolumeProfileSegments } from './to-volume-profile-segments';
 import type {
   CandleRow,
   ChartTimeframe,
   FuturesListCategory,
+  HorizontalVolumeApiResponse,
   InstrumentLookup,
   PivotSegment,
 } from './types';
@@ -104,6 +106,9 @@ export function PriceChartApp(props: Props) {
   const [instrument, setInstrument] = useState<InstrumentLookup | null>(null);
   const [candles, setCandles] = useState<CandleRow[]>([]);
   const [pivots, setPivots] = useState<PivotSegment[]>([]);
+  const [horizontalVolume, setHorizontalVolume] = useState<HorizontalVolumeApiResponse | null>(
+    null,
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [xWindow, setXWindow] = useState<ChartXWindow>({ start: -0.5, end: 0.5 });
@@ -125,7 +130,7 @@ export function PriceChartApp(props: Props) {
   const loadHistorical = useEffectEvent(
     async (lookedUp: InstrumentLookup, nextTimeframe: ChartTimeframe) => {
       const range = defaultRange(nextTimeframe);
-      const [candleRows, pivotResponse] = await Promise.all([
+      const [candleRows, pivotResponse, volumeResponse] = await Promise.all([
         client.getCandles({
           instrumentUid: lookedUp.instrumentUid,
           interval: nextTimeframe,
@@ -138,10 +143,17 @@ export function PriceChartApp(props: Props) {
           from: range.from,
           to: range.to,
         }),
+        client.getHorizontalVolume({
+          instrumentUid: lookedUp.instrumentUid,
+          timeframe: nextTimeframe,
+          from: range.from,
+          to: range.to,
+        }),
       ]);
       setCandles(candleRows);
       const sessionCandles = toSessionCandles(candleRows);
       setPivots(toPivotSegments(pivotResponse, sessionCandles, nextTimeframe));
+      setHorizontalVolume(volumeResponse);
     },
   );
 
@@ -183,6 +195,7 @@ export function PriceChartApp(props: Props) {
         setInstrument(null);
         setCandles([]);
         setPivots([]);
+        setHorizontalVolume(null);
         setError(err instanceof Error ? err.message : 'Failed to load chart data');
       } finally {
         setLoading(false);
@@ -315,16 +328,22 @@ export function PriceChartApp(props: Props) {
     })();
   }, [instrument, live.status, live.error, timeframe]);
 
+  const volumeProfile = useMemo(
+    () => (horizontalVolume === null ? [] : toVolumeProfileSegments(horizontalVolume, xWindow)),
+    [horizontalVolume, xWindow],
+  );
+
   const definition = useMemo(
     () =>
       buildPriceChartDefinition({
         candles: sessionCandles,
         pivots,
+        volumeProfile,
         xWindow,
         xExtent,
         timeframe,
       }),
-    [sessionCandles, pivots, xWindow, xExtent, timeframe],
+    [sessionCandles, pivots, volumeProfile, xWindow, xExtent, timeframe],
   );
 
   const selectedInstrumentValue =
@@ -466,7 +485,7 @@ export function PriceChartApp(props: Props) {
           <div ref={plotRef} className="price-chart__plot-host">
             <Chart
               definition={definition}
-              ariaLabel={`${instrument?.ticker ?? ticker} ${timeframe} candlestick chart with Fibonacci pivots`}
+              ariaLabel={`${instrument?.ticker ?? ticker} ${timeframe} candlestick chart with Fibonacci pivots and horizontal volume`}
               height={520}
               {...(plotWidth > 0 ? { width: plotWidth } : {})}
               className="price-chart__plot"
