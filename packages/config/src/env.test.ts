@@ -49,6 +49,9 @@ describe('loadEnv', () => {
         }),
       ),
     ).toBe('-100chat');
+    expect(resolveTelegramChatId(loadEnv({ ...baseEnv, TELEGRAM_CHAT_ID: '3917086438' }))).toBe(
+      '-1003917086438',
+    );
   });
 
   it('parses Telegram topic thread ids', () => {

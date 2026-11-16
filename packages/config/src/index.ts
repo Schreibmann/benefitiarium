@@ -2,6 +2,7 @@ export type { AppEnv, EnvSource, TinvestTokenPurpose } from './env.js';
 export {
   envSchema,
   loadEnv,
+  normalizeTelegramForumChatId,
   parseTelegramTopicId,
   requireTinvestToken,
   resolveTelegramChatId,

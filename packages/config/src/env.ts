@@ -137,14 +137,26 @@ export function resolveTinvestSandboxAccountId(env: AppEnv): string | null {
   return legacy.length > 0 ? legacy : null;
 }
 
-/** Prefer TELEGRAM_CHAT_ID; fall back to legacy TELEGRAM_CHANNEL_ID. */
+/**
+ * Prefer TELEGRAM_CHAT_ID; fall back to legacy TELEGRAM_CHANNEL_ID.
+ * Bare positive digits are normalized to `-100…` (Telegram forum/supergroup form).
+ */
 export function resolveTelegramChatId(env: AppEnv): string | null {
   const chat = env.TELEGRAM_CHAT_ID.trim();
   if (chat.length > 0) {
-    return chat;
+    return normalizeTelegramForumChatId(chat);
   }
   const legacy = env.TELEGRAM_CHANNEL_ID.trim();
-  return legacy.length > 0 ? legacy : null;
+  return legacy.length > 0 ? normalizeTelegramForumChatId(legacy) : null;
+}
+
+/** Forum/supergroup chat ids are `-100…`; accept bare digits from BotFather/UI copies. */
+export function normalizeTelegramForumChatId(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return `-100${trimmed}`;
+  }
+  return trimmed;
 }
 
 /**
