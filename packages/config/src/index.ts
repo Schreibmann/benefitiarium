@@ -2,7 +2,9 @@ export type { AppEnv, EnvSource, TinvestTokenPurpose } from './env.js';
 export {
   envSchema,
   loadEnv,
+  parseTelegramTopicId,
   requireTinvestToken,
+  resolveTelegramChatId,
   resolveTinvestSandboxAccountId,
   resolveTinvestToken,
 } from './env.js';

@@ -1,6 +1,7 @@
 import type { StreamCandleInterval } from '@moex/broker-tinvest';
 import { isStreamCandleInterval } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
+import { parseTelegramTopicId, resolveTelegramChatId } from '@moex/config';
 import type { EvalMode, SignalTimeframe, TriggerId } from '@moex/signal-triggers';
 
 const SIGNAL_TIMEFRAMES = new Set<SignalTimeframe>(['5m', '1h']);
@@ -14,6 +15,7 @@ export type SignalsWorkerConfig = {
   approachPctByTimeframe: { '5m': string; '1h': string };
   favoritesPollMs: number;
   telegramChannelId: string | null;
+  telegramTopicAlerts: number | null;
   waitingClose: boolean;
 };
 
@@ -74,7 +76,6 @@ export function parseSignalsWorkerConfig(env: AppEnv): SignalsWorkerConfig {
     streamIntervals.push(timeframe);
   }
 
-  const channel = env.TELEGRAM_CHANNEL_ID.trim();
   return {
     timeframes,
     streamIntervals,
@@ -85,7 +86,8 @@ export function parseSignalsWorkerConfig(env: AppEnv): SignalsWorkerConfig {
       '1h': env.SIGNALS_APPROACH_PCT_1H.trim(),
     },
     favoritesPollMs: env.SIGNALS_FAVORITES_POLL_MS,
-    telegramChannelId: channel.length > 0 ? channel : null,
+    telegramChannelId: resolveTelegramChatId(env),
+    telegramTopicAlerts: parseTelegramTopicId(env.TELEGRAM_TOPIC_ALERTS),
     waitingClose: env.SIGNALS_EVAL_MODE === 'close',
   };
 }

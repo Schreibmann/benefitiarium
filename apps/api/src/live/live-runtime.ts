@@ -12,6 +12,7 @@ import type {
 } from '@moex/persistence';
 import type { LiveCandleStreamLog } from '../market/live-candle-stream-log.js';
 import type { MarketStreamHub } from '../market/market-stream-hub.js';
+import type { TelegramTopicPublisher } from '../notifications/telegram-topic-publisher.js';
 import {
   type ClosedBarEvaluator,
   createNullClosedBarEvaluator,
@@ -53,6 +54,7 @@ export type CreateLiveRuntimeInput = {
   runtimeState: LiveRuntimeStateRepository;
   signals: LiveSignalsRepository;
   telegram: TelegramNotifier;
+  topics?: TelegramTopicPublisher;
   streamLog?: LiveCandleStreamLog;
   analysisIntervals?: StreamCandleInterval[];
   evaluateClosedBar?: ClosedBarEvaluator;
@@ -149,6 +151,11 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         lastError = `lease acquire failed: ${result.reason}`;
         status = 'DEGRADED';
         stamp();
+        void input.topics?.publishError('live lease acquire failed', {
+          reason: result.reason,
+          instrumentUid: item.instrumentUid,
+          interval: item.interval,
+        });
       }
     }
 
@@ -227,6 +234,10 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
           lastError = error instanceof Error ? error.message : 'live alert failed';
           status = 'DEGRADED';
           stamp();
+          void input.topics?.publishError('live alert evaluation failed', {
+            message: lastError,
+            instrumentUid: candle.instrumentUid,
+          });
         });
       return;
     }
@@ -242,6 +253,10 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         lastError = error instanceof Error ? error.message : 'analyze failed';
         status = 'DEGRADED';
         stamp();
+        void input.topics?.publishError('live closed-bar analysis failed', {
+          message: lastError,
+          instrumentUid: candle.instrumentUid,
+        });
       });
   };
 
@@ -280,6 +295,12 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
           lastError,
         });
+        void input.topics?.publishLog('live runtime started', {
+          status,
+          favoriteCount: favorites.length,
+          strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
+          lastError,
+        });
         if (favorites.length === 0) {
           input.streamLog?.clientEvent(
             'live runtime has zero favorites from T-Invest — no candle subscriptions yet',
@@ -291,6 +312,7 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         status = 'DEGRADED';
         stamp();
         input.streamLog?.clientEvent('live runtime start failed', { lastError });
+        void input.topics?.publishError('live runtime start failed', { message: lastError });
       }
       return snapshot();
     },
@@ -313,11 +335,15 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         input.streamLog?.clientEvent('live runtime stopped', {
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
         });
+        void input.topics?.publishLog('live runtime stopped', {
+          strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
+        });
       } catch (error: unknown) {
         lastError = error instanceof Error ? error.message : 'stop failed';
         status = 'DEGRADED';
         stamp();
         input.streamLog?.clientEvent('live runtime stop failed', { lastError });
+        void input.topics?.publishError('live runtime stop failed', { message: lastError });
       }
       return snapshot();
     },

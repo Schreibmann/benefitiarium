@@ -1,41 +1,49 @@
+import { GrammyError } from 'grammy';
 import { describe, expect, it, vi } from 'vitest';
-import { createTelegramClient } from './telegram-client.js';
+import { createTelegramClient, TelegramHttpError } from './telegram-client.js';
 
 describe('createTelegramClient', () => {
-  it('sends HTML message and returns message id', async () => {
-    let capturedUrl = '';
-    let capturedBody = '';
-    let capturedMethod = '';
-    const fetchImpl: typeof fetch = async (input, init) => {
-      capturedUrl = String(input);
-      capturedMethod = init?.method ?? '';
-      capturedBody = typeof init?.body === 'string' ? init.body : '';
-      return new Response(JSON.stringify({ ok: true, result: { message_id: 42 } }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    };
+  it('sends HTML message with thread id and returns message id', async () => {
+    const sendMessage = vi.fn(async () => ({ message_id: 42 }));
     const client = createTelegramClient({
       botToken: 'secret-token',
-      fetchImpl,
-      apiBaseUrl: 'https://example.test',
+      bot: { api: { sendMessage } },
     });
-    const result = await client.sendMessage({ chatId: '-1001', text: '<b>hi</b>' });
+    const result = await client.sendMessage({
+      chatId: '-1001',
+      text: '<b>hi</b>',
+      threadId: 17,
+    });
     expect(result.messageId).toBe('42');
-    expect(capturedUrl).toBe('https://example.test/botsecret-token/sendMessage');
-    expect(capturedMethod).toBe('POST');
-    expect(capturedBody).toContain('"parse_mode":"HTML"');
+    expect(sendMessage).toHaveBeenCalledWith('-1001', '<b>hi</b>', {
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: true },
+      message_thread_id: 17,
+    });
   });
 
   it('maps 429 with retry_after', async () => {
-    const fetchImpl = vi.fn(
-      async () =>
-        new Response(JSON.stringify({ ok: false, parameters: { retry_after: 7 } }), {
-          status: 429,
-          headers: { 'Content-Type': 'application/json', 'retry-after': '7' },
-        }),
+    const error = new GrammyError(
+      'Too Many Requests: retry after 7',
+      {
+        ok: false,
+        error_code: 429,
+        description: 'Too Many Requests: retry after 7',
+        parameters: { retry_after: 7 },
+      },
+      'sendMessage',
+      {},
     );
-    const client = createTelegramClient({ botToken: 't', fetchImpl });
+    const client = createTelegramClient({
+      botToken: 't',
+      bot: {
+        api: {
+          sendMessage: async () => {
+            throw error;
+          },
+        },
+      },
+    });
     await expect(client.sendMessage({ chatId: '1', text: 'x' })).rejects.toMatchObject({
       name: 'TelegramHttpError',
       status: 429,
@@ -44,20 +52,47 @@ describe('createTelegramClient', () => {
   });
 
   it('maps 500 as TelegramHttpError', async () => {
-    const fetchImpl = vi.fn(
-      async () => new Response('boom', { status: 500, statusText: 'Server Error' }),
+    const error = new GrammyError(
+      'Internal Server Error',
+      { ok: false, error_code: 500, description: 'Internal Server Error' },
+      'sendMessage',
+      {},
     );
-    const client = createTelegramClient({ botToken: 't', fetchImpl });
+    const client = createTelegramClient({
+      botToken: 't',
+      bot: {
+        api: {
+          sendMessage: async () => {
+            throw error;
+          },
+        },
+      },
+    });
+    await expect(client.sendMessage({ chatId: '1', text: 'x' })).rejects.toBeInstanceOf(
+      TelegramHttpError,
+    );
     await expect(client.sendMessage({ chatId: '1', text: 'x' })).rejects.toMatchObject({
       status: 500,
     });
   });
 
   it('maps 400 as TelegramHttpError', async () => {
-    const fetchImpl = vi.fn(
-      async () => new Response('bad', { status: 400, statusText: 'Bad Request' }),
+    const error = new GrammyError(
+      'Bad Request',
+      { ok: false, error_code: 400, description: 'Bad Request' },
+      'sendMessage',
+      {},
     );
-    const client = createTelegramClient({ botToken: 't', fetchImpl });
+    const client = createTelegramClient({
+      botToken: 't',
+      bot: {
+        api: {
+          sendMessage: async () => {
+            throw error;
+          },
+        },
+      },
+    });
     await expect(client.sendMessage({ chatId: '1', text: 'x' })).rejects.toMatchObject({
       status: 400,
     });

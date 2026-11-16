@@ -55,6 +55,7 @@ async function main(): Promise<void> {
     triggers: config.triggers,
     approachPctByTimeframe: config.approachPctByTimeframe,
     telegramChannelId: config.telegramChannelId,
+    telegramTopicAlerts: config.telegramTopicAlerts,
     timeZone: env.APP_TIMEZONE,
     onPersisted: (count) => {
       logger.info('signals persisted', { count });

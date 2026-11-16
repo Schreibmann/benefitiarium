@@ -51,11 +51,12 @@ describe('BL-107 market signals memory store', () => {
     const store = createMemoryMarketSignalsStore(() => new Date('2026-11-14T10:00:00.000Z'));
     const first = await store.insertSignalWithNotification({
       signal: sampleSignal(),
-      notification: sampleNotification(),
+      notification: sampleNotification({ threadId: 42 }),
     });
     expect(first.inserted).toBe(true);
     expect(first.signal?.dedupeKey).toContain('fib_pivot_cross');
     expect(first.notification?.status).toBe('pending');
+    expect(first.notification?.threadId).toBe(42);
 
     const second = await store.insertSignalWithNotification({
       signal: sampleSignal({ id: SIGNAL_ID_2 }),
@@ -63,6 +64,21 @@ describe('BL-107 market signals memory store', () => {
     });
     expect(second.inserted).toBe(false);
     expect(store.snapshotNotifications()).toHaveLength(1);
+  });
+
+  it('enqueues log-only notifications without signal_id', async () => {
+    const store = createMemoryMarketSignalsStore(() => new Date('2026-11-14T10:00:00.000Z'));
+    const row = await store.enqueueLogNotification({
+      id: NOTIF_ID_2,
+      channel: 'telegram',
+      target: '-1001',
+      threadId: 99,
+      text: 'stream failed',
+    });
+    expect(row.signalId).toBeNull();
+    expect(row.threadId).toBe(99);
+    expect(row.text).toBe('stream failed');
+    expect(store.snapshotSignals()).toHaveLength(0);
   });
 
   it('claims due notifications and marks sent/failed', async () => {

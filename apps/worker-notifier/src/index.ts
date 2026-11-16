@@ -1,4 +1,4 @@
-import { applyLocalEnvFile, loadEnv } from '@moex/config';
+import { applyLocalEnvFile, loadEnv, resolveTelegramChatId } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import { createMarketSignalsRepository, createPsqlDbClient } from '@moex/persistence';
 import { createNotifierPollLoop } from './poll-loop.js';
@@ -13,8 +13,8 @@ async function main(): Promise<void> {
   if (token.length === 0) {
     throw new Error('TELEGRAM_BOT_TOKEN is required for worker-notifier');
   }
-  if (env.TELEGRAM_CHANNEL_ID.trim().length === 0) {
-    logger.warn('TELEGRAM_CHANNEL_ID is empty; pending notifications still process by target');
+  if (resolveTelegramChatId(env) === null) {
+    logger.warn('TELEGRAM_CHAT_ID is empty; pending notifications still process by target');
   }
 
   const db = createPsqlDbClient();

@@ -1,6 +1,6 @@
 import type { IsoDateTime, UUID } from '@moex/domain';
 
-export type MarketSignalKind = 'approach' | 'cross';
+export type MarketSignalKind = 'approach' | 'cross' | 'consolidation' | 'entry_confirm';
 export type MarketSignalSide = 'above' | 'below' | 'up' | 'down';
 export type MarketSignalEvalMode = 'close' | 'intrabar';
 export type NotificationChannel = 'telegram';
@@ -52,7 +52,8 @@ export type Notification = {
   id: UUID;
   channel: NotificationChannel;
   target: string;
-  signalId: UUID;
+  signalId: UUID | null;
+  threadId: number | null;
   status: NotificationStatus;
   attempts: number;
   nextAttemptAt: IsoDateTime;
@@ -67,6 +68,15 @@ export type NewNotificationForSignal = {
   id: UUID;
   channel: NotificationChannel;
   target: string;
+  text: string;
+  threadId?: number | null;
+};
+
+export type NewLogNotification = {
+  id: UUID;
+  channel: NotificationChannel;
+  target: string;
+  threadId: number;
   text: string;
 };
 

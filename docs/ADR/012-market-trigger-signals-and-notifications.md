@@ -17,16 +17,20 @@ Accepted (принято)
 1. Ввести пакет `@moex/signal-triggers` с интерфейсом `Trigger` / `TriggerRegistry`; первые триггеры — `fib_pivot_approach` и `fib_pivot_cross`.
 2. Хранить алерты в `market_signals` (ключ дедупа) и очередь доставки в `notifications`; атомарная запись signal+notification.
 3. `apps/worker-signals` потребляет favorites-свечи (отдельный T-Invest stream, режим `close` по умолчанию или `intrabar` из env) и пишет в Postgres.
-4. `apps/worker-notifier` поллит `notifications` и шлёт в Telegram Bot API через встроенный `fetch` (без новых npm-зависимостей).
-5. Триггеры не являются ордерами и не вызывают брокера.
+4. `apps/worker-notifier` поллит `notifications` и шлёт через **Grammy** (`sendMessage` + `message_thread_id`) в forum group: topics **alerts** / **logs** / **errors**.
+5. Live Mode пишет alerts/`entry_confirm` в ту же очередь (`thread_id` = alerts); ops → logs; platform errors → errors (`signal_id` nullable).
+6. Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS|LOGS|ERRORS` (legacy `TELEGRAM_CHANNEL_ID` как alias).
+7. Триггеры не являются ордерами и не вызывают брокера.
 
 **EN.**
 
 1. Introduce `@moex/signal-triggers` with a `Trigger` / `TriggerRegistry` interface; first triggers are `fib_pivot_approach` and `fib_pivot_cross`.
 2. Persist alerts in `market_signals` (dedupe key) and a delivery queue in `notifications`; write signal+notification atomically.
 3. `apps/worker-signals` consumes favorites candles (separate T-Invest stream, default `close` or env `intrabar`) and writes to Postgres.
-4. `apps/worker-notifier` polls `notifications` and sends via Telegram Bot API using built-in `fetch` (no new npm dependencies).
-5. Triggers are not orders and never call the broker.
+4. `apps/worker-notifier` polls `notifications` and sends via **Grammy** (`sendMessage` + `message_thread_id`) into a forum group: **alerts** / **logs** / **errors** topics.
+5. Live Mode enqueues alerts/`entry_confirm` on the same queue (`thread_id` = alerts); ops → logs; platform errors → errors (`signal_id` nullable).
+6. Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS|LOGS|ERRORS` (legacy `TELEGRAM_CHANNEL_ID` alias).
+7. Triggers are not orders and never call the broker.
 
 ## Consequences / Последствия
 

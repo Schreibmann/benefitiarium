@@ -3,6 +3,7 @@ import type { MarketSignalsRepository } from './market-signals.js';
 import type {
   ApproachStateRow,
   MarketSignal,
+  NewLogNotification,
   NewMarketSignal,
   NewNotificationForSignal,
   Notification,
@@ -66,6 +67,7 @@ export function createMemoryMarketSignalsStore(
         channel: input.notification.channel,
         target: input.notification.target,
         signalId: signal.id,
+        threadId: input.notification.threadId ?? null,
         status: 'pending',
         attempts: 0,
         nextAttemptAt: parseIsoDateTime(createdAt),
@@ -83,6 +85,27 @@ export function createMemoryMarketSignalsStore(
         signal: cloneSignal(signal),
         notification: cloneNotification(notification),
       };
+    },
+
+    enqueueLogNotification: async (input: NewLogNotification) => {
+      const createdAt = now().toISOString();
+      const notification: Notification = {
+        id: input.id,
+        channel: input.channel,
+        target: input.target,
+        signalId: null,
+        threadId: input.threadId,
+        status: 'pending',
+        attempts: 0,
+        nextAttemptAt: parseIsoDateTime(createdAt),
+        lastError: null,
+        text: input.text,
+        providerMessageId: null,
+        createdAt: parseIsoDateTime(createdAt),
+        sentAt: null,
+      };
+      notifications.set(notification.id, notification);
+      return cloneNotification(notification);
     },
 
     listActiveApproachState: async (input = {}) => {

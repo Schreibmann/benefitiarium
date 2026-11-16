@@ -7,14 +7,16 @@ import {
   createTinvestStreamClient,
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
-import { resolveTinvestToken } from '@moex/config';
+import { parseTelegramTopicId, resolveTelegramChatId, resolveTinvestToken } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import {
   createFuturesCatalogCacheRepository,
   createLiveRuntimeStateRepository,
   createLiveSignalsRepository,
+  createMarketSignalsRepository,
   createMemoryLiveRuntimeStateRepository,
   createMemoryLiveSignalsRepository,
+  createMemoryMarketSignalsStore,
   createMemoryOutboxStore,
   createOutboxRepository,
   createPsqlDbClient,
@@ -23,17 +25,23 @@ import {
   type FuturesCatalogCacheRepository,
   type LiveRuntimeStateRepository,
   type LiveSignalsRepository,
+  type MarketSignalsRepository,
   type OutboxRepository,
 } from '@moex/persistence';
 import { createBrokerFavoritesRepository } from './live/broker-favorites.js';
 import { createLevelAlertEngine } from './live/level-alert-engine.js';
 import { createLiveMarketAnalyzer } from './live/live-market-analyzer.js';
 import { createLiveRuntime, type LiveRuntime } from './live/live-runtime.js';
-import { createStubTelegramNotifier } from './live/telegram-notifier.js';
+import {
+  createQueueTelegramNotifier,
+  createStubTelegramNotifier,
+  type TelegramNotifier,
+} from './live/telegram-notifier.js';
 import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
 import type { ChartMarketDataDeps } from './market/fibonacci-pivot-service.js';
 import { createLiveCandleStreamLog } from './market/live-candle-stream-log.js';
 import { createMarketStreamHub, type MarketStreamHub } from './market/market-stream-hub.js';
+import { createTelegramTopicPublisher } from './notifications/telegram-topic-publisher.js';
 
 async function canReachPostgres(db: DbClient): Promise<boolean> {
   try {
@@ -66,10 +74,22 @@ async function liveSchemaReady(db: DbClient): Promise<boolean> {
   }
 }
 
+async function marketSignalsSchemaReady(db: DbClient): Promise<boolean> {
+  try {
+    const exists = await db.queryJsonValue<boolean | null>(
+      `SELECT to_json(to_regclass('public.notifications') IS NOT NULL)`,
+    );
+    return exists === true;
+  } catch {
+    return false;
+  }
+}
+
 async function createLivePersistence(): Promise<{
   runtimeState: LiveRuntimeStateRepository;
   signals: LiveSignalsRepository;
   outbox: OutboxRepository;
+  marketSignals: MarketSignalsRepository;
 }> {
   const db = createPsqlDbClient();
   if (!(await canReachPostgres(db)) || !(await liveSchemaReady(db))) {
@@ -80,12 +100,62 @@ async function createLivePersistence(): Promise<{
       runtimeState: createMemoryLiveRuntimeStateRepository(),
       signals: createMemoryLiveSignalsRepository(),
       outbox: createMemoryOutboxStore(),
+      marketSignals: createMemoryMarketSignalsStore(),
     };
   }
+  const marketSignals = (await marketSignalsSchemaReady(db))
+    ? createMarketSignalsRepository(db)
+    : createMemoryMarketSignalsStore();
   return {
     runtimeState: createLiveRuntimeStateRepository(db),
     signals: createLiveSignalsRepository(db),
     outbox: createOutboxRepository(db),
+    marketSignals,
+  };
+}
+
+function createLiveTelegramWiring(input: {
+  env: AppEnv;
+  marketSignals: MarketSignalsRepository;
+  outbox: OutboxRepository;
+  logger: {
+    info: (
+      message: string,
+      fields?: Record<string, string | number | boolean | null | undefined>,
+    ) => void;
+  };
+}): {
+  telegram: TelegramNotifier;
+  topics: ReturnType<typeof createTelegramTopicPublisher>;
+} {
+  const chatId = resolveTelegramChatId(input.env);
+  const topicAlerts = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_ALERTS);
+  const topicLogs = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_LOGS);
+  const topicErrors = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_ERRORS);
+  const topics = createTelegramTopicPublisher({
+    marketSignals: input.marketSignals,
+    chatId,
+    topicLogs,
+    topicErrors,
+  });
+  if (chatId !== null && topicAlerts !== null) {
+    return {
+      telegram: createQueueTelegramNotifier({
+        marketSignals: input.marketSignals,
+        outbox: input.outbox,
+        chatId,
+        topicAlerts,
+        logger: input.logger,
+      }),
+      topics,
+    };
+  }
+  return {
+    telegram: createStubTelegramNotifier({
+      outbox: input.outbox,
+      logger: input.logger,
+    }),
+    topics,
   };
 }
 
@@ -165,15 +235,19 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
       marketData,
       levelAlerts,
     });
+    const telegramWiring = createLiveTelegramWiring({
+      env,
+      marketSignals: livePersistence.marketSignals,
+      outbox: livePersistence.outbox,
+      logger: liveLogger,
+    });
     liveRuntime = createLiveRuntime({
       hub,
       favorites,
       runtimeState: livePersistence.runtimeState,
       signals: livePersistence.signals,
-      telegram: createStubTelegramNotifier({
-        outbox: livePersistence.outbox,
-        logger: liveLogger,
-      }),
+      telegram: telegramWiring.telegram,
+      topics: telegramWiring.topics,
       streamLog,
       evaluateClosedBar: analyzer.evaluateClosedBar,
       evaluateLiveAlerts: analyzer.evaluateLiveAlerts,

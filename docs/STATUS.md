@@ -9,11 +9,11 @@
 **RU.** **Текущий milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation  
 **EN.** **Current milestone:** M3 realtime + independent Live Runtime · M4 signals (TSE + BL-106…109) · UI foundation
 
-**RU.** **Активная задача:** Grammy forum topics (alerts/logs/errors) + Live notifications wire (ADR-012)  
-**EN.** **Active task:** Grammy forum topics (alerts/logs/errors) + Live notifications wire (ADR-012)
+**RU.** **Активная задача:** Phase 7 TSE; UI-017; RT-05…07; worker split  
+**EN.** **Active task:** Phase 7 TSE; UI-017; RT-05…07; worker split
 
-**RU.** **Следующая задача:** Phase 7 TSE; UI-017; RT-05…07; worker split  
-**EN.** **Next task:** Phase 7 TSE; UI-017; RT-05…07; worker split
+**RU.** **Следующая задача:** UI-017 / UI-008; candle persistence upsert; pivot persistence  
+**EN.** **Next task:** UI-017 / UI-008; candle persistence upsert; pivot persistence
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
@@ -97,12 +97,12 @@
 
 ## Market trigger signals (BL-106…109) / Рыночные триггер-сигналы (BL-106…109)
 
-| ID     | Status / Статус | Notes / Примечания                                                           |
-| ------ | --------------- | ---------------------------------------------------------------------------- |
-| BL-106 | DONE            | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators |
-| BL-107 | DONE            | `market_signals` + `notifications` migration and repos                       |
-| BL-108 | DONE            | `apps/worker-signals` favorites 5m/1h evaluator                              |
-| BL-109 | DONE            | `apps/worker-notifier` Telegram (fetch baseline; Grammy + topics next)       |
+| ID     | Status / Статус | Notes / Примечания                                                            |
+| ------ | --------------- | ----------------------------------------------------------------------------- |
+| BL-106 | DONE            | `@moex/signal-triggers`; fib approach/cross; reference-periods in indicators  |
+| BL-107 | DONE            | `market_signals` + `notifications` migration and repos                        |
+| BL-108 | DONE            | `apps/worker-signals` favorites 5m/1h evaluator                               |
+| BL-109 | DONE            | `worker-notifier` Grammy + forum topics (alerts/logs/errors); Live queue wire |
 
 ## Realtime candle stream (E4 / RT slices) / Realtime поток свечей (E4 / срезы RT)
 
@@ -117,7 +117,7 @@
 | RT-07 | TODO            | feed health                                                                         |
 | RT-08 | IN_PROGRESS     | Internal `/ws/market-data` fan-out via shared `MarketStreamHub` (API process)       |
 | RT-09 | DONE (MVP)      | Chart CHART leases (display); Independent Live = STRATEGY leases (ADR-011)          |
-| RT-10 | DONE (MVP)      | LiveRuntime: level alerts (approach/cross/chop) + TSE entry confirm + Telegram stub |
+| RT-10 | DONE (MVP)      | LiveRuntime: level alerts + TSE entry confirm → notifications queue (Grammy topics) |
 
 **RU.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)  
 **EN.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)
@@ -152,14 +152,14 @@
 
 **RU.**
 
-1. Finish BL-106…109 Grammy Telegram (alerts/logs/errors topics) + Live queue wiring
-2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-3. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
-4. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+1. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
+2. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+3. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+4. Wire more API/worker hard failures into ERRORS topic (platform-wide publisher already exists)
 
 **EN.**
 
-1. Finish BL-106…109 Grammy Telegram (alerts/logs/errors topics) + Live queue wiring
-2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-3. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
-4. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+1. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
+2. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+3. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
+4. Wire more API/worker hard failures into ERRORS topic (platform-wide publisher already exists)

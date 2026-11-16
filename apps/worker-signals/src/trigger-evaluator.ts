@@ -26,6 +26,7 @@ export type TriggerEvaluatorDeps = {
   triggers: readonly TriggerId[];
   approachPctByTimeframe: { '5m': string; '1h': string };
   telegramChannelId: string | null;
+  telegramTopicAlerts?: number | null;
   timeZone: string;
   registry?: TriggerRegistry;
   state?: TriggerStateStore;
@@ -174,6 +175,7 @@ export function createTriggerEvaluator(deps: TriggerEvaluatorDeps) {
           channel: 'telegram',
           target: channelId,
           text,
+          threadId: deps.telegramTopicAlerts ?? null,
         },
       });
       if (result.inserted) {

@@ -74,6 +74,7 @@ export function createNotifierPollLoop(options: NotifierPollLoopOptions): Notifi
       const result = await options.telegram.sendMessage({
         chatId: notification.target,
         text: notification.text,
+        threadId: notification.threadId,
       });
       await options.repo.markSent(notification.id, {
         providerMessageId: result.messageId,

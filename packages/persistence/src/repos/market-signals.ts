@@ -8,6 +8,7 @@ import type {
   MarketSignalEvalMode,
   MarketSignalKind,
   MarketSignalSide,
+  NewLogNotification,
   NewMarketSignal,
   NewNotificationForSignal,
   Notification,
@@ -20,6 +21,7 @@ export type MarketSignalsRepository = {
     signal: NewMarketSignal;
     notification: NewNotificationForSignal;
   }) => Promise<InsertSignalWithNotificationResult>;
+  enqueueLogNotification: (notification: NewLogNotification) => Promise<Notification>;
   listActiveApproachState: (input?: {
     instrumentUids?: readonly string[];
     periodIds?: readonly string[];
@@ -66,6 +68,7 @@ const NOTIFICATION_JSON = `
   channel,
   target,
   signal_id::text AS "signalId",
+  thread_id AS "threadId",
   status,
   attempts,
   next_attempt_at AS "nextAttemptAt",
@@ -74,6 +77,23 @@ const NOTIFICATION_JSON = `
   provider_message_id AS "providerMessageId",
   created_at AS "createdAt",
   sent_at AS "sentAt"
+`;
+
+/** Qualified for UPDATE … FROM due (avoids ambiguous id). */
+const NOTIFICATION_JSON_FROM_N = `
+  n.id::text AS "id",
+  n.channel,
+  n.target,
+  n.signal_id::text AS "signalId",
+  n.thread_id AS "threadId",
+  n.status,
+  n.attempts,
+  n.next_attempt_at AS "nextAttemptAt",
+  n.last_error AS "lastError",
+  n.text,
+  n.provider_message_id AS "providerMessageId",
+  n.created_at AS "createdAt",
+  n.sent_at AS "sentAt"
 `;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -108,10 +128,26 @@ function requiredNumber(row: Record<string, unknown>, key: string): number {
 }
 
 function parseKind(value: string): MarketSignalKind {
-  if (value === 'approach' || value === 'cross') {
+  if (
+    value === 'approach' ||
+    value === 'cross' ||
+    value === 'consolidation' ||
+    value === 'entry_confirm'
+  ) {
     return value;
   }
   throw new Error(`Invalid market signal kind: ${value}`);
+}
+
+function optionalNumber(row: Record<string, unknown>, key: string): number | null {
+  const value = row[key];
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`Expected number|null field ${key}`);
+  }
+  return value;
 }
 
 function parseSide(value: string): MarketSignalSide {
@@ -176,11 +212,13 @@ function mapNotificationRow(row: unknown): Notification {
   if (!isPlainObject(row)) {
     throw new Error('Invalid notifications row');
   }
+  const signalIdRaw = optionalString(row, 'signalId');
   return {
     id: parseUuid(requiredString(row, 'id')),
     channel: parseChannel(requiredString(row, 'channel')),
     target: requiredString(row, 'target'),
-    signalId: parseUuid(requiredString(row, 'signalId')),
+    signalId: signalIdRaw === null ? null : parseUuid(signalIdRaw),
+    threadId: optionalNumber(row, 'threadId'),
     status: parseStatus(requiredString(row, 'status')),
     attempts: requiredNumber(row, 'attempts'),
     nextAttemptAt: parseIsoDateTime(requiredString(row, 'nextAttemptAt')),
@@ -234,10 +272,10 @@ export function createMarketSignalsRepository(db: DbExecutor): MarketSignalsRepo
         ),
         inserted_notification AS (
           INSERT INTO notifications (
-            id, channel, target, signal_id, status, attempts, next_attempt_at, text, created_at
+            id, channel, target, signal_id, thread_id, status, attempts, next_attempt_at, text, created_at
           )
           SELECT
-            $19::uuid, $20, $21, inserted_signal.id::uuid, 'pending', 0, $18::timestamptz, $22, $18::timestamptz
+            $19::uuid, $20, $21, inserted_signal.id::uuid, $23, 'pending', 0, $18::timestamptz, $22, $18::timestamptz
           FROM inserted_signal
           RETURNING ${NOTIFICATION_JSON}
         )
@@ -269,6 +307,7 @@ export function createMarketSignalsRepository(db: DbExecutor): MarketSignalsRepo
           notification.channel,
           notification.target,
           notification.text,
+          notification.threadId ?? null,
         ],
       );
 
@@ -288,6 +327,29 @@ export function createMarketSignalsRepository(db: DbExecutor): MarketSignalsRepo
             ? null
             : mapNotificationRow(notificationRaw),
       };
+    },
+
+    enqueueLogNotification: async (notification) => {
+      const createdAt = parseIsoDateTime(new Date().toISOString());
+      const row = await db.queryJsonValue(
+        `
+        INSERT INTO notifications (
+          id, channel, target, signal_id, thread_id, status, attempts, next_attempt_at, text, created_at
+        ) VALUES (
+          $1::uuid, $2, $3, NULL, $4, 'pending', 0, $5::timestamptz, $6, $5::timestamptz
+        )
+        RETURNING ${NOTIFICATION_JSON}
+        `.trim(),
+        [
+          notification.id,
+          notification.channel,
+          notification.target,
+          notification.threadId,
+          createdAt,
+          notification.text,
+        ],
+      );
+      return mapNotificationRow(row);
     },
 
     listActiveApproachState: async (input = {}) => {
@@ -338,7 +400,7 @@ export function createMarketSignalsRepository(db: DbExecutor): MarketSignalsRepo
               attempts = attempts + 1
           FROM due
           WHERE n.id = due.id
-          RETURNING ${NOTIFICATION_JSON}
+          RETURNING ${NOTIFICATION_JSON_FROM_N}
         )
         SELECT COALESCE(json_agg(row_to_json(updated)), '[]'::json) FROM updated
         `.trim(),

@@ -22,6 +22,7 @@ export const MIGRATION_FILES = [
   '003_futures_catalog_cache.sql',
   '004_live_runtime.sql',
   '005_market_signals_notifications.sql',
+  '006_notifications_forum_topics.sql',
 ] as const;
 
 export type { MemoryAuditLogStore } from './audit/memory.js';
@@ -108,6 +109,7 @@ export type {
   MarketSignalEvalMode,
   MarketSignalKind,
   MarketSignalSide,
+  NewLogNotification,
   NewMarketSignal,
   NewNotificationForSignal,
   Notification,

@@ -18,8 +18,8 @@ Accepted (принято)
 - Один **`MarketStreamHub`** владеет `StreamConnectionManager` + `SubscriptionRegistry` в процессе API (MVP).
 - Потребители: `CHART` (gateway) и `STRATEGY` (LiveRuntime) делят ref-count провайдерских ключей.
 - Вселенная Live = T-Invest `GetFavorites` (не ручной CRUD); start/stop через `/api/v1/live/*` и UI на dashboard.
-- Сигналы: (A) live-алерты APPROACH/CROSS/`LEVEL_CONSOLIDATION` по незакрытой свече vs fib+VP уровни; (B) closed-bar TSE confirm → `live_signals`. Outbox `signal.telegram` stub (реальный bot позже).
-- Отложено: перенос hub → `worker-market-data`, Live → `worker-strategy`, autostart после деплоя, реальные Telegram credentials, durable store setups/alerts.
+- Сигналы: (A) live-алерты APPROACH/CROSS/`LEVEL_CONSOLIDATION` по незакрытой свече vs fib+VP уровни; (B) closed-bar TSE confirm → `live_signals`. При настроенных Telegram env — durable `market_signals`+`notifications` (topic alerts); outbox `signal.telegram` = audit (`delivery: notifications_queue`). Ops/errors → topics logs/errors.
+- Отложено: перенос hub → `worker-market-data`, Live → `worker-strategy`, autostart после деплоя, durable store setups/alerts.
 
 **EN.**
 
@@ -27,11 +27,11 @@ Accepted (принято)
 - One **`MarketStreamHub`** owns `StreamConnectionManager` + `SubscriptionRegistry` in the API process (MVP).
 - Consumers: `CHART` (gateway) and `STRATEGY` (LiveRuntime) share provider-key ref-counts.
 - Live universe = T-Invest `GetFavorites` (not manual CRUD); start/stop via `/api/v1/live/*` and dashboard UI.
-- Signals: (A) live APPROACH/CROSS/`LEVEL_CONSOLIDATION` alerts on the unclosed candle vs fib+VP levels; (B) closed-bar TSE confirm → `live_signals`. Outbox `signal.telegram` stub (real bot later).
-- Deferred: move hub → `worker-market-data`, Live → `worker-strategy`, post-deploy autostart, real Telegram credentials, durable setup/alert store.
+- Signals: (A) live APPROACH/CROSS/`LEVEL_CONSOLIDATION` alerts on the unclosed candle vs fib+VP levels; (B) closed-bar TSE confirm → `live_signals`. With Telegram env set — durable `market_signals`+`notifications` (alerts topic); outbox `signal.telegram` is audit-only (`delivery: notifications_queue`). Ops/errors → logs/errors topics.
+- Deferred: move hub → `worker-market-data`, Live → `worker-strategy`, post-deploy autostart, durable setup/alert store.
 
 ## Consequences / Последствия
 
-**RU.** Остановка Live не рвёт CHART leases; закрытие графика не останавливает Live. Один provider subscription на ключ при одновременном Live+chart. Live алерты идут на `UPDATING`; вход confirm — через `@moex/strategy-engine` на закрытии бара + Telegram stub.
+**RU.** Остановка Live не рвёт CHART leases; закрытие графика не останавливает Live. Один provider subscription на ключ при одновременном Live+chart. Live алерты идут на `UPDATING`; вход confirm — через `@moex/strategy-engine` на закрытии бара; доставка Telegram — через очередь + Grammy worker-notifier.
 
-**EN.** Stopping Live does not drop CHART leases; closing the chart does not stop Live. One provider subscription per key when Live and chart overlap. Live alerts fire on `UPDATING`; entry confirm runs `@moex/strategy-engine` on bar close + Telegram stub.
+**EN.** Stopping Live does not drop CHART leases; closing the chart does not stop Live. One provider subscription per key when Live and chart overlap. Live alerts fire on `UPDATING`; entry confirm runs `@moex/strategy-engine` on bar close; Telegram delivery goes through the notifications queue + Grammy worker-notifier.

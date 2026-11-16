@@ -14,7 +14,8 @@
   "dependencies": {
     "@moex/config": "workspace:*",
     "@moex/observability": "workspace:*",
-    "@moex/persistence": "workspace:*"
+    "@moex/persistence": "workspace:*",
+    "grammy": "^1.46.0"
   },
   "devDependencies": {
     "tsx": "^4.20.6"

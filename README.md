@@ -18,7 +18,7 @@
 | ---------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial + realtime MVP (`/ws/market-data`, chart auto-live) / Частично + realtime MVP         |
 | **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots + chart UX (`1m`/`5m`/`1h`, zoom/pan, futures picker)                        |
-| **Signals & backtest** | Reproducible signals + event-driven simulation             | Live alerts + TSE closed-bar confirm (Telegram stub) / Live-алерты + TSE confirm              |
+| **Signals & backtest** | Reproducible signals + event-driven simulation             | Live alerts + TSE confirm → Telegram forum (Grammy) / Live-алерты + TSE → Telegram forum      |
 | **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** / **Рабочий вертикаль — Sandbox Admin (E7A)** |
 
 **RU.** Архитектурное правило жёсткое: **источник биржевых данных ≠ канал исполнения у брокера**. Стратегии общаются с портами (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), а не с DTO SDK.
@@ -92,24 +92,26 @@
 1. **Вселенная.** Live читает `GetFavorites` и оставляет **только фьючерсы**. CRUD избранного в API = `405`; правки в приложении T-Invest + `POST /api/v1/favorites/sync`.
 2. **Start / stream.** `POST /api/v1/live/start` → `STRATEGY` leases на каждый фьючерс × `5m`. Один `MarketStreamHub` с ref-count (общий с CHART). Лимиты T-Invest: 300 подписок / stream, 100 subscribe/min.
 3. **Уровни.** Кэш уровней из Fibonacci pivots + volume profile (POC/VAH/VAL). Без VP алерты/setups работают на fib; для TSE `requireSecondaryFamily` ослабляется.
-4. **Lane A — live alerts (`UPDATING`).** На актуальную незакрытую свечу: **APPROACH** (дистанция ≤ 0.15 ATR), **CROSS** (смена стороны уровня или новый span бара). Дедуп `(instrument, level, kind)` ≈ 5 мин. Если ≥ **3 CROSS за 15 мин** → один алерт **`LEVEL_CONSOLIDATION`**, дальше approach/cross по уровню глушатся на 15 мин «тишины». Outbox `signal.telegram` с `kind: level_approach|level_cross|level_consolidation`.
-5. **Lane B — entry confirm (closed bar).** На `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: история → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `kind: entry_confirm` при `accepted`. Сигнал ≠ ордер (ADR-006).
-6. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` — lifecycle/candle логи.
+4. **Lane A — live alerts (`UPDATING`).** На актуальную незакрытую свечу: **APPROACH** (дистанция ≤ 0.15 ATR), **CROSS** (смена стороны уровня или новый span бара). Дедуп `(instrument, level, kind)` ≈ 5 мин. Если ≥ **3 CROSS за 15 мин** → один алерт **`LEVEL_CONSOLIDATION`**, дальше approach/cross по уровню глушатся на 15 мин «тишины». При настроенных `TELEGRAM_*` — atomic `market_signals`+`notifications` (topic **alerts**); outbox `signal.telegram` audit-only.
+5. **Lane B — entry confirm (closed bar).** На `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: история → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `entry_confirm` (topic alerts) при `accepted`. Сигнал ≠ ордер (ADR-006).
+6. **Telegram delivery.** `worker-notifier` (Grammy) доставляет очередь в forum: **alerts** / **logs** / **errors**. Live start/stop → logs; hard failures → errors. Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS|LOGS|ERRORS`.
+7. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` — lifecycle/candle логи.
 
 **EN.** Two lanes: **live alerts on the unclosed candle** (Telegram) and **confirmed entry on bar close** (TSE → `live_signals`).
 
 1. **Universe.** Live reads `GetFavorites` and keeps **futures only**. Favorites CRUD via API is `405`; edit in T-Invest app + `POST /api/v1/favorites/sync`.
 2. **Start / stream.** `POST /api/v1/live/start` → `STRATEGY` leases per futures × `5m`. One ref-counted `MarketStreamHub` (shared with CHART). T-Invest limits: 300 subs/stream, 100 subscribe/min.
 3. **Levels.** Cache from Fibonacci pivots + volume profile (POC/VAH/VAL). Without VP, alerts/setups use fib; TSE runs with `requireSecondaryFamily` relaxed.
-4. **Lane A — live alerts (`UPDATING`).** On the current open bar: **APPROACH** (distance ≤ 0.15 ATR), **CROSS** (side flip or newly spanning range). Dedup `(instrument, level, kind)` ~5 min. If ≥ **3 CROSSes in 15 min** → one **`LEVEL_CONSOLIDATION`** alert, then suppress approach/cross for 15 min quiet. Outbox `signal.telegram` with `kind: level_approach|level_cross|level_consolidation`.
-5. **Lane B — entry confirm (closed bar).** On `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: history → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `kind: entry_confirm` when accepted. Signal ≠ order (ADR-006).
-6. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` for lifecycle/candle logs.
+4. **Lane A — live alerts (`UPDATING`).** On the current open bar: **APPROACH** (distance ≤ 0.15 ATR), **CROSS** (side flip or newly spanning range). Dedup `(instrument, level, kind)` ~5 min. If ≥ **3 CROSSes in 15 min** → one **`LEVEL_CONSOLIDATION`** alert, then suppress approach/cross for 15 min quiet. With `TELEGRAM_*` set — atomic `market_signals`+`notifications` (**alerts** topic); outbox `signal.telegram` audit-only.
+5. **Lane B — entry confirm (closed bar).** On `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: history → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `entry_confirm` (alerts topic) when accepted. Signal ≠ order (ADR-006).
+6. **Telegram delivery.** `worker-notifier` (Grammy) delivers the queue into a forum: **alerts** / **logs** / **errors**. Live start/stop → logs; hard failures → errors. Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS|LOGS|ERRORS`.
+7. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` for lifecycle/candle logs.
 
-| Wired now / Уже есть                    | Deferred / Отложено                                    |
-| --------------------------------------- | ------------------------------------------------------ |
-| Live level alerts + chop dedup          | Real Telegram bot delivery                             |
-| TSE closed-bar confirm → `live_signals` | Durable setup/alert store across restarts              |
-| Fib + best-effort VP levels             | Full MTF context opposition / workers host / autostart |
+| Wired now / Уже есть                     | Deferred / Отложено                                    |
+| ---------------------------------------- | ------------------------------------------------------ |
+| Live alerts + TSE → notifications queue  | Durable setup/alert store across restarts              |
+| Grammy forum topics (alerts/logs/errors) | Full MTF context opposition / workers host / autostart |
+| Fib + best-effort VP levels              | Broader API/worker ERRORS topic coverage               |
 
 ### Live API / Live API
 

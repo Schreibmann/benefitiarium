@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   loadEnv,
+  parseTelegramTopicId,
   requireTinvestToken,
+  resolveTelegramChatId,
   resolveTinvestSandboxAccountId,
   resolveTinvestToken,
 } from './env.js';
@@ -25,6 +27,36 @@ describe('loadEnv', () => {
     expect(env.SIGNALS_TIMEFRAMES).toBe('5m,1h');
     expect(env.SIGNALS_EVAL_MODE).toBe('close');
     expect(env.TELEGRAM_BOT_TOKEN).toBe('');
+    expect(env.TELEGRAM_CHAT_ID).toBe('');
+    expect(env.TELEGRAM_CHANNEL_ID).toBe('');
+    expect(env.TELEGRAM_TOPIC_ALERTS).toBe('');
+    expect(env.TELEGRAM_TOPIC_LOGS).toBe('');
+    expect(env.TELEGRAM_TOPIC_ERRORS).toBe('');
+    expect(env.NOTIFIER_POLL_MS).toBe(2000);
+  });
+
+  it('resolves TELEGRAM_CHAT_ID over legacy CHANNEL_ID', () => {
+    expect(resolveTelegramChatId(loadEnv(baseEnv))).toBeNull();
+    expect(
+      resolveTelegramChatId(loadEnv({ ...baseEnv, TELEGRAM_CHANNEL_ID: ' -100legacy ' })),
+    ).toBe('-100legacy');
+    expect(
+      resolveTelegramChatId(
+        loadEnv({
+          ...baseEnv,
+          TELEGRAM_CHAT_ID: ' -100chat ',
+          TELEGRAM_CHANNEL_ID: '-100legacy',
+        }),
+      ),
+    ).toBe('-100chat');
+  });
+
+  it('parses Telegram topic thread ids', () => {
+    expect(parseTelegramTopicId('')).toBeNull();
+    expect(parseTelegramTopicId(' 42 ')).toBe(42);
+    expect(parseTelegramTopicId('0')).toBeNull();
+    expect(parseTelegramTopicId('-1')).toBeNull();
+    expect(parseTelegramTopicId('abc')).toBeNull();
   });
 
   it('fails when DATABASE_URL is missing', () => {
