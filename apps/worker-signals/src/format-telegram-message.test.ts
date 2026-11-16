@@ -27,7 +27,7 @@ describe('formatTelegramMessage', () => {
       timeZone: 'Europe/Moscow',
     });
     expect(text).toContain('<b>NGZ6</b>');
-    expect(text).toContain('пересечение вверх');
+    expect(text).toContain('CROSS ⬆️');
     expect(text).toContain('<b>P</b>');
     expect(text).toContain('<code>100.50</code>');
     expect(text).toContain('<code>100.60</code>');

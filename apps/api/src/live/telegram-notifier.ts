@@ -82,11 +82,24 @@ function formatInstrumentHeading(input: {
   return `<b>${code}</b> · ${timeframe}`;
 }
 
+function formatAlertKind(alert: LevelAlert): string {
+  if (alert.kind === 'CROSS') {
+    if (alert.crossDirection === 'up') {
+      return 'CROSS ⬆️';
+    }
+    if (alert.crossDirection === 'down') {
+      return 'CROSS ⬇️';
+    }
+    return 'CROSS';
+  }
+  return escapeHtml(alert.kind);
+}
+
 function formatLevelAlertText(alert: LevelAlert): string {
   const level = escapeHtml(alert.levelId);
   const levelPrice = escapeHtml(roundDisplay(alert.levelPrice));
   const price = escapeHtml(roundDisplay(alert.referencePrice));
-  const kind = escapeHtml(alert.kind);
+  const kind = formatAlertKind(alert);
   return [
     formatInstrumentHeading({
       ticker: alert.ticker,

@@ -77,6 +77,7 @@ describe('createLevelAlertEngine', () => {
       nowMs: 2_000,
     });
     expect(cross1.map((a) => a.kind)).toContain('CROSS');
+    expect(cross1.find((a) => a.kind === 'CROSS')?.crossDirection).toBe('up');
 
     const cross2 = engine.evaluate({
       instrumentUid: 'uid-1',
@@ -90,6 +91,7 @@ describe('createLevelAlertEngine', () => {
       nowMs: 3_000,
     });
     expect(cross2.map((a) => a.kind)).toContain('CROSS');
+    expect(cross2.find((a) => a.kind === 'CROSS')?.crossDirection).toBe('down');
 
     const chop = engine.evaluate({
       instrumentUid: 'uid-1',

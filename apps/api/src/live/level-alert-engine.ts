@@ -9,6 +9,8 @@ export type AlertLevel = {
   sources: string[];
 };
 
+export type LevelAlertCrossDirection = 'up' | 'down';
+
 export type LevelAlert = {
   kind: LevelAlertKind;
   levelId: string;
@@ -19,6 +21,8 @@ export type LevelAlert = {
   ticker: string | null;
   /** Provider display name (often Russian for MOEX futures). */
   name: string | null;
+  /** Set for CROSS: price moved above (up) or below (down) the level. */
+  crossDirection: LevelAlertCrossDirection | null;
   intervalCode: string;
   barTimeStart: string;
   referencePrice: string;
@@ -124,6 +128,25 @@ function pruneTimestamps(timestamps: number[], nowMs: number, windowMs: number):
   return timestamps.filter((ts) => ts >= start);
 }
 
+function crossDirectionFromSides(
+  lastSide: LevelSide | null,
+  currentSide: LevelSide,
+): LevelAlertCrossDirection | null {
+  if (currentSide === 'above') {
+    return 'up';
+  }
+  if (currentSide === 'below') {
+    return 'down';
+  }
+  if (lastSide === 'below') {
+    return 'up';
+  }
+  if (lastSide === 'above') {
+    return 'down';
+  }
+  return null;
+}
+
 function makeAlert(
   kind: LevelAlertKind,
   level: AlertLevel,
@@ -136,6 +159,7 @@ function makeAlert(
     barTimeStart: string;
     price: string;
   },
+  crossDirection: LevelAlertCrossDirection | null = null,
 ): LevelAlert {
   return {
     kind,
@@ -146,6 +170,7 @@ function makeAlert(
     instrumentUid: input.instrumentUid,
     ticker: input.ticker,
     name: input.name,
+    crossDirection: kind === 'CROSS' ? crossDirection : null,
     intervalCode: input.intervalCode,
     barTimeStart: input.barTimeStart,
     referencePrice: input.price,
@@ -257,7 +282,15 @@ export function createLevelAlertEngine(
           state.crossTimestamps = [];
         } else if (!inQuiet) {
           if (crossed && canEmit(state, 'CROSS', input.nowMs)) {
-            out.push(makeAlert('CROSS', level, distanceAtr, input));
+            out.push(
+              makeAlert(
+                'CROSS',
+                level,
+                distanceAtr,
+                input,
+                crossDirectionFromSides(state.lastSide, currentSide),
+              ),
+            );
             markEmitted(state, 'CROSS', input.nowMs);
           } else if (!crossed) {
             const distanceNum = Number(distanceAtr);

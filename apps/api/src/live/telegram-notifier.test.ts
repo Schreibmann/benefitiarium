@@ -26,6 +26,7 @@ describe('createQueueTelegramNotifier', () => {
       instrumentUid: 'uid-1',
       ticker: 'NBISperpA',
       name: 'Акции NVIDIA',
+      crossDirection: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       referencePrice: '107.35',
@@ -76,6 +77,7 @@ describe('createQueueTelegramNotifier', () => {
       instrumentUid: 'uid-1',
       ticker: 'SBER',
       name: null,
+      crossDirection: 'up' as const,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:05:00.000Z',
       referencePrice: '110',
@@ -103,11 +105,40 @@ describe('createStubTelegramNotifier', () => {
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
       name: null,
+      crossDirection: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       referencePrice: '100.5',
     });
     const pending = await outbox.listPending();
     expect(pending[0]?.payload).toMatchObject({ delivery: 'stub' });
+  });
+
+  it('formats CROSS with direction arrow emoji', async () => {
+    const store = createMemoryMarketSignalsStore();
+    const outbox = createMemoryOutboxStore();
+    const notifier = createQueueTelegramNotifier({
+      marketSignals: store,
+      outbox,
+      chatId: '-1001',
+      topicAlerts: 7,
+      logger: { info: () => undefined },
+      createId: () => '00000000-0000-4000-8000-000000000077',
+    });
+    await notifier.publishLevelAlert({
+      kind: 'CROSS',
+      levelId: 'FIB:S3',
+      levelPrice: '100',
+      levelSources: ['FIB_PIVOT'],
+      distanceAtr: '0',
+      instrumentUid: 'uid-1',
+      ticker: 'CEZ6',
+      name: null,
+      crossDirection: 'down',
+      intervalCode: '5m',
+      barTimeStart: '2026-11-16T10:00:00.000Z',
+      referencePrice: '99',
+    });
+    expect(store.snapshotNotifications()[0]?.text).toContain('CROSS ⬇️');
   });
 });

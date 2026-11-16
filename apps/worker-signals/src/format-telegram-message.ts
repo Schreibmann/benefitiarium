@@ -14,7 +14,7 @@ function roundDisplay(raw: string): string {
 
 function kindLabel(hit: TriggerHit): string {
   if (hit.kind === 'cross') {
-    return hit.side === 'up' ? 'пересечение вверх' : 'пересечение вниз';
+    return hit.side === 'up' ? 'CROSS ⬆️' : 'CROSS ⬇️';
   }
   return hit.side === 'above' ? 'приближение сверху' : 'приближение снизу';
 }
