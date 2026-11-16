@@ -101,6 +101,44 @@ export {
   type RiskRewardGateInput,
   stopDistanceTicks,
 } from './gates/eligibility.js';
+export { buildProcessedEventRecordId, buildSignalDeduplicationKey } from './live/dedup.js';
+export {
+  assertSignalTransition,
+  canTransitionSignalStatus,
+  type SignalEventType,
+  type SignalLifecycleEvent,
+  type SignalStatus,
+  setupStatusToSignalStatus,
+  signalStatusToEventType,
+  type TradingSignalRecord,
+  updateSignalLifecycle,
+} from './live/lifecycle.js';
+export {
+  compareMarketEvents,
+  isLateConfirmedEvent,
+  sortMarketEvents,
+} from './live/ordering.js';
+export { type PartitionKey, parsePartitionKey, partitionKey } from './live/partition.js';
+export {
+  type CreateLiveSignalProcessorInput,
+  createLiveSignalProcessor,
+  type LiveEvaluationDecision,
+  type LiveProcessorHooks,
+  type LiveSignalProcessor,
+  type PaperTradingDecision,
+  type ProcessMarketEventResult,
+} from './live/processor.js';
+export {
+  clonePartitionState,
+  createEmptyPartitionState,
+  createMemoryLiveStore,
+  type EngineOutboxRecord,
+  type LivePersistencePorts,
+  type MemoryLiveStore,
+  type PartitionAnalysisState,
+  type PartitionTransactionWrites,
+  type ProcessedMarketEventRecord,
+} from './live/store.js';
 export {
   buildMtfContextSnapshot,
   candlesAsOf,
@@ -117,6 +155,43 @@ export {
   type NormalizeMarketEventResult,
   normalizeMarketEvent,
 } from './normalizer.js';
+export {
+  buildTradeEvaluation,
+  markUnrealizedPnl,
+  updateExcursions,
+} from './paper/evaluation.js';
+export {
+  applyExitActions,
+  type BarExitAction,
+  DEFAULT_PARTIAL_EXIT_POLICY,
+  type EvaluateBarExitsInput,
+  evaluateBarExits,
+  type PartialExitPolicy,
+} from './paper/exits.js';
+export {
+  DEFAULT_PAPER_FILL_CONFIG,
+  type PaperFillConfig,
+  type PaperFillResult,
+  simulatePaperFill,
+} from './paper/fill-simulator.js';
+export {
+  type ManagePaperPositionsInput,
+  type ManagePaperPositionsResult,
+  managePaperPositions,
+} from './paper/manage.js';
+export {
+  type OpenPaperPositionInput,
+  type OpenPaperPositionResult,
+  openPaperPosition,
+} from './paper/open-position.js';
+export type {
+  ExitReason,
+  PositionLifecycleEvent,
+  PositionLifecycleEventType,
+  PositionStatus,
+  TradeEvaluation,
+  TradingPosition,
+} from './paper/types.js';
 export { isReasonCode, REASON_CODES, type ReasonCode } from './reason-codes.js';
 export {
   buildEntryReferences,

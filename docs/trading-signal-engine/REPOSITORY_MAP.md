@@ -83,11 +83,11 @@
 
 - Нет session/rolling/anchored VP scopes.
 - Нет loader `trading_sessions`.
-- Domain `Signal` lifecycle уже persistence-ориентирован (`new`/`accepted`/…); Benefit lifecycle живёт в `@moex/strategy-engine` до этапа persistence.
+- Domain `Signal` lifecycle уже persistence-ориентирован (`new`/`accepted`/…); Benefit lifecycle + paper positions/evaluations + in-memory outbox есть в `@moex/strategy-engine` (Phase 6); Postgres signal/position repos ещё нет.
 - Workers `worker-strategy` / `worker-market-data` — scaffold only.
   **EN.**
 
 - No session/rolling/anchored VP scopes.
 - No `trading_sessions` loader.
-- Domain `Signal` lifecycle is persistence-oriented (`new`/`accepted`/…); Benefit lifecycle lives in `@moex/strategy-engine` until the persistence stage.
+- Domain `Signal` lifecycle is persistence-oriented (`new`/`accepted`/…); Benefit lifecycle + paper positions/evaluations + in-memory outbox live in `@moex/strategy-engine` (Phase 6); Postgres signal/position repos still missing.
 - Workers `worker-strategy` / `worker-market-data` are scaffold only.
