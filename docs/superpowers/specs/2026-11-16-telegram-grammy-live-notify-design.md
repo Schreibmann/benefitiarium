@@ -18,18 +18,18 @@
 
 - Cherry-pick полный стек BL-106 → BL-109 на ветку от Live tip.
 - Заменить HTTP-клиент notifier на **Grammy** (send-only, без long polling).
-- Доставка в один forum chat: topic **alerts** (сигналы) и topic **logs** (ops).
+- Доставка в один forum chat: topics **alerts** (сигналы), **logs** (ops), **errors** (ошибки платформы, не только Live).
 - Live level alerts + TSE `entry_confirm` → atomic `market_signals` + `notifications`.
-- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS`, `TELEGRAM_TOPIC_LOGS`.
+- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS`, `TELEGRAM_TOPIC_LOGS`, `TELEGRAM_TOPIC_ERRORS`.
 - Никогда не логировать bot token; credentials не в payload.
 
 **EN.**
 
 - Cherry-pick the full BL-106 → BL-109 stack onto a branch from Live tip.
 - Replace the notifier HTTP client with **Grammy** (send-only, no long polling).
-- Deliver into one forum chat: **alerts** topic (signals) and **logs** topic (ops).
+- Deliver into one forum chat: **alerts** (signals), **logs** (ops), **errors** (platform errors, not Live-only).
 - Live level alerts + TSE `entry_confirm` → atomic `market_signals` + `notifications`.
-- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS`, `TELEGRAM_TOPIC_LOGS`.
+- Env: `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `TELEGRAM_TOPIC_ALERTS`, `TELEGRAM_TOPIC_LOGS`, `TELEGRAM_TOPIC_ERRORS`.
 - Never log the bot token; no credentials in payloads.
 
 ## Non-goals / Вне scope
@@ -58,7 +58,7 @@
 | Library               | Grammy (`pnpm add` explicitly approved)                                   |
 | Scope bring-up        | Cherry-pick full BL-106…109, then wire Live                               |
 | Branch                | `cursor/bl-109-grammy-live-notify` from `cursor/independent-live-runtime` |
-| Forum topics          | Alerts topic + Logs topic                                                 |
+| Forum topics          | Alerts + Logs + Errors topics                                             |
 | ADR clash             | Keep Live `ADR-011`; renumber market-triggers ADR to **012** if needed    |
 
 ## Architecture / Архитектура
@@ -66,6 +66,7 @@
 ```mermaid
 flowchart LR
   live[LiveRuntime]
+  api[API / workers]
   ms[(market_signals)]
   nq[(notifications)]
   wn[worker-notifier + Grammy]
@@ -73,14 +74,15 @@ flowchart LR
 
   live -->|alerts / entry_confirm| ms
   ms --> nq
-  live -->|ops logs enqueue| nq
+  live -->|ops → logs topic| nq
+  api -->|errors → errors topic| nq
   wn -->|poll claim| nq
   wn -->|sendMessage + message_thread_id| tg
 ```
 
-**RU.** Live не вызывает Telegram напрямую. API ставит строки в очередь; worker доставляет с retry.
+**RU.** Процессы не вызывают Telegram напрямую. Ставят строки в очередь; worker доставляет с retry. Topic **errors** — общий для платформы (API, Live, workers), не только Live.
 
-**EN.** Live does not call Telegram directly. The API enqueues rows; the worker delivers with retries.
+**EN.** Processes do not call Telegram directly. They enqueue rows; the worker delivers with retries. The **errors** topic is platform-wide (API, Live, workers), not Live-only.
 
 ## Data model changes / Изменения модели
 
@@ -107,10 +109,15 @@ flowchart LR
 | LEVEL_CONSOLIDATION   | `consolidation`           | `intrabar`  | alerts |
 | entry_confirm         | `entry_confirm`           | `close`     | alerts |
 | Live/notifier ops log | *(no market_signals row)* | —           | logs   |
+| Platform error log    | *(no market_signals row)* | —           | errors |
 
 **RU.** `trigger_id` для Live: `live.level_alert` / `live.entry_confirm`. Dedupe key включает instrument, level/signal id, kind, time bucket — вместе с Live engine dedup.
 
 **EN.** Live `trigger_id`s: `live.level_alert` / `live.entry_confirm`. Dedupe key includes instrument, level/signal id, kind, time bucket — alongside Live engine dedup.
+
+**RU.** Разделение topics: **logs** = штатные ops-события (start/stop/degraded); **errors** = сбои и исключения (stream failure, unhandled route error, worker crash summary). Без firehose каждого `logger.warn`.
+
+**EN.** Topic split: **logs** = routine ops (start/stop/degraded); **errors** = failures/exceptions (stream failure, unhandled route error, worker crash summary). No firehose of every `logger.warn`.
 
 ## Components / Компоненты
 
@@ -132,11 +139,17 @@ flowchart LR
 
 **EN.** Replace stub delivery path: when `TELEGRAM_CHAT_ID` + topic ids are set — atomic queue insert; outbox `signal.telegram` stays **audit-only** (`delivery: 'notifications_queue'`). Without env — local log only; Live does not fail.
 
-### 4. Logs topic publisher / Публикатор logs-topic
+### 4. Logs + Errors topic publishers / Публикаторы logs/errors
 
-**RU.** Узкий helper в API/Live: enqueue notification без `signal_id`, `thread_id = TELEGRAM_TOPIC_LOGS`, текст HTML-escaped. Использовать для start/stop/degraded и notifier failure summaries (не сырой firehose каждого candle log).
+**RU.** Общий helper (API-compose, доступен Live и другим сервисам): enqueue notification без `signal_id`, HTML-escaped text, `thread_id` = `TELEGRAM_TOPIC_LOGS` или `TELEGRAM_TOPIC_ERRORS`.
 
-**EN.** Small API/Live helper: enqueue notification with no `signal_id`, `thread_id = TELEGRAM_TOPIC_LOGS`, HTML-escaped text. Use for start/stop/degraded and notifier failure summaries (not a firehose of every candle log).
+- **logs:** Live start/stop/degraded, штатные lifecycle события.
+- **errors:** ошибки платформы (Live stream/lease failures, API fatal handlers, worker failure summaries) — не только Live.
+
+**EN.** Shared helper (API compose, usable by Live and other services): enqueue notification with no `signal_id`, HTML-escaped text, `thread_id` = `TELEGRAM_TOPIC_LOGS` or `TELEGRAM_TOPIC_ERRORS`.
+
+- **logs:** Live start/stop/degraded and routine lifecycle events.
+- **errors:** platform failures (Live stream/lease failures, API fatal handlers, worker failure summaries) — not Live-only.
 
 ## Config / Конфиг
 
@@ -146,6 +159,7 @@ flowchart LR
 | `TELEGRAM_CHAT_ID`      | Forum group chat id                |
 | `TELEGRAM_TOPIC_ALERTS` | Thread id for signals              |
 | `TELEGRAM_TOPIC_LOGS`   | Thread id for ops logs             |
+| `TELEGRAM_TOPIC_ERRORS` | Thread id for platform error logs  |
 | `NOTIFIER_POLL_MS`      | Worker poll interval (from BL-109) |
 
 **RU.** Пустые значения = доставка выключена. Worker без token не стартует (fail fast). API без token работает, очередь не шлёт.
@@ -170,16 +184,16 @@ flowchart LR
 
 **RU.**
 
-- Grammy wrapper: mock API; assert `message_thread_id` for alerts vs logs.
+- Grammy wrapper: mock API; assert `message_thread_id` for alerts / logs / errors.
 - Persistence: `thread_id`, nullable `signal_id`, new kinds round-trip.
-- Live notifier: alert → alerts topic; ops → logs topic; missing env → no throw.
+- Live notifier: alert → alerts; ops → logs; failure → errors; missing env → no throw.
 - Keep BL-106…109 unit tests green after cherry-pick.
 
 **EN.**
 
-- Grammy wrapper: mock API; assert `message_thread_id` for alerts vs logs.
+- Grammy wrapper: mock API; assert `message_thread_id` for alerts / logs / errors.
 - Persistence: `thread_id`, nullable `signal_id`, new kinds round-trip.
-- Live notifier: alert → alerts topic; ops → logs topic; missing env → no throw.
+- Live notifier: alert → alerts; ops → logs; failure → errors; missing env → no throw.
 - Keep BL-106…109 unit tests green after cherry-pick.
 
 ## Docs / Документация
@@ -194,6 +208,6 @@ flowchart LR
 2. Cherry-pick BL-106…109; fix ADR numbering conflicts.
 3. Schema follow-up migration (kinds, `thread_id`, nullable `signal_id`).
 4. Add Grammy; rewrite notifier client; adjust poll loop for `threadId`.
-5. Wire Live notifier + logs publisher + compose/config.
+5. Wire Live notifier + logs/errors publishers + compose/config.
 6. Tests + bilingual docs + STATUS.
 7. Commit stage when green (`pnpm lint` / `pnpm typecheck`).
