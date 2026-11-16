@@ -101,6 +101,43 @@ export {
   type RiskRewardGateInput,
   stopDistanceTicks,
 } from './gates/eligibility.js';
+export { buildProcessedEventRecordId, buildSignalDeduplicationKey } from './live/dedup.js';
+export {
+  assertSignalTransition,
+  canTransitionSignalStatus,
+  type SignalEventType,
+  type SignalLifecycleEvent,
+  type SignalStatus,
+  setupStatusToSignalStatus,
+  signalStatusToEventType,
+  type TradingSignalRecord,
+  updateSignalLifecycle,
+} from './live/lifecycle.js';
+export {
+  compareMarketEvents,
+  isLateConfirmedEvent,
+  sortMarketEvents,
+} from './live/ordering.js';
+export { type PartitionKey, parsePartitionKey, partitionKey } from './live/partition.js';
+export {
+  type CreateLiveSignalProcessorInput,
+  createLiveSignalProcessor,
+  type LiveEvaluationDecision,
+  type LiveProcessorHooks,
+  type LiveSignalProcessor,
+  type ProcessMarketEventResult,
+} from './live/processor.js';
+export {
+  clonePartitionState,
+  createEmptyPartitionState,
+  createMemoryLiveStore,
+  type EngineOutboxRecord,
+  type LivePersistencePorts,
+  type MemoryLiveStore,
+  type PartitionAnalysisState,
+  type PartitionTransactionWrites,
+  type ProcessedMarketEventRecord,
+} from './live/store.js';
 export {
   buildMtfContextSnapshot,
   candlesAsOf,
