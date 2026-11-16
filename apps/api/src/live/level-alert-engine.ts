@@ -17,6 +17,8 @@ export type LevelAlert = {
   distanceAtr: string;
   instrumentUid: string;
   ticker: string | null;
+  /** Provider display name (often Russian for MOEX futures). */
+  name: string | null;
   intervalCode: string;
   barTimeStart: string;
   referencePrice: string;
@@ -53,6 +55,7 @@ export type LevelAlertEngine = {
   evaluate: (input: {
     instrumentUid: string;
     ticker: string | null;
+    name: string | null;
     intervalCode: string;
     barTimeStart: string;
     price: string;
@@ -128,6 +131,7 @@ function makeAlert(
   input: {
     instrumentUid: string;
     ticker: string | null;
+    name: string | null;
     intervalCode: string;
     barTimeStart: string;
     price: string;
@@ -141,6 +145,7 @@ function makeAlert(
     distanceAtr,
     instrumentUid: input.instrumentUid,
     ticker: input.ticker,
+    name: input.name,
     intervalCode: input.intervalCode,
     barTimeStart: input.barTimeStart,
     referencePrice: input.price,

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { format as formatDecimal } from '@moex/decimal';
 import { parseUuid } from '@moex/domain';
 import type {
   LiveSignalRow,
@@ -58,28 +59,54 @@ function escapeHtml(value: string): string {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
+function roundDisplay(raw: string): string {
+  try {
+    return formatDecimal(raw, 2);
+  } catch {
+    return raw;
+  }
+}
+
+function formatInstrumentHeading(input: {
+  ticker: string | null;
+  name: string | null;
+  instrumentUid: string;
+  intervalCode: string;
+}): string {
+  const code = escapeHtml(input.ticker ?? input.instrumentUid);
+  const timeframe = escapeHtml(input.intervalCode);
+  const name = input.name?.trim() ?? '';
+  if (name.length > 0 && name !== input.ticker) {
+    return `<b>${code}</b> · ${escapeHtml(name)} · ${timeframe}`;
+  }
+  return `<b>${code}</b> · ${timeframe}`;
+}
+
 function formatLevelAlertText(alert: LevelAlert): string {
-  const ticker = escapeHtml(alert.ticker ?? alert.instrumentUid);
   const level = escapeHtml(alert.levelId);
-  const levelPrice = escapeHtml(alert.levelPrice);
-  const price = escapeHtml(alert.referencePrice);
-  const timeframe = escapeHtml(alert.intervalCode);
+  const levelPrice = escapeHtml(roundDisplay(alert.levelPrice));
+  const price = escapeHtml(roundDisplay(alert.referencePrice));
   const kind = escapeHtml(alert.kind);
   return [
-    `<b>${ticker}</b> · ${timeframe}`,
+    formatInstrumentHeading({
+      ticker: alert.ticker,
+      name: alert.name,
+      instrumentUid: alert.instrumentUid,
+      intervalCode: alert.intervalCode,
+    }),
     `${kind} · уровень <b>${level}</b> = <code>${levelPrice}</code>`,
     `цена <code>${price}</code>`,
-    `ATR dist <code>${escapeHtml(alert.distanceAtr)}</code>`,
+    `ATR dist <code>${escapeHtml(roundDisplay(alert.distanceAtr))}</code>`,
   ].join('\n');
 }
 
 function formatEntryConfirmText(signal: LiveSignalRow): string {
-  const ticker = escapeHtml(signal.ticker ?? signal.instrumentUid);
   const timeframe = escapeHtml(signal.intervalCode);
   const direction = escapeHtml(signal.direction);
-  const price = escapeHtml(signal.referencePrice);
+  const price = escapeHtml(roundDisplay(signal.referencePrice));
+  const code = escapeHtml(signal.ticker ?? signal.instrumentUid);
   return [
-    `<b>${ticker}</b> · ${timeframe}`,
+    `<b>${code}</b> · ${timeframe}`,
     `entry_confirm · <b>${direction}</b>`,
     `цена <code>${price}</code>`,
   ].join('\n');
@@ -262,7 +289,7 @@ export function createQueueTelegramNotifier(input: QueueTelegramNotifierOptions)
           timeframe: alert.intervalCode,
           kind: marketKind,
           levelName: alert.levelId,
-          levelValue: alert.levelPrice,
+          levelValue: roundDisplay(alert.levelPrice),
           side: sideFromAlert(alert.kind),
           price: alert.referencePrice,
           previousPrice: null,

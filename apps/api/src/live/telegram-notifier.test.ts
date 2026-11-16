@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createQueueTelegramNotifier, createStubTelegramNotifier } from './telegram-notifier.js';
 
 describe('createQueueTelegramNotifier', () => {
-  it('enqueues level alert into market_signals + notifications with alerts thread', async () => {
+  it('enqueues level alert with Russian name and 2-decimal levels', async () => {
     const store = createMemoryMarketSignalsStore(() => new Date('2026-11-16T12:00:00.000Z'));
     const outbox = createMemoryOutboxStore();
     let n = 0;
@@ -20,24 +20,30 @@ describe('createQueueTelegramNotifier', () => {
     await notifier.publishLevelAlert({
       kind: 'APPROACH',
       levelId: 'FIB:P',
-      levelPrice: '100',
+      levelPrice: '107.35666666666667',
       levelSources: ['FIB_PIVOT'],
-      distanceAtr: '0.1',
+      distanceAtr: '0.66666666666667',
       instrumentUid: 'uid-1',
-      ticker: 'BRH6',
+      ticker: 'NBISperpA',
+      name: 'Акции NVIDIA',
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
-      referencePrice: '100.5',
+      referencePrice: '107.35',
     });
 
     const signals = store.snapshotSignals();
     const notifications = store.snapshotNotifications();
     expect(signals).toHaveLength(1);
     expect(signals[0]?.kind).toBe('approach');
+    expect(signals[0]?.levelValue).toBe('107.36');
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.threadId).toBe(7);
     expect(notifications[0]?.target).toBe('-1001');
-    expect(notifications[0]?.text).toContain('BRH6');
+    expect(notifications[0]?.text).toContain('NBISperpA');
+    expect(notifications[0]?.text).toContain('Акции NVIDIA');
+    expect(notifications[0]?.text).toContain('<code>107.36</code>');
+    expect(notifications[0]?.text).toContain('ATR dist <code>0.67</code>');
+    expect(notifications[0]?.text).not.toContain('107.356666');
 
     const pending = await outbox.listPending();
     expect(pending).toHaveLength(1);
@@ -69,6 +75,7 @@ describe('createQueueTelegramNotifier', () => {
       distanceAtr: '0',
       instrumentUid: 'uid-1',
       ticker: 'SBER',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:05:00.000Z',
       referencePrice: '110',
@@ -95,6 +102,7 @@ describe('createStubTelegramNotifier', () => {
       distanceAtr: '0.1',
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       referencePrice: '100.5',

@@ -113,6 +113,22 @@ export function createLiveMarketAnalyzer(input: {
   levelAlerts: LevelAlertEngine;
 }): LiveMarketAnalyzer {
   const partitions = new Map<PartitionKey, PartitionState>();
+  let instrumentNames: Map<string, string> | null = null;
+
+  const resolveInstrumentName = async (instrumentUid: string): Promise<string | null> => {
+    if (instrumentNames === null) {
+      instrumentNames = new Map();
+      try {
+        const catalog = await input.marketData.getInstrumentCatalog();
+        for (const row of catalog) {
+          instrumentNames.set(row.providerInstrumentId, row.name);
+        }
+      } catch {
+        // Keep empty map; alerts still send with ticker only.
+      }
+    }
+    return instrumentNames.get(instrumentUid) ?? null;
+  };
 
   const getPartition = (instrumentUid: string, interval: StreamCandleInterval): PartitionState => {
     const key = partitionKey(instrumentUid, interval);
@@ -292,9 +308,11 @@ export function createLiveMarketAnalyzer(input: {
     } catch {
       return [];
     }
+    const name = await resolveInstrumentName(candle.instrumentUid);
     return input.levelAlerts.evaluate({
       instrumentUid: candle.instrumentUid,
       ticker: candle.ticker,
+      name,
       intervalCode: streamInterval,
       barTimeStart: candle.timeStart,
       price: candle.close,

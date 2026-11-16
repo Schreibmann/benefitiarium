@@ -15,6 +15,7 @@ describe('createLevelAlertEngine', () => {
     const first = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '100.5',
@@ -28,6 +29,7 @@ describe('createLevelAlertEngine', () => {
     const second = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '100.4',
@@ -53,6 +55,7 @@ describe('createLevelAlertEngine', () => {
       engine.evaluate({
         instrumentUid: 'uid-1',
         ticker: 'BRH6',
+        name: null,
         intervalCode: '5m',
         barTimeStart: '2026-11-16T10:00:00.000Z',
         price: '90',
@@ -65,6 +68,7 @@ describe('createLevelAlertEngine', () => {
     const cross1 = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '110',
@@ -77,6 +81,7 @@ describe('createLevelAlertEngine', () => {
     const cross2 = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '90',
@@ -89,6 +94,7 @@ describe('createLevelAlertEngine', () => {
     const chop = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '110',
@@ -101,6 +107,7 @@ describe('createLevelAlertEngine', () => {
     const suppressed = engine.evaluate({
       instrumentUid: 'uid-1',
       ticker: 'BRH6',
+      name: null,
       intervalCode: '5m',
       barTimeStart: '2026-11-16T10:00:00.000Z',
       price: '90',

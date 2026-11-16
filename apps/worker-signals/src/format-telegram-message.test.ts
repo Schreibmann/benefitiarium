@@ -29,8 +29,21 @@ describe('formatTelegramMessage', () => {
     expect(text).toContain('<b>NGZ6</b>');
     expect(text).toContain('пересечение вверх');
     expect(text).toContain('<b>P</b>');
-    expect(text).toContain('<code>100.5</code>');
-    expect(text).toContain('<code>100.6</code>');
+    expect(text).toContain('<code>100.50</code>');
+    expect(text).toContain('<code>100.60</code>');
+  });
+
+  it('includes Russian name and rounds long decimals', () => {
+    const text = formatTelegramMessage({
+      hit: { ...hit, levelValue: '107.3566666667', price: '107.35111' },
+      ticker: 'NBISperpA',
+      name: 'Акции NVIDIA',
+      timeframe: '5m',
+      timeZone: 'Europe/Moscow',
+    });
+    expect(text).toContain('Акции NVIDIA');
+    expect(text).toContain('<code>107.36</code>');
+    expect(text).toContain('<code>107.35</code>');
   });
 
   it('escapes HTML in ticker', () => {

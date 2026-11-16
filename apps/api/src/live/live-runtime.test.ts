@@ -178,6 +178,7 @@ describe('LiveRuntime', () => {
           distanceAtr: '0.1',
           instrumentUid: 'uid-1',
           ticker: 'BRH6',
+          name: 'Нефть Brent',
           intervalCode: '5m',
           barTimeStart: '2026-11-16T10:00:00.000Z',
           referencePrice: '100.5',
