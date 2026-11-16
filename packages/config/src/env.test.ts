@@ -15,6 +15,7 @@ describe('loadEnv', () => {
     const env = loadEnv(baseEnv);
     expect(env.TRADING_MODE).toBe('research');
     expect(env.LIVE_TRADING_ENABLED).toBe(false);
+    expect(env.LIVE_CANDLE_STREAM_LOG).toBe(false);
     expect(env.GLOBAL_KILL_SWITCH).toBe(true);
     expect(env.TINVEST_ENV).toBe('sandbox');
     expect(env.MOEX_ISS_AUTH_MODE).toBe('anonymous');
@@ -31,9 +32,11 @@ describe('loadEnv', () => {
     const env = loadEnv({
       ...baseEnv,
       LIVE_TRADING_ENABLED: 'true',
+      LIVE_CANDLE_STREAM_LOG: 'true',
       GLOBAL_KILL_SWITCH: 'false',
     });
     expect(env.LIVE_TRADING_ENABLED).toBe(true);
+    expect(env.LIVE_CANDLE_STREAM_LOG).toBe(true);
     expect(env.GLOBAL_KILL_SWITCH).toBe(false);
   });
 

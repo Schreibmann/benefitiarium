@@ -41,6 +41,7 @@ async function main(): Promise<void> {
     sandboxAdminStore: sandboxAdmin?.storeMode ?? null,
     marketDataEnabled: market !== null,
     chartLiveEnabled: market?.chartLive !== null && market?.chartLive !== undefined,
+    liveCandleStreamLog: env.LIVE_CANDLE_STREAM_LOG,
   });
 }
 

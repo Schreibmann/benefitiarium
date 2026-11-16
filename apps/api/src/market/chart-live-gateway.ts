@@ -10,6 +10,7 @@ import {
   type SubscriptionRegistry,
 } from '@moex/broker-tinvest';
 import { attachInternalWebSocketServer, type InternalWebSocket } from './internal-websocket.js';
+import { createLiveCandleStreamLog, type LiveCandleStreamLog } from './live-candle-stream-log.js';
 
 export type ChartLiveGateway = {
   attach: (server: Server) => void;
@@ -83,9 +84,21 @@ function toStreamInterval(interval: string): StreamCandleInterval | null {
 export function createChartLiveGateway(input: {
   streamManager: StreamConnectionManager;
   registry: SubscriptionRegistry;
+  streamLog?: LiveCandleStreamLog;
 }): ChartLiveGateway {
   const sockets = new Map<string, InternalWebSocket>();
   const seenEventIds = new Set<string>();
+  const streamLog =
+    input.streamLog ??
+    createLiveCandleStreamLog({
+      enabled: false,
+      logger: {
+        info: () => undefined,
+        warn: () => undefined,
+        error: () => undefined,
+        debug: () => undefined,
+      },
+    });
 
   const syncProvider = async (): Promise<void> => {
     await input.streamManager.syncDesiredSubscriptions(input.registry.desiredProviderKeys());
@@ -113,6 +126,8 @@ export function createChartLiveGateway(input: {
       seenEventIds.clear();
     }
 
+    streamLog.candle(candle, { leaseCount: leases.length });
+
     for (const lease of leases) {
       if (lease.status !== 'ACTIVE' && lease.status !== 'DEGRADED') {
         continue;
@@ -135,6 +150,7 @@ export function createChartLiveGateway(input: {
   };
 
   const handleSubscriptionAcks = (acks: StreamSubscriptionAck[]): void => {
+    streamLog.subscriptionAcks(acks);
     for (const ack of acks) {
       if (ack.interval === null) {
         continue;
@@ -191,6 +207,12 @@ export function createChartLiveGateway(input: {
       });
       return;
     }
+
+    streamLog.clientEvent('live candle stream subscribe', {
+      instrumentId: message.instrumentId,
+      interval: message.interval,
+      requestId: message.requestId,
+    });
 
     const result = input.registry.acquire({
       connectionId: socket.connectionId,
@@ -262,6 +284,10 @@ export function createChartLiveGateway(input: {
   }
 
   function handleUnsubscribe(socket: InternalWebSocket, message: ClientUnsubscribe): void {
+    streamLog.clientEvent('live candle stream unsubscribe', {
+      subscriptionId: message.subscriptionId,
+      requestId: message.requestId,
+    });
     const lease = input.registry.getLease(message.subscriptionId);
     if (lease !== null && lease.connectionId !== socket.connectionId) {
       sendJson(socket, {

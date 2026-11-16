@@ -54,6 +54,11 @@ export const envSchema = z.object({
   GLOBAL_KILL_SWITCH: booleanFromString.default(true),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
   /**
+   * When true, API logs structured Live candle-stream analysis events
+   * (subscribe/ack/candle barState). Default off to avoid per-event noise.
+   */
+  LIVE_CANDLE_STREAM_LOG: booleanFromString.default(false),
+  /**
    * Single-operator Admin API bearer token (BL-088).
    * Empty disables admin routes (anonymous access remains impossible).
    */

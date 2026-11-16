@@ -10,6 +10,7 @@ import {
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
 import { resolveTinvestToken } from '@moex/config';
+import { createLogger } from '@moex/observability';
 import {
   createFuturesCatalogCacheRepository,
   createPsqlDbClient,
@@ -18,6 +19,7 @@ import {
 } from '@moex/persistence';
 import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
 import type { ChartMarketDataDeps } from './market/fibonacci-pivot-service.js';
+import { createLiveCandleStreamLog } from './market/live-candle-stream-log.js';
 
 async function canReachPostgres(db: DbClient): Promise<boolean> {
   try {
@@ -102,7 +104,14 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
         },
       },
     });
-    const gateway = createChartLiveGateway({ streamManager, registry });
+    const streamLog = createLiveCandleStreamLog({
+      enabled: env.LIVE_CANDLE_STREAM_LOG,
+      logger: createLogger({
+        service: '@moex/api/live-candle-stream',
+        level: env.LOG_LEVEL,
+      }),
+    });
+    const gateway = createChartLiveGateway({ streamManager, registry, streamLog });
     holder.gateway = gateway;
     chartLive = gateway;
   } catch {
