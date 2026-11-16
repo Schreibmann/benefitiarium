@@ -298,7 +298,24 @@ importers:
         specifier: ^22.20.5
         version: 22.20.5
 
-  packages/strategy-engine: {}
+  packages/strategy-engine:
+    dependencies:
+      '@moex/decimal':
+        specifier: workspace:*
+        version: link:../decimal
+      '@moex/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@moex/indicators':
+        specifier: workspace:*
+        version: link:../indicators
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
 
   packages/test-fixtures: {}
 
