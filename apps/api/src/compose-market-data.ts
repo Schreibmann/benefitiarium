@@ -5,21 +5,35 @@ import {
   createTinvestMarketDataProvider,
   createTinvestSdk,
   createTinvestStreamClient,
-  StreamConnectionManager,
-  SubscriptionRegistry,
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
 import { resolveTinvestToken } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import {
+  createFavoritesRepository,
   createFuturesCatalogCacheRepository,
+  createLiveRuntimeStateRepository,
+  createLiveSignalsRepository,
+  createMemoryFavoritesRepository,
+  createMemoryLiveRuntimeStateRepository,
+  createMemoryLiveSignalsRepository,
+  createMemoryOutboxStore,
+  createOutboxRepository,
   createPsqlDbClient,
   type DbClient,
+  type FavoritesRepository,
   type FuturesCatalogCacheRepository,
+  type LiveRuntimeStateRepository,
+  type LiveSignalsRepository,
+  type OutboxRepository,
 } from '@moex/persistence';
+import { createCloseEmittedHoldEvaluator } from './live/closed-bar-evaluator.js';
+import { createLiveRuntime, type LiveRuntime } from './live/live-runtime.js';
+import { createStubTelegramNotifier } from './live/telegram-notifier.js';
 import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
 import type { ChartMarketDataDeps } from './market/fibonacci-pivot-service.js';
 import { createLiveCandleStreamLog } from './market/live-candle-stream-log.js';
+import { createMarketStreamHub, type MarketStreamHub } from './market/market-stream-hub.js';
 
 async function canReachPostgres(db: DbClient): Promise<boolean> {
   try {
@@ -41,17 +55,45 @@ async function tryCreateFuturesCatalogCache(): Promise<FuturesCatalogCacheReposi
   return createFuturesCatalogCacheRepository(db);
 }
 
+async function createLiveStores(): Promise<{
+  favorites: FavoritesRepository;
+  runtimeState: LiveRuntimeStateRepository;
+  signals: LiveSignalsRepository;
+  outbox: OutboxRepository;
+}> {
+  const db = createPsqlDbClient();
+  if (!(await canReachPostgres(db))) {
+    if (db.close !== undefined) {
+      await db.close();
+    }
+    return {
+      favorites: createMemoryFavoritesRepository(),
+      runtimeState: createMemoryLiveRuntimeStateRepository(),
+      signals: createMemoryLiveSignalsRepository(),
+      outbox: createMemoryOutboxStore(),
+    };
+  }
+  return {
+    favorites: createFavoritesRepository(db),
+    runtimeState: createLiveRuntimeStateRepository(db),
+    signals: createLiveSignalsRepository(db),
+    outbox: createOutboxRepository(db),
+  };
+}
+
 export type ComposedMarketData = {
   chartDeps: ChartMarketDataDeps;
   chartLive: ChartLiveGateway | null;
+  streamHub: MarketStreamHub | null;
+  liveRuntime: LiveRuntime | null;
+  favorites: FavoritesRepository;
 };
 
 /**
- * Compose market-data deps for chart/pivot read routes and optional live stream gateway.
+ * Compose market-data deps for chart/pivot read routes, shared stream hub, and Live runtime.
  * Prefers TINVEST_READ_ONLY_TOKEN; falls back to sandbox token for sandbox env.
- * When Postgres is reachable, attaches futures catalog cache for list fallback.
  *
- * Live stream runs in-process with the API for MVP (worker-market-data will host later).
+ * Stream + Live run in-process with the API for this stage (workers host later).
  */
 export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarketData | null> {
   const readOnly = resolveTinvestToken(env, 'read_only');
@@ -83,26 +125,21 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     ...(futuresCatalogCache !== undefined ? { futuresCatalogCache } : {}),
   };
 
+  const liveStores = await createLiveStores();
+  const liveLogger = createLogger({
+    service: '@moex/api/live-runtime',
+    level: env.LOG_LEVEL,
+  });
+
   let chartLive: ChartLiveGateway | null = null;
+  let streamHub: MarketStreamHub | null = null;
+  let liveRuntime: LiveRuntime | null = null;
+
   try {
     const streamClient = await createTinvestStreamClient({
       token,
       env: sdkEnv,
       baseUrl: env.TINVEST_BASE_URL,
-    });
-    const registry = new SubscriptionRegistry();
-    // Gateway + manager are wired through shared mutable holder so callbacks close over gateway.
-    const holder: { gateway: ChartLiveGateway | null } = { gateway: null };
-    const streamManager = new StreamConnectionManager({
-      client: streamClient,
-      handlers: {
-        onCandle: (candle) => {
-          holder.gateway?.handleCandle(candle);
-        },
-        onSubscriptionAck: (acks) => {
-          holder.gateway?.handleSubscriptionAcks(acks);
-        },
-      },
     });
     const streamLog = createLiveCandleStreamLog({
       enabled: env.LIVE_CANDLE_STREAM_LOG,
@@ -111,12 +148,33 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
         level: env.LOG_LEVEL,
       }),
     });
-    const gateway = createChartLiveGateway({ streamManager, registry, streamLog });
-    holder.gateway = gateway;
-    chartLive = gateway;
+    const hub = createMarketStreamHub({ client: streamClient, streamLog });
+    streamHub = hub;
+    chartLive = createChartLiveGateway({ hub, streamLog });
+    liveRuntime = createLiveRuntime({
+      hub,
+      favorites: liveStores.favorites,
+      runtimeState: liveStores.runtimeState,
+      signals: liveStores.signals,
+      telegram: createStubTelegramNotifier({
+        outbox: liveStores.outbox,
+        logger: liveLogger,
+      }),
+      // Closed-bar hold monitor until full TSE strategy loop is wired into LiveRuntime.
+      evaluateClosedBar: createCloseEmittedHoldEvaluator(),
+      analysisIntervals: ['5m'],
+    });
   } catch {
     chartLive = null;
+    streamHub = null;
+    liveRuntime = null;
   }
 
-  return { chartDeps, chartLive };
+  return {
+    chartDeps,
+    chartLive,
+    streamHub,
+    liveRuntime,
+    favorites: liveStores.favorites,
+  };
 }

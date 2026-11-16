@@ -28,6 +28,9 @@ async function main(): Promise<void> {
     ...(market?.chartLive !== null && market?.chartLive !== undefined
       ? { chartLive: market.chartLive }
       : {}),
+    ...(market?.liveRuntime !== null && market?.liveRuntime !== undefined
+      ? { liveRuntime: market.liveRuntime, favorites: market.favorites }
+      : {}),
   });
   await app.listen({ port, host: '0.0.0.0' });
 
@@ -41,6 +44,7 @@ async function main(): Promise<void> {
     sandboxAdminStore: sandboxAdmin?.storeMode ?? null,
     marketDataEnabled: market !== null,
     chartLiveEnabled: market?.chartLive !== null && market?.chartLive !== undefined,
+    liveRuntimeEnabled: market?.liveRuntime !== null && market?.liveRuntime !== undefined,
     liveCandleStreamLog: env.LIVE_CANDLE_STREAM_LOG,
   });
 }

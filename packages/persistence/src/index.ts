@@ -20,6 +20,7 @@ export const MIGRATION_FILES = [
   '001_init.sql',
   '002_audit_append_only.sql',
   '003_futures_catalog_cache.sql',
+  '004_live_runtime.sql',
 ] as const;
 
 export type { MemoryAuditLogStore } from './audit/memory.js';
@@ -57,6 +58,11 @@ export { createOutboxRepository } from './outbox/repository.js';
 export type { NewOutboxEvent, OutboxEvent } from './outbox/types.js';
 export type { BrokerAccountRepository } from './repos/broker-accounts.js';
 export { createBrokerAccountRepository } from './repos/broker-accounts.js';
+export type { FavoriteRow, FavoritesRepository } from './repos/favorites.js';
+export {
+  createFavoritesRepository,
+  createMemoryFavoritesRepository,
+} from './repos/favorites.js';
 export type {
   FuturesCatalogCacheRepository,
   FuturesCatalogCacheRow,
@@ -70,6 +76,26 @@ export type { InstrumentSpecRepository } from './repos/instrument-specs.js';
 export { createInstrumentSpecRepository } from './repos/instrument-specs.js';
 export type { CatalogProvider, InstrumentRepository } from './repos/instruments.js';
 export { createInstrumentRepository } from './repos/instruments.js';
+export type {
+  LiveDesiredStatus,
+  LiveRuntimeStateRepository,
+  LiveRuntimeStateRow,
+} from './repos/live-runtime-state.js';
+export {
+  createLiveRuntimeStateRepository,
+  createMemoryLiveRuntimeStateRepository,
+} from './repos/live-runtime-state.js';
+export type {
+  LiveSignalDirection,
+  LiveSignalRow,
+  LiveSignalStatus,
+  LiveSignalsRepository,
+  NewLiveSignal,
+} from './repos/live-signals.js';
+export {
+  createLiveSignalsRepository,
+  createMemoryLiveSignalsRepository,
+} from './repos/live-signals.js';
 export type { PersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
 export { parsePersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
 export type { SandboxOperationRepository } from './repos/sandbox-operations.js';

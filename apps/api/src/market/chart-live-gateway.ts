@@ -5,17 +5,14 @@ import {
   isStreamCandleInterval,
   marketCandleEventTypeForBarState,
   type StreamCandleInterval,
-  type StreamConnectionManager,
   type StreamSubscriptionAck,
-  type SubscriptionRegistry,
 } from '@moex/broker-tinvest';
 import { attachInternalWebSocketServer, type InternalWebSocket } from './internal-websocket.js';
 import { createLiveCandleStreamLog, type LiveCandleStreamLog } from './live-candle-stream-log.js';
+import type { MarketStreamHub } from './market-stream-hub.js';
 
 export type ChartLiveGateway = {
   attach: (server: Server) => void;
-  handleCandle: (candle: CanonicalStreamCandle) => void;
-  handleSubscriptionAcks: (acks: StreamSubscriptionAck[]) => void;
   shutdown: () => Promise<void>;
 };
 
@@ -81,9 +78,12 @@ function toStreamInterval(interval: string): StreamCandleInterval | null {
   return interval;
 }
 
+/**
+ * Chart realtime WebSocket consumer. Uses CHART leases on the shared MarketStreamHub.
+ * This is display-only — not Live Mode analysis.
+ */
 export function createChartLiveGateway(input: {
-  streamManager: StreamConnectionManager;
-  registry: SubscriptionRegistry;
+  hub: MarketStreamHub;
   streamLog?: LiveCandleStreamLog;
 }): ChartLiveGateway {
   const sockets = new Map<string, InternalWebSocket>();
@@ -100,10 +100,6 @@ export function createChartLiveGateway(input: {
       },
     });
 
-  const syncProvider = async (): Promise<void> => {
-    await input.streamManager.syncDesiredSubscriptions(input.registry.desiredProviderKeys());
-  };
-
   const handleCandle = (candle: CanonicalStreamCandle): void => {
     const streamInterval = toStreamInterval(candle.interval);
     if (streamInterval === null) {
@@ -115,7 +111,9 @@ export function createChartLiveGateway(input: {
       candleSource: 'EXCHANGE',
       waitingClose: candle.waitingClose,
     });
-    const leases = input.registry.listActiveLeasesForProvider(providerKey);
+    const leases = input.hub.registry
+      .listActiveLeasesForProvider(providerKey)
+      .filter((lease) => lease.consumer.consumerType === 'CHART');
     const eventType = marketCandleEventTypeForBarState(candle.barState);
     const eventId = candle.eventHash;
     if (seenEventIds.has(eventId)) {
@@ -125,8 +123,6 @@ export function createChartLiveGateway(input: {
     if (seenEventIds.size > 5_000) {
       seenEventIds.clear();
     }
-
-    streamLog.candle(candle, { leaseCount: leases.length });
 
     for (const lease of leases) {
       if (lease.status !== 'ACTIVE' && lease.status !== 'DEGRADED') {
@@ -150,7 +146,6 @@ export function createChartLiveGateway(input: {
   };
 
   const handleSubscriptionAcks = (acks: StreamSubscriptionAck[]): void => {
-    streamLog.subscriptionAcks(acks);
     for (const ack of acks) {
       if (ack.interval === null) {
         continue;
@@ -162,16 +157,19 @@ export function createChartLiveGateway(input: {
         waitingClose: ack.waitingClose ?? false,
       });
       if (ack.status === 'SUCCESS') {
-        input.registry.setProviderStatus(providerKey, 'ACTIVE', ack.subscriptionId);
+        input.hub.registry.setProviderStatus(providerKey, 'ACTIVE', ack.subscriptionId);
       } else {
-        input.registry.setProviderStatus(providerKey, 'REJECTED', ack.subscriptionId);
+        input.hub.registry.setProviderStatus(providerKey, 'REJECTED', ack.subscriptionId);
       }
-      for (const lease of input.registry.listActiveLeasesForProvider(providerKey)) {
+      for (const lease of input.hub.registry.listActiveLeasesForProvider(providerKey)) {
+        if (lease.consumer.consumerType !== 'CHART') {
+          continue;
+        }
         const socket = sockets.get(lease.connectionId);
         if (socket === undefined) {
           continue;
         }
-        const refreshed = input.registry.getLease(lease.leaseId);
+        const refreshed = input.hub.registry.getLease(lease.leaseId);
         if (refreshed === null) {
           continue;
         }
@@ -188,6 +186,9 @@ export function createChartLiveGateway(input: {
       }
     }
   };
+
+  const unsubscribeCandle = input.hub.subscribeCandles(handleCandle);
+  const unsubscribeAcks = input.hub.subscribeAcks(handleSubscriptionAcks);
 
   async function handleSubscribe(
     socket: InternalWebSocket,
@@ -208,13 +209,13 @@ export function createChartLiveGateway(input: {
       return;
     }
 
-    streamLog.clientEvent('live candle stream subscribe', {
+    streamLog.clientEvent('chart realtime subscribe', {
       instrumentId: message.instrumentId,
       interval: message.interval,
       requestId: message.requestId,
     });
 
-    const result = input.registry.acquire({
+    const result = input.hub.acquire({
       connectionId: socket.connectionId,
       requestId: message.requestId,
       consumer: {
@@ -260,9 +261,9 @@ export function createChartLiveGateway(input: {
     });
 
     try {
-      await syncProvider();
+      await input.hub.syncDesired();
     } catch (error: unknown) {
-      input.registry.setLeaseStatus(
+      input.hub.registry.setLeaseStatus(
         result.lease.leaseId,
         'REJECTED',
         error instanceof Error ? error.message : 'INTERNAL_ERROR',
@@ -278,17 +279,17 @@ export function createChartLiveGateway(input: {
         message: error instanceof Error ? error.message : 'subscribe failed',
         updatedAt: new Date().toISOString(),
       });
-      input.registry.release(result.lease.leaseId);
-      await syncProvider();
+      input.hub.release(result.lease.leaseId);
+      await input.hub.syncDesired();
     }
   }
 
   function handleUnsubscribe(socket: InternalWebSocket, message: ClientUnsubscribe): void {
-    streamLog.clientEvent('live candle stream unsubscribe', {
+    streamLog.clientEvent('chart realtime unsubscribe', {
       subscriptionId: message.subscriptionId,
       requestId: message.requestId,
     });
-    const lease = input.registry.getLease(message.subscriptionId);
+    const lease = input.hub.registry.getLease(message.subscriptionId);
     if (lease !== null && lease.connectionId !== socket.connectionId) {
       sendJson(socket, {
         type: 'market.subscription.state',
@@ -303,7 +304,7 @@ export function createChartLiveGateway(input: {
       return;
     }
 
-    const released = input.registry.release(message.subscriptionId);
+    const released = input.hub.release(message.subscriptionId);
     sendJson(socket, {
       type: 'market.subscription.state',
       requestId: message.requestId,
@@ -314,13 +315,11 @@ export function createChartLiveGateway(input: {
       updatedAt: new Date().toISOString(),
     });
     if (released.shouldUnsubscribeProvider) {
-      void syncProvider();
+      void input.hub.syncDesired();
     }
   }
 
   return {
-    handleCandle,
-    handleSubscriptionAcks,
     attach(server: Server): void {
       attachInternalWebSocketServer(server, {
         path: '/ws/market-data',
@@ -363,19 +362,20 @@ export function createChartLiveGateway(input: {
         },
         onClose(socket) {
           sockets.delete(socket.connectionId);
-          const released = input.registry.releaseAllForConnection(socket.connectionId);
+          const released = input.hub.releaseAllForConnection(socket.connectionId);
           if (released.some((item) => item.shouldUnsubscribeProvider)) {
-            void syncProvider();
+            void input.hub.syncDesired();
           }
         },
       });
     },
     async shutdown(): Promise<void> {
+      unsubscribeCandle();
+      unsubscribeAcks();
       for (const socket of sockets.values()) {
         socket.close(1001, 'server shutdown');
       }
       sockets.clear();
-      await input.streamManager.shutdown();
     },
   };
 }

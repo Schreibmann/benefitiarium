@@ -91,6 +91,12 @@ flowchart LR
 
 **EN.** **Do not open a separate stream per instrument or chart.** MVP: one ticker + timeframe per page, shared provider connection on the worker. Consumer demands aggregate in the connection manager; one client request must not subscribe the whole watchlist.
 
+### 0.0.1. Live Mode vs chart realtime / Live Mode и realtime графика
+
+**RU.** **Live Mode** — независимый backend `LiveRuntime` (STRATEGY leases по `favorites`), start/stop через API/UI, анализ 24/7 и публикация сигналов (Telegram stub). **Chart realtime** — только CHART leases для отображения свечей на графике. Оба потребителя делят один `MarketStreamHub` / `SubscriptionRegistry` (ADR-011). Открытие графика не запускает Live; остановка Live не рвёт подписку графика.
+
+**EN.** **Live Mode** is the independent backend `LiveRuntime` (STRATEGY leases over `favorites`), start/stop via API/UI, 24/7 analysis and signal publish (Telegram stub). **Chart realtime** is CHART leases for candle display only. Both consumers share one `MarketStreamHub` / `SubscriptionRegistry` (ADR-011). Opening the chart does not start Live; stopping Live does not drop the chart subscription.
+
 ### 0.1. Primary uses of the candle stream / Основное назначение свечного потока
 
 **RU.** Поток используется для:
