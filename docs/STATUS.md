@@ -77,7 +77,7 @@
 | Custom wheel zoom / drag pan           | DONE            | Replaces broken TanStack `zoomX` remount loop                     |
 | Futures catalog cache-first picker     | DONE            | Categories + family optgroups; nanostores + API snapshot          |
 | Chart realtime + history REST fallback | DONE            | Chart CHART leases (display only); REJECTED/error → REST          |
-| Independent Live Mode                  | DONE (MVP)      | T-Invest GetFavorites universe + LiveRuntime; Telegram stub       |
+| Independent Live Mode                  | DONE (MVP)      | Futures GetFavorites + live level alerts + TSE closed-bar confirm |
 | Chart route code-split + bootstrap     | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
 | Signals                                | DEFERRED        | Out of scope for this slice                                       |
 | Persist table / workers                | DEFERRED        | Next stage after UI                                               |
@@ -108,7 +108,7 @@
 | RT-07 | TODO            | feed health                                                                         |
 | RT-08 | IN_PROGRESS     | Internal `/ws/market-data` fan-out via shared `MarketStreamHub` (API process)       |
 | RT-09 | DONE (MVP)      | Chart CHART leases (display); Independent Live = STRATEGY leases (ADR-011)          |
-| RT-10 | DONE (MVP)      | LiveRuntime start/stop + favorites + live_signals + Telegram outbox stub            |
+| RT-10 | DONE (MVP)      | LiveRuntime: level alerts (approach/cross/chop) + TSE entry confirm + Telegram stub |
 
 **RU.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)  
 **EN.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)

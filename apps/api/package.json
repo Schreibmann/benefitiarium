@@ -15,11 +15,13 @@
     "@moex/broker-tinvest": "workspace:*",
     "@moex/config": "workspace:*",
     "@moex/contracts": "workspace:*",
+    "@moex/decimal": "workspace:*",
     "@moex/domain": "workspace:*",
     "@moex/indicators": "workspace:*",
     "@moex/observability": "workspace:*",
     "@moex/persistence": "workspace:*",
     "@moex/sandbox-management": "workspace:*",
+    "@moex/strategy-engine": "workspace:*",
     "fastify": "^5.6.2"
   },
   "devDependencies": {

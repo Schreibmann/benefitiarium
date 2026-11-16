@@ -38,6 +38,9 @@ importers:
       '@moex/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@moex/decimal':
+        specifier: workspace:*
+        version: link:../../packages/decimal
       '@moex/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -53,6 +56,9 @@ importers:
       '@moex/sandbox-management':
         specifier: workspace:*
         version: link:../../packages/sandbox-management
+      '@moex/strategy-engine':
+        specifier: workspace:*
+        version: link:../../packages/strategy-engine
       fastify:
         specifier: ^5.6.2
         version: 5.12.8

@@ -17,7 +17,12 @@ import {
   createNullClosedBarEvaluator,
   type LiveSignalCandidate,
 } from './closed-bar-evaluator.js';
+import type { LevelAlert } from './level-alert-engine.js';
 import type { TelegramNotifier } from './telegram-notifier.js';
+
+export type LiveAlertsEvaluator = (
+  candle: CanonicalStreamCandle,
+) => LevelAlert[] | Promise<LevelAlert[]>;
 
 export type LiveRuntimeStatus = 'STOPPED' | 'STARTING' | 'RUNNING' | 'STOPPING' | 'DEGRADED';
 
@@ -51,6 +56,7 @@ export type CreateLiveRuntimeInput = {
   streamLog?: LiveCandleStreamLog;
   analysisIntervals?: StreamCandleInterval[];
   evaluateClosedBar?: ClosedBarEvaluator;
+  evaluateLiveAlerts?: LiveAlertsEvaluator;
   createId?: () => string;
 };
 
@@ -64,6 +70,7 @@ function leaseRequestId(instrumentUid: string, interval: StreamCandleInterval): 
 export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
   const analysisIntervals = input.analysisIntervals ?? ['5m'];
   const evaluate = input.evaluateClosedBar ?? createNullClosedBarEvaluator();
+  const evaluateLiveAlerts = input.evaluateLiveAlerts ?? (() => []);
   const createId = input.createId ?? (() => randomUUID());
 
   let status: LiveRuntimeStatus = 'STOPPED';
@@ -169,7 +176,13 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
       sourceEventTime: candidate.sourceEventTime,
     });
     if (row.status === 'accepted') {
-      await input.telegram.publishSignal(row);
+      await input.telegram.publishSignal(row, 'entry_confirm');
+    }
+  };
+
+  const publishLevelAlerts = async (alerts: LevelAlert[]): Promise<void> => {
+    for (const alert of alerts) {
+      await input.telegram.publishLevelAlert(alert);
     }
   };
 
@@ -202,6 +215,19 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
       .listActiveLeasesForProvider(providerKey)
       .some((lease) => lease.consumer.consumerType === 'STRATEGY');
     if (!hasStrategyLease) {
+      return;
+    }
+
+    if (candle.barState === 'UPDATING') {
+      void Promise.resolve(evaluateLiveAlerts(candle))
+        .then(async (alerts) => {
+          await publishLevelAlerts(alerts);
+        })
+        .catch((error: unknown) => {
+          lastError = error instanceof Error ? error.message : 'live alert failed';
+          status = 'DEGRADED';
+          stamp();
+        });
       return;
     }
 

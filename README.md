@@ -18,7 +18,7 @@
 | ---------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | **Market data**        | Catalog, candles, provenance, MOEX ISS + T‑Invest adapters | Partial + realtime MVP (`/ws/market-data`, chart auto-live) / Частично + realtime MVP         |
 | **Research**           | Indicators, strategy versions, exploration UI              | Fibonacci pivots + chart UX (`1m`/`5m`/`1h`, zoom/pan, futures picker)                        |
-| **Signals & backtest** | Reproducible signals + event-driven simulation             | Live Mode MVP (closed-bar monitor + Telegram stub); full TSE deferred / Live Mode MVP         |
+| **Signals & backtest** | Reproducible signals + event-driven simulation             | Live alerts + TSE closed-bar confirm (Telegram stub) / Live-алерты + TSE confirm              |
 | **Trading**            | Manual → Sandbox → Paper → guarded Live                    | **Sandbox Admin (E7A) is the working vertical** / **Рабочий вертикаль — Sandbox Admin (E7A)** |
 
 **RU.** Архитектурное правило жёсткое: **источник биржевых данных ≠ канал исполнения у брокера**. Стратегии общаются с портами (`MarketDataProvider`, `BrokerGateway`, `SandboxAccountProvider`), а не с DTO SDK.
@@ -87,25 +87,29 @@
 
 ### Algorithm / Алгоритм
 
-**RU.**
+**RU.** Две дорожки: **live-алерты по незакрытой свече** (Telegram) и **подтверждённый вход по закрытию бара** (TSE → `live_signals`).
 
-1. **Вселенная.** Live читает избранное брокера (`InstrumentsService.GetFavorites`) и оставляет **только фьючерсы** (`instrumentType` future/futures или uid из `listFutures`). Ручной CRUD избранного в API отключён (`405`); изменение списка — в приложении T-Invest, затем `POST /api/v1/favorites/sync`.
-2. **Start.** UI/API `POST /api/v1/live/start` → `LiveRuntime` пишет desired `RUNNING`, подписывается на свечи hub и для каждого фьючерса × analysis interval (сейчас `5m`) приобретает `STRATEGY` lease. Stop освобождает только leases `connectionId=live-runtime`; CHART leases графика не трогает.
-3. **Общий stream.** Один `MarketStreamHub` + `SubscriptionRegistry` в процессе API. Одинаковый ключ `instrumentUid + interval + EXCHANGE + waitingClose:false` дедуплицируется ref-count: Live и график не открывают вторую подписку у T-Invest. Лимиты брокера: до **300** подписок на stream и до **100** новых subscribe-запросов в минуту.
-4. **Свеча.** Hub принимает canonical candle → fan-out. `LiveRuntime` обрабатывает событие только если статус Live активен, interval в `analysisIntervals`, есть активный `STRATEGY` lease на этот provider key, и `eventHash` ещё не видели (дедуп).
-5. **Оценка (MVP).** Порт `ClosedBarEvaluator`. Сейчас подключён `createCloseEmittedHoldEvaluator`: на `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE` формирует кандидат `direction=hold`, `status=accepted`, reason `CLOSED_BAR_MONITOR`. Обновления `UPDATING` игнорируются. Полный Benefit TSE loop подключится тем же портом позже.
-6. **Сигнал.** Кандидат пишется в `live_signals`. Если `accepted` — `TelegramNotifier` (stub) кладёт outbox-событие `signal.telegram` (`delivery: stub`) и логирует; реальная отправка в Telegram (bot token / channel) ещё не подключена. Сигнал **не** является ордером (см. ADR-006).
-7. **Управление.** Dashboard-панель Live: Start / Stop / Sync favorites / Refresh; список фьючерсов из избранного свёрнут по умолчанию. Статус: `STOPPED` → `STARTING` → `RUNNING` (или `DEGRADED` при ошибках lease/analyze) → `STOPPING` → `STOPPED`. Опционально `LIVE_CANDLE_STREAM_LOG=true` — lifecycle + candle/ack логи.
+1. **Вселенная.** Live читает `GetFavorites` и оставляет **только фьючерсы**. CRUD избранного в API = `405`; правки в приложении T-Invest + `POST /api/v1/favorites/sync`.
+2. **Start / stream.** `POST /api/v1/live/start` → `STRATEGY` leases на каждый фьючерс × `5m`. Один `MarketStreamHub` с ref-count (общий с CHART). Лимиты T-Invest: 300 подписок / stream, 100 subscribe/min.
+3. **Уровни.** Кэш уровней из Fibonacci pivots + volume profile (POC/VAH/VAL). Без VP алерты/setups работают на fib; для TSE `requireSecondaryFamily` ослабляется.
+4. **Lane A — live alerts (`UPDATING`).** На актуальную незакрытую свечу: **APPROACH** (дистанция ≤ 0.15 ATR), **CROSS** (смена стороны уровня или новый span бара). Дедуп `(instrument, level, kind)` ≈ 5 мин. Если ≥ **3 CROSS за 15 мин** → один алерт **`LEVEL_CONSOLIDATION`**, дальше approach/cross по уровню глушатся на 15 мин «тишины». Outbox `signal.telegram` с `kind: level_approach|level_cross|level_consolidation`.
+5. **Lane B — entry confirm (closed bar).** На `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: история → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `kind: entry_confirm` при `accepted`. Сигнал ≠ ордер (ADR-006).
+6. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` — lifecycle/candle логи.
 
-**EN.**
+**EN.** Two lanes: **live alerts on the unclosed candle** (Telegram) and **confirmed entry on bar close** (TSE → `live_signals`).
 
-1. **Universe.** Live reads the broker watchlist (`InstrumentsService.GetFavorites`) and keeps **futures only** (`instrumentType` future/futures or uid present in `listFutures`). Manual favorites CRUD via API is disabled (`405`); edit the list in the T-Invest app, then `POST /api/v1/favorites/sync`.
-2. **Start.** UI/API `POST /api/v1/live/start` → `LiveRuntime` persists desired `RUNNING`, subscribes to hub candles, and acquires a `STRATEGY` lease per futures favorite × analysis interval (currently `5m`). Stop releases only leases with `connectionId=live-runtime`; chart CHART leases stay intact.
-3. **Shared stream.** One `MarketStreamHub` + `SubscriptionRegistry` in the API process. The same `instrumentUid + interval + EXCHANGE + waitingClose:false` key is ref-counted so Live and the chart do not open a second T-Invest subscription. Broker limits: up to **300** subscriptions per stream and **100** new subscribe requests per minute.
-4. **Candle.** Hub receives a canonical candle → fan-out. `LiveRuntime` handles it only when Live is active, the interval is in `analysisIntervals`, a `STRATEGY` lease exists for that provider key, and `eventHash` has not been seen yet (dedupe).
-5. **Evaluation (MVP).** `ClosedBarEvaluator` port. Wired today: `createCloseEmittedHoldEvaluator` — on `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE` emits a `direction=hold`, `status=accepted` candidate with reason `CLOSED_BAR_MONITOR`. `UPDATING` bars are ignored. Full Benefit TSE loop plugs into the same port later.
-6. **Signal.** Candidate is inserted into `live_signals`. If `accepted`, the stub `TelegramNotifier` enqueues outbox `signal.telegram` (`delivery: stub`) and logs; real Telegram delivery (bot token / channel) is not wired yet. A signal is **not** an order (see ADR-006).
-7. **Ops.** Dashboard Live panel: Start / Stop / Sync favorites / Refresh; futures favorites list is collapsed by default. Status flow: `STOPPED` → `STARTING` → `RUNNING` (or `DEGRADED` on lease/analyze errors) → `STOPPING` → `STOPPED`. Optional `LIVE_CANDLE_STREAM_LOG=true` for lifecycle + candle/ack logs.
+1. **Universe.** Live reads `GetFavorites` and keeps **futures only**. Favorites CRUD via API is `405`; edit in T-Invest app + `POST /api/v1/favorites/sync`.
+2. **Start / stream.** `POST /api/v1/live/start` → `STRATEGY` leases per futures × `5m`. One ref-counted `MarketStreamHub` (shared with CHART). T-Invest limits: 300 subs/stream, 100 subscribe/min.
+3. **Levels.** Cache from Fibonacci pivots + volume profile (POC/VAH/VAL). Without VP, alerts/setups use fib; TSE runs with `requireSecondaryFamily` relaxed.
+4. **Lane A — live alerts (`UPDATING`).** On the current open bar: **APPROACH** (distance ≤ 0.15 ATR), **CROSS** (side flip or newly spanning range). Dedup `(instrument, level, kind)` ~5 min. If ≥ **3 CROSSes in 15 min** → one **`LEVEL_CONSOLIDATION`** alert, then suppress approach/cross for 15 min quiet. Outbox `signal.telegram` with `kind: level_approach|level_cross|level_consolidation`.
+5. **Lane B — entry confirm (closed bar).** On `CLOSE_EMITTED` / `FINALIZED_BY_SCHEDULE`: history → `buildAnalysisSnapshot` → confluence → `TREND_PULLBACK` / `BREAKOUT_RETEST` → `confirmSignal` → `live_signals` (`buy`/`sell`) + Telegram `kind: entry_confirm` when accepted. Signal ≠ order (ADR-006).
+6. **Ops.** Dashboard Live: Start / Stop / Sync / Refresh. `LIVE_CANDLE_STREAM_LOG=true` for lifecycle/candle logs.
+
+| Wired now / Уже есть                    | Deferred / Отложено                                    |
+| --------------------------------------- | ------------------------------------------------------ |
+| Live level alerts + chop dedup          | Real Telegram bot delivery                             |
+| TSE closed-bar confirm → `live_signals` | Durable setup/alert store across restarts              |
+| Fib + best-effort VP levels             | Full MTF context opposition / workers host / autostart |
 
 ### Live API / Live API
 
@@ -116,10 +120,6 @@
 | POST   | `/api/v1/live/stop`      | Stop Live / Остановка Live                            |
 | GET    | `/api/v1/favorites`      | Futures-only GetFavorites view / Только фьючерсы      |
 | POST   | `/api/v1/favorites/sync` | Re-pull favorites + resync STRATEGY leases if running |
-
-**RU.** Отложено: autostart после деплоя, перенос hub → `worker-market-data` / Live → `worker-strategy`, полный TSE scoring, реальный Telegram notifier.
-
-**EN.** Deferred: post-deploy autostart, move hub → `worker-market-data` / Live → `worker-strategy`, full TSE scoring, real Telegram notifier.
 
 ## What works now (E7A Sandbox Admin) / Что работает сейчас (E7A Sandbox Admin)
 

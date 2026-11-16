@@ -26,7 +26,8 @@ import {
   type OutboxRepository,
 } from '@moex/persistence';
 import { createBrokerFavoritesRepository } from './live/broker-favorites.js';
-import { createCloseEmittedHoldEvaluator } from './live/closed-bar-evaluator.js';
+import { createLevelAlertEngine } from './live/level-alert-engine.js';
+import { createLiveMarketAnalyzer } from './live/live-market-analyzer.js';
 import { createLiveRuntime, type LiveRuntime } from './live/live-runtime.js';
 import { createStubTelegramNotifier } from './live/telegram-notifier.js';
 import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
@@ -159,6 +160,11 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     const hub = createMarketStreamHub({ client: streamClient, streamLog });
     streamHub = hub;
     chartLive = createChartLiveGateway({ hub, streamLog });
+    const levelAlerts = createLevelAlertEngine();
+    const analyzer = createLiveMarketAnalyzer({
+      marketData,
+      levelAlerts,
+    });
     liveRuntime = createLiveRuntime({
       hub,
       favorites,
@@ -169,8 +175,8 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
         logger: liveLogger,
       }),
       streamLog,
-      // Closed-bar hold monitor until full TSE strategy loop is wired into LiveRuntime.
-      evaluateClosedBar: createCloseEmittedHoldEvaluator(),
+      evaluateClosedBar: analyzer.evaluateClosedBar,
+      evaluateLiveAlerts: analyzer.evaluateLiveAlerts,
       analysisIntervals: ['5m'],
     });
     streamLog.clientEvent('live candle stream logging enabled', {

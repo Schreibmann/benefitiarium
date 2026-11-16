@@ -143,6 +143,65 @@ describe('LiveRuntime', () => {
     expect(registry.listActiveLeasesByConsumerType('CHART')).toHaveLength(1);
   });
 
+  it('publishes live level alerts on UPDATING candles', async () => {
+    const registry = new SubscriptionRegistry({
+      createId: (() => {
+        let n = 0;
+        return () => `lease-${++n}`;
+      })(),
+    });
+    const { hub, emitCandle } = createTestHub(registry);
+    const favorites = createMemoryFavoritesRepository([
+      {
+        instrumentUid: 'uid-1',
+        ticker: 'BRH6',
+        figi: null,
+        createdAt: '2026-11-16T09:00:00.000Z',
+      },
+    ]);
+    const outbox = createMemoryOutboxStore();
+    const info = vi.fn();
+
+    const runtime = createLiveRuntime({
+      hub,
+      favorites,
+      runtimeState: createMemoryLiveRuntimeStateRepository(),
+      signals: createMemoryLiveSignalsRepository(),
+      telegram: createStubTelegramNotifier({ outbox, logger: { info } }),
+      analysisIntervals: ['5m'],
+      evaluateLiveAlerts: () => [
+        {
+          kind: 'APPROACH',
+          levelId: 'FIB:P',
+          levelPrice: '100',
+          levelSources: ['FIB_PIVOT'],
+          distanceAtr: '0.1',
+          instrumentUid: 'uid-1',
+          ticker: 'BRH6',
+          intervalCode: '5m',
+          barTimeStart: '2026-11-16T10:00:00.000Z',
+          referencePrice: '100.5',
+        },
+      ],
+      createId: () => randomUUID(),
+    });
+
+    await runtime.start();
+    emitCandle({
+      ...closedCandle({ instrumentUid: 'uid-1', eventHash: 'hash-live-1' }),
+      barState: 'UPDATING',
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const pending = await outbox.listPending();
+    expect(
+      pending.some(
+        (event) =>
+          event.eventType === 'signal.telegram' && event.aggregateType === 'live_level_alert',
+      ),
+    ).toBe(true);
+  });
+
   it('publishes accepted closed-bar signals via telegram stub outbox', async () => {
     const registry = new SubscriptionRegistry({
       createId: (() => {
@@ -205,6 +264,7 @@ describe('LiveRuntime', () => {
       signals: createMemoryLiveSignalsRepository(),
       telegram: {
         publishSignal: async () => undefined,
+        publishLevelAlert: async () => undefined,
       },
       analysisIntervals: ['5m'],
     });
