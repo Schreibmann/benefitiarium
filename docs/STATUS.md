@@ -138,7 +138,7 @@
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
 - Web: `/` Landing · `/app` overview · `/app/signals` · `/app/strategies` · `/app/backtesting` · `/app/trading` · `/app/portfolio` · `/charts/:ticker` · `/admin/sandbox`
-- `pnpm dev` runs **API + web only**; workers via `pnpm dev:workers`
+- `pnpm dev` поднимает API + web + `worker-notifier`; Live стартует только из UI; остальные воркеры — `pnpm dev:workers`
 
 **EN.**
 
@@ -146,7 +146,7 @@
 - Admin stores: `SANDBOX_ADMIN_STORE=auto|memory|postgres`
 - Quality: Biome + `pnpm precommit`
 - Web: `/` Landing · `/app` overview · `/app/signals` · `/app/strategies` · `/app/backtesting` · `/app/trading` · `/app/portfolio` · `/charts/:ticker` · `/admin/sandbox`
-- `pnpm dev` runs **API + web only**; workers via `pnpm dev:workers`
+- `pnpm dev` starts API + web + `worker-notifier`; Live starts only from UI; other workers via `pnpm dev:workers`
 
 ## Next / Дальше
 

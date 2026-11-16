@@ -34,7 +34,7 @@
 **RU.**
 
 1. Задайте `TINVEST_READ_ONLY_TOKEN` (или sandbox token) в `.env`.
-2. Запустите API + web (`pnpm --filter @moex/api dev` и `pnpm --filter @moex/web dev`). Vite проксирует `/api` и `/ws` → `:3000`.
+2. Запустите `pnpm dev` (API + web + `worker-notifier`). Vite проксирует `/api` и `/ws` → `:3000`. Live не стартует сам — только Start в UI.
 3. Откройте `http://127.0.0.1:5173/charts` (или `/charts/:ticker`).
 4. Выберите фьючерсный контракт: категории (товарные / индексные / валютные / на акции) + family optgroups; каталог cache-first (`nanostores` + API snapshot).
 5. Переключайте **`1m` / `5m` / `1h`**; в шапке ticker · name и last close.
@@ -45,7 +45,7 @@
 **EN.**
 
 1. Set `TINVEST_READ_ONLY_TOKEN` (or sandbox token) in `.env`.
-2. Start API + web (`pnpm --filter @moex/api dev` and `pnpm --filter @moex/web dev`). Vite proxies `/api` and `/ws` → `:3000`.
+2. Start `pnpm dev` (API + web + `worker-notifier`). Vite proxies `/api` and `/ws` → `:3000`. Live does not auto-start — only UI Start.
 3. Open `http://127.0.0.1:5173/charts` (or `/charts/:ticker`).
 4. Pick a futures contract: categories (товарные / индексные / валютные / на акции) + family optgroups; catalog is cache-first (`nanostores` + API snapshot).
 5. Switch **`1m` / `5m` / `1h`**; header shows ticker · name and last close.
@@ -281,9 +281,9 @@ pnpm db:migrate
 
 ### Dev servers / Dev-серверы
 
-**RU.** `apps/api` и workers загружают корневой `.env` через `applyLocalEnvFile()` до `loadEnv`. `pnpm dev` поднимает только API + web (воркеры опциональны).
+**RU.** `apps/api` и workers загружают корневой `.env` через `applyLocalEnvFile()` до `loadEnv`. `pnpm dev` поднимает API + web + `worker-notifier` (Telegram). Live Mode **не** стартует с API — только кнопкой Start в UI. Остальные воркеры опциональны.
 
-**EN.** `apps/api` and workers load root `.env` via `applyLocalEnvFile()` before `loadEnv`. `pnpm dev` starts API + web only (workers are optional).
+**EN.** `apps/api` and workers load root `.env` via `applyLocalEnvFile()` before `loadEnv`. `pnpm dev` starts API + web + `worker-notifier` (Telegram). Live Mode does **not** start with the API — only via the UI Start button. Other workers are optional.
 
 ```bash
 # API (port 3000) + web via turbo (no workers)
@@ -375,7 +375,7 @@ pnpm lint          # Biome
 pnpm typecheck
 pnpm test          # Vitest across packages
 pnpm build
-pnpm dev           # API + web only
+pnpm dev           # API + web + worker-notifier (Live stays stopped until UI Start)
 pnpm dev:workers   # all workers (optional)
 pnpm dev:worker-execution
 pnpm dev:worker-market-data

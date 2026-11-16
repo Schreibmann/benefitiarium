@@ -258,6 +258,13 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
       evaluateLiveAlerts: analyzer.evaluateLiveAlerts,
       analysisIntervals: ['5m'],
     });
+    // API boot never auto-starts Live Mode — only UI / POST /api/v1/live/start.
+    await livePersistence.runtimeState.setDesiredStatus('STOPPED');
+    liveLogger.info('Live Mode ready (stopped until UI start)', {
+      telegramTopicsConfigured:
+        resolveTelegramChatId(env) !== null &&
+        parseTelegramTopicId(env.TELEGRAM_TOPIC_LOGS) !== null,
+    });
     streamLog.clientEvent('live candle stream logging enabled', {
       chartLive: true,
       liveRuntime: true,

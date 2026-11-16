@@ -7,7 +7,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "turbo run dev --parallel --filter=@moex/api --filter=@moex/web",
+    "dev": "turbo run dev --parallel --filter=@moex/api --filter=@moex/web --filter=@moex/worker-notifier",
     "dev:worker-execution": "pnpm --filter @moex/worker-execution dev",
     "dev:worker-market-data": "pnpm --filter @moex/worker-market-data dev",
     "dev:worker-strategy": "pnpm --filter @moex/worker-strategy dev",

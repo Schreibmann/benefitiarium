@@ -295,7 +295,8 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
           lastError,
         });
-        void input.topics?.publishLog('live runtime started', {
+        await input.topics?.publishLog('Live started', {
+          source: 'ui',
           status,
           favoriteCount: favorites.length,
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
@@ -312,7 +313,10 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         status = 'DEGRADED';
         stamp();
         input.streamLog?.clientEvent('live runtime start failed', { lastError });
-        void input.topics?.publishError('live runtime start failed', { message: lastError });
+        await input.topics?.publishError('Live start failed', {
+          source: 'ui',
+          message: lastError,
+        });
       }
       return snapshot();
     },
@@ -335,7 +339,8 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         input.streamLog?.clientEvent('live runtime stopped', {
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
         });
-        void input.topics?.publishLog('live runtime stopped', {
+        await input.topics?.publishLog('Live stopped', {
+          source: 'ui',
           strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
         });
       } catch (error: unknown) {
@@ -343,7 +348,10 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         status = 'DEGRADED';
         stamp();
         input.streamLog?.clientEvent('live runtime stop failed', { lastError });
-        void input.topics?.publishError('live runtime stop failed', { message: lastError });
+        await input.topics?.publishError('Live stop failed', {
+          source: 'ui',
+          message: lastError,
+        });
       }
       return snapshot();
     },
