@@ -6,6 +6,12 @@ export type { CreateTinvestStreamClientInput } from './create-stream-client.js';
 export { createTinvestStreamClient } from './create-stream-client.js';
 export { createFixtureTinvestReadApi } from './fixture-read-api.js';
 export { createFixtureSandboxAccountProvider } from './fixture-sandbox-provider.js';
+export type { TinvestFavoriteRaw } from './get-favorites-command.js';
+export {
+  buildGetFavoritesCommand,
+  mapFavoriteInstrument,
+  mapFavoritesResponse,
+} from './get-favorites-command.js';
 export {
   buildGetLastTradesCommand,
   clampLastTradesWindow,

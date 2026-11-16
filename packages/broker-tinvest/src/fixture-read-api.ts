@@ -219,6 +219,33 @@ export function createFixtureTinvestReadApi(): TinvestReadApi {
     listShares: async () => [share],
     listFutures: async () => futures,
     listIndicatives: async () => indicatives,
+    listFavorites: async () => {
+      const firstFuture = futures[0];
+      return [
+        {
+          uid: share.uid,
+          ticker: share.ticker,
+          figi: share.figi,
+          name: share.name,
+          classCode: share.classCode,
+          instrumentType: 'share',
+          apiTradeAvailableFlag: share.apiTradeAvailableFlag,
+        },
+        ...(firstFuture === undefined
+          ? []
+          : [
+              {
+                uid: firstFuture.uid,
+                ticker: firstFuture.ticker,
+                figi: firstFuture.figi,
+                name: firstFuture.name,
+                classCode: firstFuture.classCode,
+                instrumentType: 'futures',
+                apiTradeAvailableFlag: firstFuture.apiTradeAvailableFlag,
+              },
+            ]),
+      ];
+    },
     getShareByUid: async (uid) => (uid === share.uid ? share : null),
     getFutureByUid: async (uid) => futures.find((item) => item.uid === uid) ?? null,
     getIndicativeByUid: async (uid) => indicatives.find((item) => item.uid === uid) ?? null,

@@ -17,7 +17,7 @@ Accepted (принято)
 - **Live Mode ≠ chart realtime.** Live — durable backend-сессия (`LiveRuntime`); график — эфемерный display-consumer.
 - Один **`MarketStreamHub`** владеет `StreamConnectionManager` + `SubscriptionRegistry` в процессе API (MVP).
 - Потребители: `CHART` (gateway) и `STRATEGY` (LiveRuntime) делят ref-count провайдерских ключей.
-- Вселенная Live = таблица `favorites`; start/stop через `/api/v1/live/*` и UI на dashboard.
+- Вселенная Live = T-Invest `GetFavorites` (не ручной CRUD); start/stop через `/api/v1/live/*` и UI на dashboard.
 - Сигналы → `live_signals` + outbox `signal.telegram`; `TelegramNotifier` пока stub (токен/channel id позже).
 - Отложено: перенос hub → `worker-market-data`, Live → `worker-strategy`, autostart после деплоя, реальные Telegram credentials.
 
@@ -26,7 +26,7 @@ Accepted (принято)
 - **Live Mode ≠ chart realtime.** Live is a durable backend session (`LiveRuntime`); the chart is an ephemeral display consumer.
 - One **`MarketStreamHub`** owns `StreamConnectionManager` + `SubscriptionRegistry` in the API process (MVP).
 - Consumers: `CHART` (gateway) and `STRATEGY` (LiveRuntime) share provider-key ref-counts.
-- Live universe = `favorites` table; start/stop via `/api/v1/live/*` and dashboard UI.
+- Live universe = T-Invest `GetFavorites` (not manual CRUD); start/stop via `/api/v1/live/*` and dashboard UI.
 - Signals → `live_signals` + outbox `signal.telegram`; `TelegramNotifier` is a stub for now (bot token/channel id later).
 - Deferred: move hub → `worker-market-data`, Live → `worker-strategy`, post-deploy autostart, real Telegram credentials.
 

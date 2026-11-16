@@ -77,7 +77,7 @@
 | Custom wheel zoom / drag pan           | DONE            | Replaces broken TanStack `zoomX` remount loop                     |
 | Futures catalog cache-first picker     | DONE            | Categories + family optgroups; nanostores + API snapshot          |
 | Chart realtime + history REST fallback | DONE            | Chart CHART leases (display only); REJECTED/error → REST          |
-| Independent Live Mode                  | DONE (MVP)      | Favorites universe + LiveRuntime start/stop; Telegram stub        |
+| Independent Live Mode                  | DONE (MVP)      | T-Invest GetFavorites universe + LiveRuntime; Telegram stub       |
 | Chart route code-split + bootstrap     | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
 | Signals                                | DEFERRED        | Out of scope for this slice                                       |
 | Persist table / workers                | DEFERRED        | Next stage after UI                                               |

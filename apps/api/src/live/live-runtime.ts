@@ -10,6 +10,7 @@ import type {
   LiveRuntimeStateRepository,
   LiveSignalsRepository,
 } from '@moex/persistence';
+import type { LiveCandleStreamLog } from '../market/live-candle-stream-log.js';
 import type { MarketStreamHub } from '../market/market-stream-hub.js';
 import {
   type ClosedBarEvaluator,
@@ -47,6 +48,7 @@ export type CreateLiveRuntimeInput = {
   runtimeState: LiveRuntimeStateRepository;
   signals: LiveSignalsRepository;
   telegram: TelegramNotifier;
+  streamLog?: LiveCandleStreamLog;
   analysisIntervals?: StreamCandleInterval[];
   evaluateClosedBar?: ClosedBarEvaluator;
   createId?: () => string;
@@ -144,6 +146,12 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
     }
 
     await input.hub.syncDesired();
+    input.streamLog?.clientEvent('live runtime strategy leases synced', {
+      wantedCount: wanted.length,
+      strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
+      favoriteCount: (await input.favorites.list()).length,
+      intervals: analysisIntervals.join(','),
+    });
   };
 
   const publishCandidate = async (candidate: LiveSignalCandidate): Promise<void> => {
@@ -228,6 +236,9 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
       status = 'STARTING';
       lastError = null;
       stamp();
+      input.streamLog?.clientEvent('live runtime starting', {
+        intervals: analysisIntervals.join(','),
+      });
       try {
         await input.runtimeState.setDesiredStatus('RUNNING');
         ensureCandleSubscription();
@@ -236,10 +247,24 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
           status = 'RUNNING';
         }
         stamp();
+        const favorites = await input.favorites.list();
+        input.streamLog?.clientEvent('live runtime started', {
+          status,
+          favoriteCount: favorites.length,
+          strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
+          lastError,
+        });
+        if (favorites.length === 0) {
+          input.streamLog?.clientEvent(
+            'live runtime has zero favorites from T-Invest — no candle subscriptions yet',
+            { hint: 'Add instruments in T-Invest favorites, then Sync favorites' },
+          );
+        }
       } catch (error: unknown) {
         lastError = error instanceof Error ? error.message : 'start failed';
         status = 'DEGRADED';
         stamp();
+        input.streamLog?.clientEvent('live runtime start failed', { lastError });
       }
       return snapshot();
     },
@@ -251,6 +276,7 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
       }
       status = 'STOPPING';
       stamp();
+      input.streamLog?.clientEvent('live runtime stopping', {});
       try {
         await input.runtimeState.setDesiredStatus('STOPPED');
         input.hub.releaseAllForConnection(LIVE_RUNTIME_CONNECTION_ID);
@@ -258,18 +284,24 @@ export function createLiveRuntime(input: CreateLiveRuntimeInput): LiveRuntime {
         status = 'STOPPED';
         lastError = null;
         stamp();
+        input.streamLog?.clientEvent('live runtime stopped', {
+          strategyLeaseCount: input.hub.listLeasesByConsumerType('STRATEGY').length,
+        });
       } catch (error: unknown) {
         lastError = error instanceof Error ? error.message : 'stop failed';
         status = 'DEGRADED';
         stamp();
+        input.streamLog?.clientEvent('live runtime stop failed', { lastError });
       }
       return snapshot();
     },
 
     async resyncFavorites() {
       if (status !== 'RUNNING' && status !== 'DEGRADED') {
+        input.streamLog?.clientEvent('live runtime resync skipped (not running)', { status });
         return;
       }
+      input.streamLog?.clientEvent('live runtime resync favorites', {});
       await syncStrategyLeases();
       stamp();
     },

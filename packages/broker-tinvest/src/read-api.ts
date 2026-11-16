@@ -1,4 +1,5 @@
 import type { CandleInterval } from '@moex/domain';
+import type { TinvestFavoriteRaw } from './get-favorites-command.js';
 import type {
   TinvestAccountRaw,
   TinvestCandleRaw,
@@ -24,6 +25,8 @@ export type TinvestReadApi = {
   listShares: () => Promise<TinvestShareRaw[]>;
   listFutures: () => Promise<TinvestFutureRaw[]>;
   listIndicatives: () => Promise<TinvestIndicativeRaw[]>;
+  /** InstrumentsService.GetFavorites — client watchlist from T-Invest. */
+  listFavorites: () => Promise<TinvestFavoriteRaw[]>;
   getShareByUid: (uid: string) => Promise<TinvestShareRaw | null>;
   getFutureByUid: (uid: string) => Promise<TinvestFutureRaw | null>;
   getIndicativeByUid: (uid: string) => Promise<TinvestIndicativeRaw | null>;

@@ -20,12 +20,7 @@ export type LiveApiClient = {
   startLive: () => Promise<LiveRuntimeSnapshot>;
   stopLive: () => Promise<LiveRuntimeSnapshot>;
   listFavorites: () => Promise<FavoriteItem[]>;
-  addFavorite: (input: {
-    instrumentUid: string;
-    ticker: string;
-    figi?: string | null;
-  }) => Promise<FavoriteItem>;
-  removeFavorite: (instrumentUid: string) => Promise<void>;
+  syncFavorites: () => Promise<FavoriteItem[]>;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -96,22 +91,21 @@ function parseFavorite(json: unknown): FavoriteItem {
   };
 }
 
+function parseFavoritesPayload(json: unknown): FavoriteItem[] {
+  if (!isRecord(json) || !Array.isArray(json.items)) {
+    throw new Error('Invalid favorites list');
+  }
+  return json.items.map(parseFavorite);
+}
+
 export function createLiveApiClient(
   options: { baseUrl?: string; fetchImpl?: typeof fetch } = {},
 ): LiveApiClient {
   const baseUrl = options.baseUrl ?? '';
   const fetchImpl = options.fetchImpl ?? fetch;
 
-  async function request(method: string, path: string, body?: unknown): Promise<unknown> {
-    const init: RequestInit = { method };
-    if (body !== undefined) {
-      init.headers = { 'content-type': 'application/json' };
-      init.body = JSON.stringify(body);
-    }
-    const response = await fetchImpl(`${baseUrl}${path}`, init);
-    if (response.status === 204) {
-      return null;
-    }
+  async function request(method: string, path: string): Promise<unknown> {
+    const response = await fetchImpl(`${baseUrl}${path}`, { method });
     if (!response.ok) {
       const text = await response.text();
       throw new Error(`API ${response.status}: ${text || response.statusText}`);
@@ -123,19 +117,8 @@ export function createLiveApiClient(
     getLive: async () => parseSnapshot(await request('GET', '/api/v1/live')),
     startLive: async () => parseSnapshot(await request('POST', '/api/v1/live/start')),
     stopLive: async () => parseSnapshot(await request('POST', '/api/v1/live/stop')),
-    listFavorites: async () => {
-      const json = await request('GET', '/api/v1/favorites');
-      if (!isRecord(json) || !Array.isArray(json.items)) {
-        throw new Error('Invalid favorites list');
-      }
-      return json.items.map(parseFavorite);
-    },
-    addFavorite: async (input) => {
-      const json = await request('POST', '/api/v1/favorites', input);
-      return parseFavorite(json);
-    },
-    removeFavorite: async (instrumentUid) => {
-      await request('DELETE', `/api/v1/favorites/${encodeURIComponent(instrumentUid)}`);
-    },
+    listFavorites: async () => parseFavoritesPayload(await request('GET', '/api/v1/favorites')),
+    syncFavorites: async () =>
+      parseFavoritesPayload(await request('POST', '/api/v1/favorites/sync')),
   };
 }

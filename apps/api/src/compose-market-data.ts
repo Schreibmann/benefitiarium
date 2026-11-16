@@ -10,11 +10,9 @@ import type { AppEnv } from '@moex/config';
 import { resolveTinvestToken } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import {
-  createFavoritesRepository,
   createFuturesCatalogCacheRepository,
   createLiveRuntimeStateRepository,
   createLiveSignalsRepository,
-  createMemoryFavoritesRepository,
   createMemoryLiveRuntimeStateRepository,
   createMemoryLiveSignalsRepository,
   createMemoryOutboxStore,
@@ -27,6 +25,7 @@ import {
   type LiveSignalsRepository,
   type OutboxRepository,
 } from '@moex/persistence';
+import { createBrokerFavoritesRepository } from './live/broker-favorites.js';
 import { createCloseEmittedHoldEvaluator } from './live/closed-bar-evaluator.js';
 import { createLiveRuntime, type LiveRuntime } from './live/live-runtime.js';
 import { createStubTelegramNotifier } from './live/telegram-notifier.js';
@@ -55,26 +54,34 @@ async function tryCreateFuturesCatalogCache(): Promise<FuturesCatalogCacheReposi
   return createFuturesCatalogCacheRepository(db);
 }
 
-async function createLiveStores(): Promise<{
-  favorites: FavoritesRepository;
+async function liveSchemaReady(db: DbClient): Promise<boolean> {
+  try {
+    const exists = await db.queryJsonValue<boolean | null>(
+      `SELECT to_json(to_regclass('public.live_runtime_state') IS NOT NULL)`,
+    );
+    return exists === true;
+  } catch {
+    return false;
+  }
+}
+
+async function createLivePersistence(): Promise<{
   runtimeState: LiveRuntimeStateRepository;
   signals: LiveSignalsRepository;
   outbox: OutboxRepository;
 }> {
   const db = createPsqlDbClient();
-  if (!(await canReachPostgres(db))) {
+  if (!(await canReachPostgres(db)) || !(await liveSchemaReady(db))) {
     if (db.close !== undefined) {
       await db.close();
     }
     return {
-      favorites: createMemoryFavoritesRepository(),
       runtimeState: createMemoryLiveRuntimeStateRepository(),
       signals: createMemoryLiveSignalsRepository(),
       outbox: createMemoryOutboxStore(),
     };
   }
   return {
-    favorites: createFavoritesRepository(db),
     runtimeState: createLiveRuntimeStateRepository(db),
     signals: createLiveSignalsRepository(db),
     outbox: createOutboxRepository(db),
@@ -125,7 +132,8 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     ...(futuresCatalogCache !== undefined ? { futuresCatalogCache } : {}),
   };
 
-  const liveStores = await createLiveStores();
+  const livePersistence = await createLivePersistence();
+  const favorites = createBrokerFavoritesRepository(api);
   const liveLogger = createLogger({
     service: '@moex/api/live-runtime',
     level: env.LOG_LEVEL,
@@ -153,21 +161,31 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     chartLive = createChartLiveGateway({ hub, streamLog });
     liveRuntime = createLiveRuntime({
       hub,
-      favorites: liveStores.favorites,
-      runtimeState: liveStores.runtimeState,
-      signals: liveStores.signals,
+      favorites,
+      runtimeState: livePersistence.runtimeState,
+      signals: livePersistence.signals,
       telegram: createStubTelegramNotifier({
-        outbox: liveStores.outbox,
+        outbox: livePersistence.outbox,
         logger: liveLogger,
       }),
+      streamLog,
       // Closed-bar hold monitor until full TSE strategy loop is wired into LiveRuntime.
       evaluateClosedBar: createCloseEmittedHoldEvaluator(),
       analysisIntervals: ['5m'],
     });
-  } catch {
+    streamLog.clientEvent('live candle stream logging enabled', {
+      chartLive: true,
+      liveRuntime: true,
+    });
+  } catch (error: unknown) {
     chartLive = null;
     streamHub = null;
     liveRuntime = null;
+    if (env.LIVE_CANDLE_STREAM_LOG) {
+      liveLogger.warn('live candle stream / LiveRuntime init failed', {
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+    }
   }
 
   return {
@@ -175,6 +193,6 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     chartLive,
     streamHub,
     liveRuntime,
-    favorites: liveStores.favorites,
+    favorites,
   };
 }
