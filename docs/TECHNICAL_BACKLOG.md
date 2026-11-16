@@ -1,4 +1,4 @@
-# MOEX Trading Platform — Technical Backlog & Implementation Blueprint / Технический backlog и план реализации
+# Benefitiarium — Technical Backlog & Implementation Blueprint / Benefitiarium — технический backlog и план реализации
 
 **RU.** **Версия:** 1.2  
 **EN.** **Version:** 1.2  
@@ -403,7 +403,7 @@ Continuous contract is a separate synthetic series for analysis, not an executab
 ```text
 **RU.**
 
-moex-trading-platform/
+benefitiarium/
 ├── apps/
 │   ├── api/                         # Fastify REST + WebSocket gateway; protected admin routes
 │   ├── web/                         # React + Vite SPA; /admin/sandbox route group
@@ -457,7 +457,7 @@ moex-trading-platform/
 
 **EN.**
 
-moex-trading-platform/
+benefitiarium/
 ├── apps/
 │   ├── api/                         # Fastify REST + WebSocket gateway; protected admin routes
 │   ├── web/                         # React + Vite SPA; /admin/sandbox route group

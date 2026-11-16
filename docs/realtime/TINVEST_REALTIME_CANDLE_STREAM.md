@@ -1,7 +1,7 @@
 # T-Invest Realtime Candle Stream — Implementation Guide / Поток realtime-свечей T-Invest — руководство по реализации
 
-**RU.** **Проект:** MOEX Trading Platform  
-**EN.** **Project:** MOEX Trading Platform
+**RU.** **Проект:** Benefitiarium  
+**EN.** **Project:** Benefitiarium
 
 **RU.** **Версия документа:** 1.3  
 **EN.** **Document version:** 1.3
@@ -17,13 +17,13 @@
 
 > Версия 1.3 уточняет контракт realtime `Candle` против исторического `HistoricCandle`: поле `is_complete` присутствует в историческом ответе `GetCandles`, но не документировано в stream-сообщении `Candle`. Поэтому realtime finality нельзя определять чтением несуществующего поля. Также зафиксированы лимиты 32 quote stream connections, 300 subscriptions per stream и 100 subscription requests/minute.
 >
-> Этот документ дополняет `MOEX Trading Platform — Technical Backlog v1.2`. Он не заменяет его и не меняет существующие ID задач. Основная реализация относится к EPIC E4: `BL-040`–`BL-045`, а проверка SDK и контрактов — к `BL-013`/`BL-014`.
+> Этот документ дополняет `Benefitiarium — Technical Backlog v1.2`. Он не заменяет его и не меняет существующие ID задач. Основная реализация относится к EPIC E4: `BL-040`–`BL-045`, а проверка SDK и контрактов — к `BL-013`/`BL-014`.
 
 **EN.**
 
 > v1.3 clarifies the realtime `Candle` contract vs historical `HistoricCandle`: `is_complete` exists on `GetCandles` history but is not documented on stream `Candle`. Do not infer realtime bar finality from a non-existent field. Limits: 32 quote stream connections, 300 subscriptions per stream, 100 subscription requests/minute.
 >
-> This document supplements `MOEX Trading Platform — Technical Backlog v1.2`. It does not replace it or rename task IDs. Main implementation: EPIC E4 `BL-040`–`BL-045`; SDK/contract verification: `BL-013`/`BL-014`.
+> This document supplements `Benefitiarium — Technical Backlog v1.2`. It does not replace it or rename task IDs. Main implementation: EPIC E4 `BL-040`–`BL-045`; SDK/contract verification: `BL-013`/`BL-014`.
 
 ---
 
@@ -2566,7 +2566,7 @@ Provider Candle (waitingClose=false snapshot)
 **RU.** Текст prompt (русский):
 
 ```text
-Ты работаешь в проекте MOEX Trading Platform. Перед реализацией прочитай:
+Ты работаешь в проекте Benefitiarium. Перед реализацией прочитай:
 - docs/TECHNICAL_BACKLOG.md;
 - docs/API_CONTRACTS.md;
 - docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md;
@@ -2607,7 +2607,7 @@ Provider Candle (waitingClose=false snapshot)
 **EN.** Prompt text (English):
 
 ```text
-You work on the MOEX Trading Platform. Before implementing, read:
+You work on Benefitiarium. Before implementing, read:
 - docs/TECHNICAL_BACKLOG.md;
 - docs/API_CONTRACTS.md;
 - docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md;

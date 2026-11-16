@@ -1,4 +1,4 @@
-# MOEX Trading Platform Development Roadmap / Roadmap разработки торговой платформы для MOEX
+# Benefitiarium Development Roadmap / Roadmap разработки Benefitiarium
 
 **RU.** **Версия документа:** 1.1
 **EN.** **Document version:** 1.1
