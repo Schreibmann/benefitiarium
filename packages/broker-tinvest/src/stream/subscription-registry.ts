@@ -265,6 +265,20 @@ export class SubscriptionRegistry {
     return out;
   }
 
+  listActiveLeases(): ChartLease[] {
+    const out: ChartLease[] = [];
+    for (const lease of this.leases.values()) {
+      if (lease.status !== 'INACTIVE') {
+        out.push(lease);
+      }
+    }
+    return out;
+  }
+
+  listActiveLeasesByConsumerType(consumerType: ConsumerType): ChartLease[] {
+    return this.listActiveLeases().filter((lease) => lease.consumer.consumerType === consumerType);
+  }
+
   private tryConsumeSubscribeRequestSlot(): boolean {
     const nowMs = this.now().getTime();
     const windowStart = nowMs - 60_000;

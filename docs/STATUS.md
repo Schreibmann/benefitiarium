@@ -6,32 +6,32 @@
 **RU.** **Версия backlog:** TECHNICAL_BACKLOG **v1.2**  
 **EN.** **Backlog version:** TECHNICAL_BACKLOG **v1.2**
 
-**RU.** **Текущий milestone:** M6 — Manual Sandbox (E7A DONE) · UI foundation · M3 realtime chart slice  
-**EN.** **Current milestone:** M6 — Manual Sandbox (E7A DONE) · UI foundation · M3 realtime chart slice
+**RU.** **Текущий milestone:** M3 realtime + independent Live Runtime (API MVP) · M4 signals · UI foundation  
+**EN.** **Current milestone:** M3 realtime + independent Live Runtime (API MVP) · M4 signals · UI foundation
 
-**RU.** **Активная задача:** BL-053 Trading Signal Engine Phase 6 (`@moex/strategy-engine` paper trading)  
-**EN.** **Active task:** BL-053 Trading Signal Engine Phase 6 (`@moex/strategy-engine` paper trading)
+**RU.** **Активная задача:** Independent Live Runtime + shared `MarketStreamHub` (ADR-011); TSE Phase 0–6 on main  
+**EN.** **Active task:** Independent Live Runtime + shared `MarketStreamHub` (ADR-011); TSE Phase 0–6 on main
 
-**RU.** **Следующая задача:** Signal Engine Phase 7 (replay/backtest/Evals); UI-017; RT-05…07  
-**EN.** **Next task:** Signal Engine Phase 7 (replay/backtest/Evals); UI-017; RT-05…07
+**RU.** **Следующая задача:** Wire TSE `confirmSignal`/paper into Live evaluator; Phase 7; UI-017; RT-05…07; worker split  
+**EN.** **Next task:** Wire TSE `confirmSignal`/paper into Live evaluator; Phase 7; UI-017; RT-05…07; worker split
 
 **RU.** Статусы живут здесь. Не считайте сообщения агента в чате источником истины без CI/верификации.  
 **EN.** Statuses live here. Do not treat agent chat messages as source of truth without CI/verification.
 
 ## Milestone / Вехи
 
-| Milestone            | Status / Статус | Notes / Примечания                                                    |
-| -------------------- | --------------- | --------------------------------------------------------------------- |
-| M0 — Foundation      | DONE            | EPIC E0 verified locally                                              |
-| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                                       |
-| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                                     |
-| M3 — Realtime        | IN_PROGRESS     | Stream manager + registry + chart WS Live button (API MVP)            |
-| M4 — Signals         | IN_PROGRESS     | Benefit TSE Phase 0–6 in `@moex/strategy-engine` (through paper loop) |
-| M5 — Backtesting     | TODO            | —                                                                     |
-| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                                    |
-| M7 — Paper           | TODO            | —                                                                     |
-| M8 — Guarded Live    | TODO            | —                                                                     |
-| UI foundation        | IN_PROGRESS     | UI-001…007, UI-010…013, UI-015…016 done; next UI-017 / instrument UI  |
+| Milestone            | Status / Статус | Notes / Примечания                                                   |
+| -------------------- | --------------- | -------------------------------------------------------------------- |
+| M0 — Foundation      | DONE            | EPIC E0 verified locally                                             |
+| M1 — Providers       | IN_PROGRESS     | E1 nearly complete; BL-017 done                                      |
+| M2 — Historical Data | TODO            | needs BL-039 live matrix + BL-031                                    |
+| M3 — Realtime        | IN_PROGRESS     | Shared `MarketStreamHub` + chart CHART leases (API MVP)              |
+| M4 — Signals         | IN_PROGRESS     | Benefit TSE Phase 0–6 + LiveRuntime STRATEGY leases / live_signals   |
+| M5 — Backtesting     | TODO            | —                                                                    |
+| M6 — Manual Sandbox  | DONE (E7A)      | BL-078…089 on main                                                   |
+| M7 — Paper           | TODO            | Paper loop in `@moex/strategy-engine` Phase 6; runtime wiring next   |
+| M8 — Guarded Live    | TODO            | —                                                                    |
+| UI foundation        | IN_PROGRESS     | UI-001…007, UI-010…013, UI-015…016 done; next UI-017 / instrument UI |
 
 ## EPIC E7A (v1.2) / EPIC E7A (v1.2)
 
@@ -66,20 +66,21 @@
 
 ## Fibonacci Pivot Points / chart UX / Fibonacci Pivot Points / UX графика
 
-| Piece / Компонент                    | Status / Статус | Notes / Примечания                                                |
-| ------------------------------------ | --------------- | ----------------------------------------------------------------- |
-| Pure calculator `@moex/indicators`   | DONE            | ADR formula; 5m→1D / 1h→1W                                        |
-| On-read API candles + pivots         | DONE            | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token           |
-| TanStack Charts UI `/charts/:ticker` | DONE            | Candles + period-bounded pivot `link`s                            |
-| Timeframes `1m` / `5m` / `1h`        | DONE            | Chart TF switch; pivots on 5m/1h                                  |
-| Session X-scale + Reset zoom         | DONE            | Session domain; wheel zoom / drag pan; Reset zoom control         |
-| Preserve viewport across TF          | DONE            | Zoom/pan kept when switching `1m`/`5m`/`1h`                       |
-| Custom wheel zoom / drag pan         | DONE            | Replaces broken TanStack `zoomX` remount loop                     |
-| Futures catalog cache-first picker   | DONE            | Categories + family optgroups; nanostores + API snapshot          |
-| Auto-live + history REST fallback    | DONE            | Auto-subscribe on instrument select; REJECTED/error → REST        |
-| Chart route code-split + bootstrap   | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
-| Signals                              | DEFERRED        | Out of scope for this slice                                       |
-| Persist table / workers              | DEFERRED        | Next stage after UI                                               |
+| Piece / Компонент                      | Status / Статус | Notes / Примечания                                                |
+| -------------------------------------- | --------------- | ----------------------------------------------------------------- |
+| Pure calculator `@moex/indicators`     | DONE            | ADR formula; 5m→1D / 1h→1W                                        |
+| On-read API candles + pivots           | DONE            | T-Invest via `TINVEST_READ_ONLY_TOKEN` or sandbox token           |
+| TanStack Charts UI `/charts/:ticker`   | DONE            | Candles + period-bounded pivot `link`s                            |
+| Timeframes `1m` / `5m` / `1h`          | DONE            | Chart TF switch; pivots on 5m/1h                                  |
+| Session X-scale + Reset zoom           | DONE            | Session domain; wheel zoom / drag pan; Reset zoom control         |
+| Preserve viewport across TF            | DONE            | Zoom/pan kept when switching `1m`/`5m`/`1h`                       |
+| Custom wheel zoom / drag pan           | DONE            | Replaces broken TanStack `zoomX` remount loop                     |
+| Futures catalog cache-first picker     | DONE            | Categories + family optgroups; nanostores + API snapshot          |
+| Chart realtime + history REST fallback | DONE            | Chart CHART leases (display only); REJECTED/error → REST          |
+| Independent Live Mode                  | DONE (MVP)      | Favorites universe + LiveRuntime start/stop; Telegram stub        |
+| Chart route code-split + bootstrap     | DONE            | Lazy admin/chart chunks; skip duplicate warm refresh; catalog UID |
+| Signals                                | DEFERRED        | Out of scope for this slice                                       |
+| Persist table / workers                | DEFERRED        | Next stage after UI                                               |
 
 ## Horizontal volume (trades VP) / Горизонтальный объём (VP по сделкам)
 
@@ -105,11 +106,15 @@
 | RT-05 | IN_PROGRESS     | Events: updated / close_emitted / finalized / corrected (no schedule finalizer yet) |
 | RT-06 | TODO            | gap backfill                                                                        |
 | RT-07 | TODO            | feed health                                                                         |
-| RT-08 | IN_PROGRESS     | Internal `/ws/market-data` fan-out (in API process)                                 |
-| RT-09 | IN_PROGRESS     | Chart auto-starts live stream + CHART leases; history REST fallback                 |
+| RT-08 | IN_PROGRESS     | Internal `/ws/market-data` fan-out via shared `MarketStreamHub` (API process)       |
+| RT-09 | DONE (MVP)      | Chart CHART leases (display); Independent Live = STRATEGY leases (ADR-011)          |
+| RT-10 | DONE (MVP)      | LiveRuntime start/stop + favorites + live_signals + Telegram outbox stub            |
 
-**RU.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**)  
-**EN.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**)
+**RU.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)  
+**EN.** Guide: [`docs/realtime/TINVEST_REALTIME_CANDLE_STREAM.md`](realtime/TINVEST_REALTIME_CANDLE_STREAM.md) (**v1.3**) · ADR: [`docs/ADR/011-independent-live-runtime-shared-stream.md`](ADR/011-independent-live-runtime-shared-stream.md)
+
+**RU.** **Live Mode ≠ chart realtime.** Live анализирует избранное 24/7 независимо от UI; график только отображает свечи через CHART leases на том же hub.  
+**EN.** **Live Mode ≠ chart realtime.** Live analyzes favorites 24/7 independent of the UI; the chart only displays candles via CHART leases on the same hub.
 
 ## Trading Signal Engine / Движок торговых сигналов
 
@@ -138,16 +143,16 @@
 
 **RU.**
 
-1. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-2. UI-017 visual regression (Landing/Dashboard Dark/Light)
-3. UI-008 / UI-009 — Instrument page + realtime lease UI
-4. Host stream in `worker-market-data` + IPC to API gateway
-5. RT-05…RT-07 + candle persistence upsert; pivot persistence
+1. Plug TSE `confirmSignal` / paper loop into Live `ClosedBarEvaluator`
+2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
+3. Telegram bot token / channel id settings (BL-105); autostart after deploy
+4. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+5. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence
 
 **EN.**
 
-1. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
-2. UI-017 visual regression (Landing/Dashboard Dark/Light)
-3. UI-008 / UI-009 — Instrument page + realtime lease UI
-4. Host stream in `worker-market-data` + IPC to API gateway
-5. RT-05…RT-07 + candle persistence upsert; pivot persistence
+1. Plug TSE `confirmSignal` / paper loop into Live `ClosedBarEvaluator`
+2. Signal Engine Phase 7 — historical replay, backtest costs, Evals reports
+3. Telegram bot token / channel id settings (BL-105); autostart after deploy
+4. Host stream in `worker-market-data` + Live in `worker-strategy` + IPC to API gateway
+5. UI-017 / UI-008 / UI-009; RT-05…RT-07 + candle persistence upsert; pivot persistence

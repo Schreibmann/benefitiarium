@@ -479,7 +479,7 @@ export function PriceChartApp(props: Props) {
       {error ? <p className="price-chart__error">{error}</p> : null}
       {live.error ? (
         <p className="price-chart__error">
-          Live: {live.error.code} — {live.error.message}
+          Chart realtime: {live.error.code} — {live.error.message}
         </p>
       ) : null}
 

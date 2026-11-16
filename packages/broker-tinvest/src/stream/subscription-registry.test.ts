@@ -9,6 +9,30 @@ const key = {
 };
 
 describe('SubscriptionRegistry', () => {
+  it('lists active leases by consumer type', () => {
+    const registry = new SubscriptionRegistry({
+      createId: (() => {
+        let n = 0;
+        return () => `lease-${++n}`;
+      })(),
+    });
+    registry.acquire({
+      connectionId: 'c1',
+      requestId: 'r1',
+      consumer: { consumerType: 'CHART', consumerId: 'conn:c1' },
+      key,
+    });
+    registry.acquire({
+      connectionId: 'live-runtime',
+      requestId: 'r2',
+      consumer: { consumerType: 'STRATEGY', consumerId: 'live-runtime' },
+      key,
+    });
+    expect(registry.listActiveLeases()).toHaveLength(2);
+    expect(registry.listActiveLeasesByConsumerType('CHART')).toHaveLength(1);
+    expect(registry.listActiveLeasesByConsumerType('STRATEGY')).toHaveLength(1);
+  });
+
   it('dedupes provider subscriptions across consumers and unsubscribes only at zero refs', () => {
     const registry = new SubscriptionRegistry({
       createId: (() => {

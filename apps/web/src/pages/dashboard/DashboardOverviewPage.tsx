@@ -1,3 +1,4 @@
+import { LiveModePanel } from '../../features/live/LiveModePanel.js';
 import { OnboardingChecklist } from '../../features/onboarding/OnboardingChecklist.js';
 import { Badge } from '../../shared/ui/Badge.js';
 import { Button } from '../../shared/ui/Button.js';
@@ -48,6 +49,8 @@ export function DashboardOverviewPage() {
       </Card>
 
       <OnboardingChecklist />
+
+      <LiveModePanel />
 
       <div className="dash-overview__grid">
         <Card className="dash-panel--span-12">
@@ -101,14 +104,14 @@ export function DashboardOverviewPage() {
         </Card>
 
         <Card className="dash-panel--span-4">
-          <CardHeader title="Watchlist" />
+          <CardHeader title="Favorites / Избранное" />
           <CardBody>
             <EmptyState
-              title="Список инструментов пуст"
-              description="Добавьте тикеры в watchlist после подключения каталога."
+              title="Управляйте избранным в Live Mode"
+              description="Избранное — вселенная для независимого Live-анализа. Добавление выше в панели Live Mode."
               action={
-                <Button href="/app/market" variant="secondary" size="sm">
-                  Выбрать инструменты
+                <Button href="/app/analytics" variant="secondary" size="sm">
+                  Открыть график
                 </Button>
               }
             />
