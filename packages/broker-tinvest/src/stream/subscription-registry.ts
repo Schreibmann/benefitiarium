@@ -279,7 +279,29 @@ export class SubscriptionRegistry {
     return this.listActiveLeases().filter((lease) => lease.consumer.consumerType === consumerType);
   }
 
-  private tryConsumeSubscribeRequestSlot(): boolean {
+  /** Remaining new-provider subscribe slots in the current rolling 60s window. */
+  subscribeRequestSlotsRemaining(): number {
+    this.pruneSubscribeRequestWindow();
+    return Math.max(0, this.maxSubscribeRequestsPerMinute - this.subscribeRequestTimestamps.length);
+  }
+
+  /**
+   * Milliseconds until at least one new-provider subscribe slot frees (0 if available now).
+   * T-Invest: max 100 subscription requests per minute.
+   */
+  msUntilSubscribeRequestSlot(): number {
+    this.pruneSubscribeRequestWindow();
+    if (this.subscribeRequestTimestamps.length < this.maxSubscribeRequestsPerMinute) {
+      return 0;
+    }
+    const oldest = this.subscribeRequestTimestamps[0];
+    if (oldest === undefined) {
+      return 0;
+    }
+    return Math.max(1, oldest + 60_000 - this.now().getTime() + 1);
+  }
+
+  private pruneSubscribeRequestWindow(): void {
     const nowMs = this.now().getTime();
     const windowStart = nowMs - 60_000;
     while (
@@ -288,10 +310,14 @@ export class SubscriptionRegistry {
     ) {
       this.subscribeRequestTimestamps.shift();
     }
+  }
+
+  private tryConsumeSubscribeRequestSlot(): boolean {
+    this.pruneSubscribeRequestWindow();
     if (this.subscribeRequestTimestamps.length >= this.maxSubscribeRequestsPerMinute) {
       return false;
     }
-    this.subscribeRequestTimestamps.push(nowMs);
+    this.subscribeRequestTimestamps.push(this.now().getTime());
     return true;
   }
 }

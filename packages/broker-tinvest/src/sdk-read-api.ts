@@ -13,6 +13,7 @@ import {
   GetSharesCommand,
   type InvestNodeSDK,
 } from '@ttech-pub/invest-sdk-node';
+import { buildGetFavoritesCommand, mapFavoritesResponse } from './get-favorites-command.js';
 import { buildGetLastTradesCommand, mapLastTradesResponse } from './get-last-trades-command.js';
 import {
   buildGetTechAnalysisCommand,
@@ -230,7 +231,6 @@ export function createSdkTinvestReadApi(sdk: InvestNodeSDK): TinvestReadApi {
   const indicativesCache = createTtlSingleflightCache<TinvestIndicativeRaw[]>({
     ttlMs: CATALOG_TTL_MS,
   });
-
   const api: TinvestReadApi = {
     listShares: async () =>
       sharesCache.get(async () => {
@@ -258,6 +258,10 @@ export function createSdkTinvestReadApi(sdk: InvestNodeSDK): TinvestReadApi {
         const rows = Array.isArray(response.instruments) ? response.instruments : [];
         return rows.map(mapIndicative).filter((row): row is TinvestIndicativeRaw => row !== null);
       }),
+    listFavorites: async () => {
+      const response = await sdk.send(buildGetFavoritesCommand());
+      return mapFavoritesResponse(response);
+    },
     getShareByUid: async (uid) => {
       const shares = await api.listShares();
       return shares.find((row) => row.uid === uid) ?? null;

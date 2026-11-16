@@ -21,6 +21,8 @@ export const MIGRATION_FILES = [
   '002_audit_append_only.sql',
   '003_futures_catalog_cache.sql',
   '004_live_runtime.sql',
+  '005_market_signals_notifications.sql',
+  '006_notifications_forum_topics.sql',
 ] as const;
 
 export type { MemoryAuditLogStore } from './audit/memory.js';
@@ -96,6 +98,24 @@ export {
   createLiveSignalsRepository,
   createMemoryLiveSignalsRepository,
 } from './repos/live-signals.js';
+export type { MarketSignalsRepository } from './repos/market-signals.js';
+export { createMarketSignalsRepository } from './repos/market-signals.js';
+export type { MemoryMarketSignalsStore } from './repos/market-signals-memory.js';
+export { createMemoryMarketSignalsStore } from './repos/market-signals-memory.js';
+export type {
+  ApproachStateRow,
+  InsertSignalWithNotificationResult,
+  MarketSignal,
+  MarketSignalEvalMode,
+  MarketSignalKind,
+  MarketSignalSide,
+  NewLogNotification,
+  NewMarketSignal,
+  NewNotificationForSignal,
+  Notification,
+  NotificationChannel,
+  NotificationStatus,
+} from './repos/market-signals-types.js';
 export type { PersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
 export { parsePersistedSandboxCommandRequest } from './repos/sandbox-command-request.js';
 export type { SandboxOperationRepository } from './repos/sandbox-operations.js';

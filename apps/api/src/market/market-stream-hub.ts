@@ -102,7 +102,13 @@ export function createMarketStreamHub(input: CreateMarketStreamHubInput): Market
   });
 
   const syncDesired = async (): Promise<void> => {
-    await streamManager.syncDesiredSubscriptions(registry.desiredProviderKeys());
+    const desired = registry.desiredProviderKeys();
+    streamLog.clientEvent('live candle stream sync desired', {
+      desiredCount: desired.length,
+      chartLeases: registry.listActiveLeasesByConsumerType('CHART').length,
+      strategyLeases: registry.listActiveLeasesByConsumerType('STRATEGY').length,
+    });
+    await streamManager.syncDesiredSubscriptions(desired);
   };
 
   return {

@@ -7,16 +7,16 @@ import {
   createTinvestStreamClient,
 } from '@moex/broker-tinvest';
 import type { AppEnv } from '@moex/config';
-import { resolveTinvestToken } from '@moex/config';
+import { parseTelegramTopicId, resolveTelegramChatId, resolveTinvestToken } from '@moex/config';
 import { createLogger } from '@moex/observability';
 import {
-  createFavoritesRepository,
   createFuturesCatalogCacheRepository,
   createLiveRuntimeStateRepository,
   createLiveSignalsRepository,
-  createMemoryFavoritesRepository,
+  createMarketSignalsRepository,
   createMemoryLiveRuntimeStateRepository,
   createMemoryLiveSignalsRepository,
+  createMemoryMarketSignalsStore,
   createMemoryOutboxStore,
   createOutboxRepository,
   createPsqlDbClient,
@@ -25,15 +25,23 @@ import {
   type FuturesCatalogCacheRepository,
   type LiveRuntimeStateRepository,
   type LiveSignalsRepository,
+  type MarketSignalsRepository,
   type OutboxRepository,
 } from '@moex/persistence';
-import { createCloseEmittedHoldEvaluator } from './live/closed-bar-evaluator.js';
+import { createBrokerFavoritesRepository } from './live/broker-favorites.js';
+import { createLevelAlertEngine } from './live/level-alert-engine.js';
+import { createLiveMarketAnalyzer } from './live/live-market-analyzer.js';
 import { createLiveRuntime, type LiveRuntime } from './live/live-runtime.js';
-import { createStubTelegramNotifier } from './live/telegram-notifier.js';
+import {
+  createQueueTelegramNotifier,
+  createStubTelegramNotifier,
+  type TelegramNotifier,
+} from './live/telegram-notifier.js';
 import { type ChartLiveGateway, createChartLiveGateway } from './market/chart-live-gateway.js';
 import type { ChartMarketDataDeps } from './market/fibonacci-pivot-service.js';
 import { createLiveCandleStreamLog } from './market/live-candle-stream-log.js';
 import { createMarketStreamHub, type MarketStreamHub } from './market/market-stream-hub.js';
+import { createTelegramTopicPublisher } from './notifications/telegram-topic-publisher.js';
 
 async function canReachPostgres(db: DbClient): Promise<boolean> {
   try {
@@ -55,29 +63,104 @@ async function tryCreateFuturesCatalogCache(): Promise<FuturesCatalogCacheReposi
   return createFuturesCatalogCacheRepository(db);
 }
 
-async function createLiveStores(): Promise<{
-  favorites: FavoritesRepository;
+async function liveSchemaReady(db: DbClient): Promise<boolean> {
+  try {
+    const exists = await db.queryJsonValue<boolean | null>(
+      `SELECT to_json(to_regclass('public.live_runtime_state') IS NOT NULL)`,
+    );
+    return exists === true;
+  } catch {
+    return false;
+  }
+}
+
+async function marketSignalsSchemaReady(db: DbClient): Promise<boolean> {
+  try {
+    const exists = await db.queryJsonValue<boolean | null>(
+      `SELECT to_json(to_regclass('public.notifications') IS NOT NULL)`,
+    );
+    return exists === true;
+  } catch {
+    return false;
+  }
+}
+
+async function createLivePersistence(): Promise<{
   runtimeState: LiveRuntimeStateRepository;
   signals: LiveSignalsRepository;
   outbox: OutboxRepository;
+  marketSignals: MarketSignalsRepository;
 }> {
   const db = createPsqlDbClient();
-  if (!(await canReachPostgres(db))) {
+  if (!(await canReachPostgres(db)) || !(await liveSchemaReady(db))) {
     if (db.close !== undefined) {
       await db.close();
     }
     return {
-      favorites: createMemoryFavoritesRepository(),
       runtimeState: createMemoryLiveRuntimeStateRepository(),
       signals: createMemoryLiveSignalsRepository(),
       outbox: createMemoryOutboxStore(),
+      marketSignals: createMemoryMarketSignalsStore(),
     };
   }
+  const marketSignals = (await marketSignalsSchemaReady(db))
+    ? createMarketSignalsRepository(db)
+    : createMemoryMarketSignalsStore();
   return {
-    favorites: createFavoritesRepository(db),
     runtimeState: createLiveRuntimeStateRepository(db),
     signals: createLiveSignalsRepository(db),
     outbox: createOutboxRepository(db),
+    marketSignals,
+  };
+}
+
+function createLiveTelegramWiring(input: {
+  env: AppEnv;
+  marketSignals: MarketSignalsRepository;
+  outbox: OutboxRepository;
+  logger: {
+    info: (
+      message: string,
+      fields?: Record<string, string | number | boolean | null | undefined>,
+    ) => void;
+    warn: (
+      message: string,
+      fields?: Record<string, string | number | boolean | null | undefined>,
+    ) => void;
+  };
+}): {
+  telegram: TelegramNotifier;
+  topics: ReturnType<typeof createTelegramTopicPublisher>;
+} {
+  const chatId = resolveTelegramChatId(input.env);
+  const topicAlerts = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_ALERTS);
+  const topicLogs = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_LOGS);
+  const topicErrors = parseTelegramTopicId(input.env.TELEGRAM_TOPIC_ERRORS);
+  const topics = createTelegramTopicPublisher({
+    marketSignals: input.marketSignals,
+    chatId,
+    topicLogs,
+    topicErrors,
+    logger: input.logger,
+  });
+  if (chatId !== null && topicAlerts !== null) {
+    return {
+      telegram: createQueueTelegramNotifier({
+        marketSignals: input.marketSignals,
+        outbox: input.outbox,
+        chatId,
+        topicAlerts,
+        logger: input.logger,
+      }),
+      topics,
+    };
+  }
+  return {
+    telegram: createStubTelegramNotifier({
+      outbox: input.outbox,
+      logger: input.logger,
+    }),
+    topics,
   };
 }
 
@@ -125,7 +208,8 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     ...(futuresCatalogCache !== undefined ? { futuresCatalogCache } : {}),
   };
 
-  const liveStores = await createLiveStores();
+  const livePersistence = await createLivePersistence();
+  const favorites = createBrokerFavoritesRepository(api);
   const liveLogger = createLogger({
     service: '@moex/api/live-runtime',
     level: env.LOG_LEVEL,
@@ -151,23 +235,49 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     const hub = createMarketStreamHub({ client: streamClient, streamLog });
     streamHub = hub;
     chartLive = createChartLiveGateway({ hub, streamLog });
+    const levelAlerts = createLevelAlertEngine();
+    const analyzer = createLiveMarketAnalyzer({
+      marketData,
+      levelAlerts,
+    });
+    const telegramWiring = createLiveTelegramWiring({
+      env,
+      marketSignals: livePersistence.marketSignals,
+      outbox: livePersistence.outbox,
+      logger: liveLogger,
+    });
     liveRuntime = createLiveRuntime({
       hub,
-      favorites: liveStores.favorites,
-      runtimeState: liveStores.runtimeState,
-      signals: liveStores.signals,
-      telegram: createStubTelegramNotifier({
-        outbox: liveStores.outbox,
-        logger: liveLogger,
-      }),
-      // Closed-bar hold monitor until full TSE strategy loop is wired into LiveRuntime.
-      evaluateClosedBar: createCloseEmittedHoldEvaluator(),
+      favorites,
+      runtimeState: livePersistence.runtimeState,
+      signals: livePersistence.signals,
+      telegram: telegramWiring.telegram,
+      topics: telegramWiring.topics,
+      streamLog,
+      evaluateClosedBar: analyzer.evaluateClosedBar,
+      evaluateLiveAlerts: analyzer.evaluateLiveAlerts,
       analysisIntervals: ['5m'],
     });
-  } catch {
+    // API boot never auto-starts Live Mode — only UI / POST /api/v1/live/start.
+    await livePersistence.runtimeState.setDesiredStatus('STOPPED');
+    liveLogger.info('Live Mode ready (stopped until UI start)', {
+      telegramTopicsConfigured:
+        resolveTelegramChatId(env) !== null &&
+        parseTelegramTopicId(env.TELEGRAM_TOPIC_LOGS) !== null,
+    });
+    streamLog.clientEvent('live candle stream logging enabled', {
+      chartLive: true,
+      liveRuntime: true,
+    });
+  } catch (error: unknown) {
     chartLive = null;
     streamHub = null;
     liveRuntime = null;
+    if (env.LIVE_CANDLE_STREAM_LOG) {
+      liveLogger.warn('live candle stream / LiveRuntime init failed', {
+        error: error instanceof Error ? error.message : 'unknown',
+      });
+    }
   }
 
   return {
@@ -175,6 +285,6 @@ export async function composeMarketDataDeps(env: AppEnv): Promise<ComposedMarket
     chartLive,
     streamHub,
     liveRuntime,
-    favorites: liveStores.favorites,
+    favorites,
   };
 }

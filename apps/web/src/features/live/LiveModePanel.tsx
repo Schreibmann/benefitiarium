@@ -31,8 +31,6 @@ export function LiveModePanel() {
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [ticker, setTicker] = useState('');
-  const [instrumentUid, setInstrumentUid] = useState('');
 
   const refresh = useCallback(async () => {
     try {
@@ -53,6 +51,7 @@ export function LiveModePanel() {
     setBusy(true);
     try {
       setSnapshot(await api.startLive());
+      setFavorites(await api.listFavorites());
       setError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to start Live');
@@ -73,33 +72,14 @@ export function LiveModePanel() {
     }
   }
 
-  async function onAddFavorite(): Promise<void> {
-    const nextTicker = ticker.trim();
-    const nextUid = instrumentUid.trim();
-    if (nextTicker.length === 0 || nextUid.length === 0) {
-      setError('Укажите ticker и instrumentUid');
-      return;
-    }
+  async function onSyncFavorites(): Promise<void> {
     setBusy(true);
     try {
-      await api.addFavorite({ instrumentUid: nextUid, ticker: nextTicker });
-      setTicker('');
-      setInstrumentUid('');
-      await refresh();
+      setFavorites(await api.syncFavorites());
+      setSnapshot(await api.getLive());
+      setError(null);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to add favorite');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onRemoveFavorite(uid: string): Promise<void> {
-    setBusy(true);
-    try {
-      await api.removeFavorite(uid);
-      await refresh();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to remove favorite');
+      setError(err instanceof Error ? err.message : 'Failed to sync favorites from T-Invest');
     } finally {
       setBusy(false);
     }
@@ -119,7 +99,8 @@ export function LiveModePanel() {
       />
       <CardBody>
         <p className="live-mode-panel__hint">
-          Независимый 24/7 анализ избранного. Не путать с realtime-подпиской графика.
+          Live берёт только фьючерсы из избранного T-Invest (GetFavorites). Меняйте список в
+          приложении брокера, затем синхронизируйте. Live Mode ≠ realtime графика.
         </p>
         <div className="live-mode-panel__actions">
           <Button type="button" size="sm" disabled={busy} onClick={() => void onStart()}>
@@ -139,6 +120,15 @@ export function LiveModePanel() {
             size="sm"
             variant="ghost"
             disabled={busy}
+            onClick={() => void onSyncFavorites()}
+          >
+            Sync favorites
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            disabled={busy}
             onClick={() => void refresh()}
           >
             Refresh
@@ -147,7 +137,7 @@ export function LiveModePanel() {
         {snapshot ? (
           <dl className="live-mode-panel__meta">
             <div>
-              <dt>Favorites</dt>
+              <dt>Futures favorites</dt>
               <dd>{snapshot.favoriteCount}</dd>
             </div>
             <div>
@@ -165,56 +155,26 @@ export function LiveModePanel() {
         ) : null}
         {error ? <p className="live-mode-panel__error">{error}</p> : null}
 
-        <h3 className="live-mode-panel__subheading">Избранное / Favorites</h3>
-        <div className="live-mode-panel__form">
-          <label>
-            Ticker
-            <input
-              value={ticker}
-              onChange={(event) => setTicker(event.target.value)}
-              placeholder="SBER"
-            />
-          </label>
-          <label>
-            Instrument UID
-            <input
-              value={instrumentUid}
-              onChange={(event) => setInstrumentUid(event.target.value)}
-              placeholder="uuid…"
-            />
-          </label>
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => void onAddFavorite()}
-          >
-            Add
-          </Button>
-        </div>
-        {favorites.length === 0 ? (
-          <p className="live-mode-panel__empty">Список избранного пуст.</p>
-        ) : (
-          <ul className="live-mode-panel__list">
-            {favorites.map((item) => (
-              <li key={item.instrumentUid}>
-                <span>
-                  {item.ticker} · {item.instrumentUid}
-                </span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => void onRemoveFavorite(item.instrumentUid)}
-                >
-                  Remove
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <details className="live-mode-panel__favorites">
+          <summary className="live-mode-panel__favorites-summary">
+            Избранное T-Invest (фьючерсы)
+            <span className="live-mode-panel__favorites-count">{favorites.length}</span>
+          </summary>
+          {favorites.length === 0 ? (
+            <p className="live-mode-panel__empty">
+              Нет фьючерсов в избранном брокера. Добавьте фьючерсы в приложении T-Invest, затем Sync
+              favorites.
+            </p>
+          ) : (
+            <ul className="live-mode-panel__list">
+              {favorites.map((item) => (
+                <li key={item.instrumentUid}>
+                  <strong>{item.ticker}</strong>
+                </li>
+              ))}
+            </ul>
+          )}
+        </details>
       </CardBody>
     </Card>
   );

@@ -5,7 +5,10 @@ export type LiveCandleStreamLog = {
   enabled: boolean;
   candle: (candle: CanonicalStreamCandle, fields?: { leaseCount?: number }) => void;
   subscriptionAcks: (acks: readonly StreamSubscriptionAck[]) => void;
-  clientEvent: (message: string, fields: Record<string, string | number | boolean | null>) => void;
+  clientEvent: (
+    message: string,
+    fields?: Record<string, string | number | boolean | null | undefined>,
+  ) => void;
 };
 
 /**
@@ -56,7 +59,7 @@ export function createLiveCandleStreamLog(input: {
         });
       }
     },
-    clientEvent: (message, fields) => {
+    clientEvent: (message, fields = {}) => {
       input.logger.info(message, fields);
     },
   };

@@ -68,6 +68,30 @@ export const envSchema = z.object({
    * `auto` uses Postgres when reachable, otherwise in-memory.
    */
   SANDBOX_ADMIN_STORE: z.enum(['auto', 'memory', 'postgres']).default('auto'),
+  /** Comma-separated candle intervals for worker-signals (e.g. 5m,1h). */
+  SIGNALS_TIMEFRAMES: z.string().default('5m,1h'),
+  /** close = waitingClose stream; intrabar = live updates. */
+  SIGNALS_EVAL_MODE: z.enum(['close', 'intrabar']).default('close'),
+  /** Comma-separated trigger ids enabled in worker-signals. */
+  SIGNALS_TRIGGERS: z.string().default('fib_pivot_approach,fib_pivot_cross'),
+  SIGNALS_APPROACH_PCT_5M: z.string().default('0.15'),
+  SIGNALS_APPROACH_PCT_1H: z.string().default('0.4'),
+  SIGNALS_FAVORITES_POLL_MS: z.coerce.number().int().positive().default(300_000),
+  /** Telegram Bot API token for worker-notifier. Never log. */
+  TELEGRAM_BOT_TOKEN: z.string().default(''),
+  /** Telegram forum/supergroup chat id (e.g. -100…). Preferred over TELEGRAM_CHANNEL_ID. */
+  TELEGRAM_CHAT_ID: z.string().default(''),
+  /**
+   * @deprecated Prefer TELEGRAM_CHAT_ID. Kept for older local envs / worker-signals.
+   */
+  TELEGRAM_CHANNEL_ID: z.string().default(''),
+  /** Forum topic thread id for signal alerts. */
+  TELEGRAM_TOPIC_ALERTS: z.string().default(''),
+  /** Forum topic thread id for ops logs. */
+  TELEGRAM_TOPIC_LOGS: z.string().default(''),
+  /** Forum topic thread id for platform error logs. */
+  TELEGRAM_TOPIC_ERRORS: z.string().default(''),
+  NOTIFIER_POLL_MS: z.coerce.number().int().positive().default(2000),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
@@ -111,4 +135,44 @@ export function resolveTinvestSandboxAccountId(env: AppEnv): string | null {
   }
   const legacy = env.TINVEST_ACCOUNT_ID.trim();
   return legacy.length > 0 ? legacy : null;
+}
+
+/**
+ * Prefer TELEGRAM_CHAT_ID; fall back to legacy TELEGRAM_CHANNEL_ID.
+ * Bare positive digits are normalized to `-100…` (Telegram forum/supergroup form).
+ */
+export function resolveTelegramChatId(env: AppEnv): string | null {
+  const chat = env.TELEGRAM_CHAT_ID.trim();
+  if (chat.length > 0) {
+    return normalizeTelegramForumChatId(chat);
+  }
+  const legacy = env.TELEGRAM_CHANNEL_ID.trim();
+  return legacy.length > 0 ? normalizeTelegramForumChatId(legacy) : null;
+}
+
+/** Forum/supergroup chat ids are `-100…`; accept bare digits from BotFather/UI copies. */
+export function normalizeTelegramForumChatId(raw: string): string {
+  const trimmed = raw.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return `-100${trimmed}`;
+  }
+  return trimmed;
+}
+
+/**
+ * Parse a forum topic thread id from env. Empty → null; non-integer / non-positive → null.
+ */
+export function parseTelegramTopicId(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+  if (!/^\d+$/.test(trimmed)) {
+    return null;
+  }
+  const value = Number(trimmed);
+  if (!Number.isInteger(value) || value <= 0) {
+    return null;
+  }
+  return value;
 }

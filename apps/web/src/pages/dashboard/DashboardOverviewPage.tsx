@@ -107,8 +107,8 @@ export function DashboardOverviewPage() {
           <CardHeader title="Favorites / Избранное" />
           <CardBody>
             <EmptyState
-              title="Управляйте избранным в Live Mode"
-              description="Избранное — вселенная для независимого Live-анализа. Добавление выше в панели Live Mode."
+              title="Избранное из T-Invest"
+              description="Список подтягивается из брокера (GetFavorites). Меняйте его в приложении T-Invest, затем Sync в панели Live Mode."
               action={
                 <Button href="/app/analytics" variant="secondary" size="sm">
                   Открыть график

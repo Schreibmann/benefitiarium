@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Internal JSON-friendly shapes used at the SDK boundary.
  * Adapters normalize SDK Decimal/Date into these before mapping to domain/contracts.
  * Never export these types from the public package surface as SDK substitutes.
@@ -109,6 +109,19 @@ export type TinvestIndicativeRaw = {
   exchange: string | null;
   buyAvailableFlag: boolean;
   sellAvailableFlag: boolean;
+};
+
+export type TinvestFavoriteInstrumentRaw = {
+  uid: string | null;
+  figi: string | null;
+  ticker: string;
+  classCode: string;
+  isin: string | null;
+  name: string | null;
+  instrumentType: string | null;
+  instrumentKind: string | null;
+  otcFlag: boolean;
+  apiTradeAvailableFlag: boolean;
 };
 
 export type TinvestCandleRaw = {
