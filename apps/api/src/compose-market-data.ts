@@ -123,6 +123,10 @@ function createLiveTelegramWiring(input: {
       message: string,
       fields?: Record<string, string | number | boolean | null | undefined>,
     ) => void;
+    warn: (
+      message: string,
+      fields?: Record<string, string | number | boolean | null | undefined>,
+    ) => void;
   };
 }): {
   telegram: TelegramNotifier;
@@ -137,6 +141,7 @@ function createLiveTelegramWiring(input: {
     chatId,
     topicLogs,
     topicErrors,
+    logger: input.logger,
   });
   if (chatId !== null && topicAlerts !== null) {
     return {

@@ -1,5 +1,6 @@
+import type { MarketSignalsRepository } from '@moex/persistence';
 import { createMemoryMarketSignalsStore } from '@moex/persistence';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createTelegramTopicPublisher } from './telegram-topic-publisher.js';
 
 describe('createTelegramTopicPublisher', () => {
@@ -65,5 +66,28 @@ describe('createTelegramTopicPublisher', () => {
     expect(text).toContain('&lt;b&gt;');
     expect(text).toContain('&amp;');
     expect(text).toContain('&lt;boom&gt;');
+  });
+
+  it('swallows enqueue failures so Live callers do not crash', async () => {
+    const warn = vi.fn();
+    const marketSignals: MarketSignalsRepository = {
+      ...createMemoryMarketSignalsStore(),
+      enqueueLogNotification: async () => {
+        throw new Error('boom');
+      },
+    };
+    const publisher = createTelegramTopicPublisher({
+      marketSignals,
+      chatId: '-1001',
+      topicLogs: 1,
+      topicErrors: 2,
+      createId: () => '00000000-0000-4000-8000-000000000088',
+      logger: { warn },
+    });
+    await expect(publisher.publishLog('x')).resolves.toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(
+      'telegram topic enqueue failed',
+      expect.objectContaining({ prefix: 'LOG', message: 'boom' }),
+    );
   });
 });

@@ -333,12 +333,15 @@ export function createMarketSignalsRepository(db: DbExecutor): MarketSignalsRepo
       const createdAt = parseIsoDateTime(new Date().toISOString());
       const row = await db.queryJsonValue(
         `
-        INSERT INTO notifications (
-          id, channel, target, signal_id, thread_id, status, attempts, next_attempt_at, text, created_at
-        ) VALUES (
-          $1::uuid, $2, $3, NULL, $4, 'pending', 0, $5::timestamptz, $6, $5::timestamptz
+        WITH inserted AS (
+          INSERT INTO notifications (
+            id, channel, target, signal_id, thread_id, status, attempts, next_attempt_at, text, created_at
+          ) VALUES (
+            $1::uuid, $2, $3, NULL, $4, 'pending', 0, $5::timestamptz, $6, $5::timestamptz
+          )
+          RETURNING ${NOTIFICATION_JSON}
         )
-        RETURNING ${NOTIFICATION_JSON}
+        SELECT row_to_json(inserted) FROM inserted
         `.trim(),
         [
           notification.id,

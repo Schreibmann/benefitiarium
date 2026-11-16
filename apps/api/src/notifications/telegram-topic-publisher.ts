@@ -13,12 +13,20 @@ export type TelegramTopicPublisher = {
   ) => Promise<void>;
 };
 
+export type TelegramTopicPublisherLogger = {
+  warn: (
+    message: string,
+    fields?: Record<string, string | number | boolean | null | undefined>,
+  ) => void;
+};
+
 export type TelegramTopicPublisherOptions = {
   marketSignals: MarketSignalsRepository;
   chatId: string | null;
   topicLogs: number | null;
   topicErrors: number | null;
   createId?: () => string;
+  logger?: TelegramTopicPublisherLogger;
 };
 
 function escapeHtml(value: string): string {
@@ -64,13 +72,20 @@ export function createTelegramTopicPublisher(
       return;
     }
     const text = `<b>${escapeHtml(prefix)}</b> ${escapeHtml(message)}${formatFields(fields)}`;
-    await options.marketSignals.enqueueLogNotification({
-      id: parseUuid(createId()),
-      channel: 'telegram',
-      target: chatId,
-      threadId,
-      text,
-    });
+    try {
+      await options.marketSignals.enqueueLogNotification({
+        id: parseUuid(createId()),
+        channel: 'telegram',
+        target: chatId,
+        threadId,
+        text,
+      });
+    } catch (error: unknown) {
+      options.logger?.warn('telegram topic enqueue failed', {
+        prefix,
+        message: error instanceof Error ? error.message : 'unknown',
+      });
+    }
   };
 
   return {

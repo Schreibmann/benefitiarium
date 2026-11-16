@@ -240,4 +240,22 @@ describe('BL-107 market signals (Postgres)', () => {
     });
     expect(sent.status).toBe('sent');
   });
+
+  it('enqueues log-only notification as JSON (multiline text)', async () => {
+    if (!available) {
+      return;
+    }
+    const repo = createMarketSignalsRepository(db);
+    const row = await repo.enqueueLogNotification({
+      id: NOTIF_ID_2,
+      channel: 'telegram',
+      target: '-1001',
+      threadId: 4,
+      text: '<b>LOG</b> live runtime started\nstatus=<code>RUNNING</code>',
+    });
+    expect(row.signalId).toBeNull();
+    expect(row.threadId).toBe(4);
+    expect(row.text).toContain('live runtime started');
+    expect(row.status).toBe('pending');
+  });
 });
