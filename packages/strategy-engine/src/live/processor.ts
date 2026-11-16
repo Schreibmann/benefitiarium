@@ -2,9 +2,18 @@ import {
   TRADING_SIGNAL_ENGINE_ALGORITHM_VERSION,
   type TradingSignalEngineConfig,
 } from '../config.js';
+import type { PartialExitPolicy } from '../paper/exits.js';
+import { managePaperPositions } from '../paper/manage.js';
+import type { OpenPaperPositionInput } from '../paper/open-position.js';
+import type { PositionLifecycleEvent, TradeEvaluation, TradingPosition } from '../paper/types.js';
 import type { SignalScore } from '../scoring/types.js';
 import type { TradingSetup } from '../strategies/types.js';
-import type { EngineMarketEvent, QuarantinedEvent, ValidationIssue } from '../types.js';
+import type {
+  EngineInstrumentSpec,
+  EngineMarketEvent,
+  QuarantinedEvent,
+  ValidationIssue,
+} from '../types.js';
 import { validateOhlcv } from '../validate.js';
 import {
   type SignalLifecycleEvent,
@@ -21,6 +30,19 @@ import {
   type PartitionAnalysisState,
 } from './store.js';
 
+export type PaperTradingDecision = {
+  atr: string;
+  feePerUnit: string;
+  instrument: EngineInstrumentSpec;
+  entriesToOpen?: readonly OpenPaperPositionInput[];
+  policy?: Partial<PartialExitPolicy>;
+  oppositeConfirmedSignal?: boolean;
+  structureInvalidated?: boolean;
+  profileAcceptanceReversed?: boolean;
+  sessionBlocksHold?: boolean;
+  dailyRiskBreached?: boolean;
+};
+
 export type LiveEvaluationDecision = {
   setups: readonly TradingSetup[];
   /** Lifecycle rows to apply for this event (candidate or confirmed). */
@@ -32,6 +54,8 @@ export type LiveEvaluationDecision = {
     reasonCodes?: readonly string[];
     triggerCandleTimestamp: number;
   }[];
+  /** When set on confirmed bars, runs paper position management. */
+  paperTrading?: PaperTradingDecision;
 };
 
 export type LiveProcessorHooks = {
@@ -54,6 +78,8 @@ export type ProcessMarketEventResult =
       partitionKey: PartitionKey;
       mode: 'live' | 'confirmed' | 'correction';
       lifecycleEvents: SignalLifecycleEvent[];
+      positionEvents: PositionLifecycleEvent[];
+      evaluations: TradeEvaluation[];
       lateEvent: boolean;
       replayFrom: number | null;
     };
@@ -120,7 +146,7 @@ function applySetups(state: PartitionAnalysisState, setups: readonly TradingSetu
   }
 }
 
-function toOutboxRecords(
+function toSignalOutboxRecords(
   events: readonly SignalLifecycleEvent[],
   createdAt: number,
 ): EngineOutboxRecord[] {
@@ -130,6 +156,26 @@ function toOutboxRecords(
     aggregateId: event.signalId,
     eventType: event.eventType,
     payload: event,
+    createdAt,
+    publishedAt: null,
+  }));
+}
+
+function toPositionOutboxRecords(
+  events: readonly PositionLifecycleEvent[],
+  createdAt: number,
+): EngineOutboxRecord[] {
+  return events.map((event) => ({
+    id: `${event.id}:${event.eventType}`,
+    aggregateType: 'paper_position' as const,
+    aggregateId: event.positionId,
+    eventType: event.eventType,
+    payload: {
+      positionId: event.positionId,
+      signalId: event.signalId,
+      status: event.status,
+      eventType: event.eventType,
+    },
     createdAt,
     publishedAt: null,
   }));
@@ -211,9 +257,15 @@ function revisionIssues(
   return [];
 }
 
+function openPositionsFromState(state: PartitionAnalysisState): TradingPosition[] {
+  return [...state.positionsById.values()].filter(
+    (position) => position.status === 'OPEN' || position.status === 'PARTIALLY_CLOSED',
+  );
+}
+
 /**
  * Live/confirmed market-event processor with per-partition locking,
- * processed-event idempotency, and transactional outbox commits.
+ * processed-event idempotency, paper position management, and transactional outbox commits.
  */
 export function createLiveSignalProcessor(
   input: CreateLiveSignalProcessorInput,
@@ -254,6 +306,8 @@ export function createLiveSignalProcessor(
           await input.store.commit({
             state,
             signals: [],
+            positions: [],
+            evaluations: [],
             outbox: [],
             processed: {
               eventId: event.eventId,
@@ -276,6 +330,8 @@ export function createLiveSignalProcessor(
           await input.store.commit({
             state,
             signals: [],
+            positions: [],
+            evaluations: [],
             outbox: [
               {
                 id: `${event.eventId}:correction`,
@@ -308,6 +364,8 @@ export function createLiveSignalProcessor(
             partitionKey: key,
             mode: 'correction',
             lifecycleEvents: [],
+            positionEvents: [],
+            evaluations: [],
             lateEvent,
             replayFrom: event.candle.timestamp,
           };
@@ -324,13 +382,79 @@ export function createLiveSignalProcessor(
 
         applySetups(state, decision.setups);
 
-        const { signals, lifecycleEvents } = applyLifecycleDecisions({
+        const lifecycle = applyLifecycleDecisions({
           decision,
           state,
           event,
           algorithmVersion,
           configVersion,
         });
+        const signals: TradingSignalRecord[] = [...lifecycle.signals];
+        const lifecycleEvents = lifecycle.lifecycleEvents;
+
+        let positionEvents: PositionLifecycleEvent[] = [];
+        let evaluations: TradeEvaluation[] = [];
+        let positions: TradingPosition[] = [];
+
+        if (!isLive && decision.paperTrading !== undefined) {
+          const paper = decision.paperTrading;
+          const managed = managePaperPositions({
+            openPositions: openPositionsFromState(state),
+            candle: event.candle,
+            atr: paper.atr,
+            instrument: paper.instrument,
+            feePerUnit: paper.feePerUnit,
+            timestamp: event.eventTimestamp,
+            ...(paper.entriesToOpen === undefined ? {} : { entriesToOpen: paper.entriesToOpen }),
+            ...(paper.policy === undefined ? {} : { policy: paper.policy }),
+            ...(paper.oppositeConfirmedSignal === undefined
+              ? {}
+              : { oppositeConfirmedSignal: paper.oppositeConfirmedSignal }),
+            ...(paper.structureInvalidated === undefined
+              ? {}
+              : { structureInvalidated: paper.structureInvalidated }),
+            ...(paper.profileAcceptanceReversed === undefined
+              ? {}
+              : { profileAcceptanceReversed: paper.profileAcceptanceReversed }),
+            ...(paper.sessionBlocksHold === undefined
+              ? {}
+              : { sessionBlocksHold: paper.sessionBlocksHold }),
+            ...(paper.dailyRiskBreached === undefined
+              ? {}
+              : { dailyRiskBreached: paper.dailyRiskBreached }),
+          });
+
+          for (const position of managed.positions) {
+            state.positionsById.set(position.id, position);
+          }
+          for (const evaluation of managed.evaluations) {
+            state.evaluationsByPositionId.set(evaluation.positionId, evaluation);
+          }
+          positions = managed.positions;
+          positionEvents = managed.events;
+          evaluations = managed.evaluations;
+
+          for (const opened of positionEvents.filter(
+            (item) => item.eventType === 'POSITION_OPENED',
+          )) {
+            for (const [dedup, signal] of state.signalsByDedupKey) {
+              if (signal.signalId === opened.signalId && signal.status === 'CONFIRMED') {
+                const executed: TradingSignalRecord = {
+                  ...signal,
+                  status: 'EXECUTED',
+                  updatedAt: event.eventTimestamp,
+                };
+                state.signalsByDedupKey.set(dedup, executed);
+                const index = signals.findIndex((row) => row.signalId === executed.signalId);
+                if (index >= 0) {
+                  signals[index] = executed;
+                } else {
+                  signals.push(executed);
+                }
+              }
+            }
+          }
+        }
 
         if (lateEvent) {
           state.pendingReplayFrom =
@@ -342,7 +466,12 @@ export function createLiveSignalProcessor(
         await input.store.commit({
           state,
           signals,
-          outbox: toOutboxRecords(lifecycleEvents, event.eventTimestamp),
+          positions,
+          evaluations,
+          outbox: [
+            ...toSignalOutboxRecords(lifecycleEvents, event.eventTimestamp),
+            ...toPositionOutboxRecords(positionEvents, event.eventTimestamp),
+          ],
           processed: {
             eventId: event.eventId,
             partitionKey: key,
@@ -360,6 +489,8 @@ export function createLiveSignalProcessor(
           partitionKey: key,
           mode: isLive ? 'live' : 'confirmed',
           lifecycleEvents,
+          positionEvents,
+          evaluations,
           lateEvent,
           replayFrom: state.pendingReplayFrom,
         };

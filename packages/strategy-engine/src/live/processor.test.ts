@@ -1,7 +1,7 @@
 import { parseDecimalString, parseInstrumentId } from '@moex/domain';
 import { describe, expect, it } from 'vitest';
 import type { TradingSetup } from '../strategies/types.js';
-import type { EngineCandle, EngineMarketEvent } from '../types.js';
+import type { EngineCandle, EngineInstrumentSpec, EngineMarketEvent } from '../types.js';
 import { createLiveSignalProcessor, type LiveProcessorHooks } from './processor.js';
 import { createMemoryLiveStore } from './store.js';
 
@@ -256,6 +256,121 @@ describe('createLiveSignalProcessor', () => {
     }
     expect(store.snapshotOutbox().some((row) => row.eventType === 'CANDLE_CORRECTION_REPLAY')).toBe(
       true,
+    );
+  });
+
+  it('opens and closes a paper position on confirmed bars when paperTrading is provided', async () => {
+    const store = createMemoryLiveStore();
+    const instrument: EngineInstrumentSpec = {
+      instrumentId,
+      exchange: 'MOEX',
+      tickSize: parseDecimalString('0.01'),
+      lotSize: 1,
+      pointValue: parseDecimalString('1'),
+      minQuantity: 1,
+      quantityStep: 1,
+      quoteCurrency: 'RUB',
+      priceCurrency: 'RUB',
+      tradingCalendarId: null,
+      sessionProfile: 'SESSION_BASED',
+    };
+
+    const processor = createLiveSignalProcessor({
+      store,
+      hooks: {
+        evaluateLive: hooks().evaluateLive,
+        evaluateConfirmed: ({ event: marketEvent, state }) => {
+          const open = [...state.positionsById.values()].some(
+            (position) => position.status === 'OPEN' || position.status === 'PARTIALLY_CLOSED',
+          );
+          const setup = triggeredSetup(marketEvent.eventTimestamp);
+          if (open) {
+            return {
+              setups: [],
+              signals: [],
+              paperTrading: {
+                atr: '2',
+                feePerUnit: '0',
+                instrument,
+              },
+            };
+          }
+          return {
+            setups: [setup],
+            signals: [
+              {
+                setupId: setup.id,
+                signalId: 'sig-1',
+                score: null,
+                confirm: true,
+                triggerCandleTimestamp: 1_000,
+              },
+            ],
+            paperTrading: {
+              atr: '2',
+              feePerUnit: '0',
+              instrument,
+              entriesToOpen: [
+                {
+                  positionId: 'pos-1',
+                  signalId: 'sig-1',
+                  instrumentId,
+                  timeframe: setup.setupTimeframe,
+                  strategy: setup.strategy,
+                  direction: setup.direction,
+                  timestamp: marketEvent.eventTimestamp,
+                  referencePrice: '100',
+                  tickSize: '0.01',
+                  stop: '95',
+                  targets: ['110'],
+                  quantity: 2,
+                  pointValue: '1',
+                  feePerUnit: '0',
+                  algorithmVersion: '1.0.0',
+                  configVersion: 'cfg-1',
+                  fillConfig: { halfSpreadTicks: 0, slippageTicks: 0 },
+                },
+              ],
+            },
+          };
+        },
+      },
+      config: { configVersion: 'cfg-1' },
+    });
+
+    const opened = await processor.processMarketEvent(
+      event({
+        eventId: 'close-open',
+        kind: 'CANDLE_CLOSED',
+        candle: candle({ timestamp: 1_000, revision: 1, status: 'CLOSED' }),
+      }),
+    );
+    expect(opened.status).toBe('processed');
+    if (opened.status === 'processed') {
+      expect(opened.positionEvents.some((item) => item.eventType === 'POSITION_OPENED')).toBe(true);
+    }
+
+    const closed = await processor.processMarketEvent(
+      event({
+        eventId: 'close-stop',
+        kind: 'CANDLE_CLOSED',
+        candle: candle({
+          timestamp: 2_000,
+          revision: 1,
+          status: 'CLOSED',
+          low: parseDecimalString('94'),
+          high: parseDecimalString('100'),
+          close: parseDecimalString('95'),
+        }),
+      }),
+    );
+    expect(closed.status).toBe('processed');
+    if (closed.status === 'processed') {
+      expect(closed.positionEvents.some((item) => item.eventType === 'POSITION_CLOSED')).toBe(true);
+      expect(closed.evaluations).toHaveLength(1);
+    }
+    expect(await store.listPositions(`${instrumentId}|5m`)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ status: 'CLOSED' })]),
     );
   });
 

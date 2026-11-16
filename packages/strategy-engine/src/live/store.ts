@@ -1,3 +1,4 @@
+import type { TradeEvaluation, TradingPosition } from '../paper/types.js';
 import type { TradingSetup } from '../strategies/types.js';
 import type { EngineCandle, EngineMarketEvent } from '../types.js';
 import type { SignalLifecycleEvent, TradingSignalRecord } from './lifecycle.js';
@@ -22,6 +23,8 @@ export type PartitionAnalysisState = {
   setupsById: Map<string, TradingSetup>;
   /** Active/open-lifecycle signals keyed by deduplicationKey. */
   signalsByDedupKey: Map<string, TradingSignalRecord>;
+  positionsById: Map<string, TradingPosition>;
+  evaluationsByPositionId: Map<string, TradeEvaluation>;
   pendingReplayFrom: number | null;
   algorithmVersion: string;
   configVersion: string;
@@ -29,7 +32,7 @@ export type PartitionAnalysisState = {
 
 export type EngineOutboxRecord = {
   id: string;
-  aggregateType: 'trading_signal' | 'market_event' | 'partition_state';
+  aggregateType: 'trading_signal' | 'market_event' | 'partition_state' | 'paper_position';
   aggregateId: string;
   eventType: string;
   payload: SignalLifecycleEvent | Readonly<Record<string, string | number | boolean | null>>;
@@ -40,6 +43,8 @@ export type EngineOutboxRecord = {
 export type PartitionTransactionWrites = {
   state: PartitionAnalysisState;
   signals: readonly TradingSignalRecord[];
+  positions: readonly TradingPosition[];
+  evaluations: readonly TradeEvaluation[];
   outbox: readonly EngineOutboxRecord[];
   processed: ProcessedMarketEventRecord;
 };
@@ -48,13 +53,30 @@ export type LivePersistencePorts = {
   isProcessed: (partitionKey: PartitionKey, eventId: string) => Promise<boolean>;
   loadState: (partitionKey: PartitionKey) => Promise<PartitionAnalysisState | null>;
   /**
-   * Atomically persist partition state, signal upserts, outbox rows, and
+   * Atomically persist partition state, signal/position upserts, outbox rows, and
    * processed-event mark. On failure nothing from the batch is visible.
    */
   commit: (writes: PartitionTransactionWrites) => Promise<void>;
   listOutbox: (limit?: number) => Promise<EngineOutboxRecord[]>;
   listSignals: (partitionKey: PartitionKey) => Promise<TradingSignalRecord[]>;
+  listPositions: (partitionKey: PartitionKey) => Promise<TradingPosition[]>;
 };
+
+function clonePosition(position: TradingPosition): TradingPosition {
+  return {
+    ...position,
+    targets: [...position.targets],
+    reachedTargets: [...position.reachedTargets],
+  };
+}
+
+function cloneEvaluation(evaluation: TradeEvaluation): TradeEvaluation {
+  return {
+    ...evaluation,
+    reachedTargetIds: [...evaluation.reachedTargetIds],
+    qualityFlags: [...evaluation.qualityFlags],
+  };
+}
 
 export function createEmptyPartitionState(input: {
   partitionKey: PartitionKey;
@@ -69,6 +91,8 @@ export function createEmptyPartitionState(input: {
     candlesByTimestamp: new Map(),
     setupsById: new Map(),
     signalsByDedupKey: new Map(),
+    positionsById: new Map(),
+    evaluationsByPositionId: new Map(),
     pendingReplayFrom: null,
     algorithmVersion: input.algorithmVersion,
     configVersion: input.configVersion,
@@ -84,6 +108,15 @@ export function clonePartitionState(state: PartitionAnalysisState): PartitionAna
     candlesByTimestamp: new Map(state.candlesByTimestamp),
     setupsById: new Map(state.setupsById),
     signalsByDedupKey: new Map(state.signalsByDedupKey),
+    positionsById: new Map(
+      [...state.positionsById.entries()].map(([key, value]) => [key, clonePosition(value)]),
+    ),
+    evaluationsByPositionId: new Map(
+      [...state.evaluationsByPositionId.entries()].map(([key, value]) => [
+        key,
+        cloneEvaluation(value),
+      ]),
+    ),
     pendingReplayFrom: state.pendingReplayFrom,
     algorithmVersion: state.algorithmVersion,
     configVersion: state.configVersion,
@@ -99,12 +132,14 @@ export type MemoryLiveStore = LivePersistencePorts & {
 
 /**
  * In-memory transactional store for unit tests and local dry-runs.
- * Models same-transaction state + signals + outbox + processedEvents.
+ * Models same-transaction state + signals + positions + outbox + processedEvents.
  */
 export function createMemoryLiveStore(): MemoryLiveStore {
   const processed = new Map<string, ProcessedMarketEventRecord>();
   const states = new Map<PartitionKey, PartitionAnalysisState>();
   const signals = new Map<string, TradingSignalRecord>();
+  const positions = new Map<string, TradingPosition>();
+  const evaluations = new Map<string, TradeEvaluation>();
   const outbox = new Map<string, EngineOutboxRecord>();
   let failNextCommit = false;
 
@@ -140,6 +175,11 @@ export function createMemoryLiveStore(): MemoryLiveStore {
         .filter((signal) => `${signal.instrumentId}|${signal.timeframe}` === partition)
         .map((signal) => ({ ...signal, reasonCodes: [...signal.reasonCodes] })),
 
+    listPositions: async (partition) =>
+      [...positions.values()]
+        .filter((position) => `${position.instrumentId}|${position.timeframe}` === partition)
+        .map((position) => clonePosition(position)),
+
     commit: async (writes) => {
       const processedBefore = new Map(processed);
       const statesBefore = new Map(
@@ -150,6 +190,12 @@ export function createMemoryLiveStore(): MemoryLiveStore {
           key,
           { ...value, reasonCodes: [...value.reasonCodes] },
         ]),
+      );
+      const positionsBefore = new Map(
+        [...positions.entries()].map(([key, value]) => [key, clonePosition(value)]),
+      );
+      const evaluationsBefore = new Map(
+        [...evaluations.entries()].map(([key, value]) => [key, cloneEvaluation(value)]),
       );
       const outboxBefore = new Map(
         [...outbox.entries()].map(([key, value]) => [
@@ -166,6 +212,14 @@ export function createMemoryLiveStore(): MemoryLiveStore {
             ...signal,
             reasonCodes: [...signal.reasonCodes],
           });
+        }
+
+        for (const position of writes.positions) {
+          positions.set(position.id, clonePosition(position));
+        }
+
+        for (const evaluation of writes.evaluations) {
+          evaluations.set(evaluation.positionId, cloneEvaluation(evaluation));
         }
 
         for (const row of writes.outbox) {
@@ -197,6 +251,14 @@ export function createMemoryLiveStore(): MemoryLiveStore {
         signals.clear();
         for (const [key, value] of signalsBefore) {
           signals.set(key, value);
+        }
+        positions.clear();
+        for (const [key, value] of positionsBefore) {
+          positions.set(key, value);
+        }
+        evaluations.clear();
+        for (const [key, value] of evaluationsBefore) {
+          evaluations.set(key, value);
         }
         outbox.clear();
         for (const [key, value] of outboxBefore) {

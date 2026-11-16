@@ -125,6 +125,7 @@ export {
   type LiveEvaluationDecision,
   type LiveProcessorHooks,
   type LiveSignalProcessor,
+  type PaperTradingDecision,
   type ProcessMarketEventResult,
 } from './live/processor.js';
 export {
@@ -154,6 +155,43 @@ export {
   type NormalizeMarketEventResult,
   normalizeMarketEvent,
 } from './normalizer.js';
+export {
+  buildTradeEvaluation,
+  markUnrealizedPnl,
+  updateExcursions,
+} from './paper/evaluation.js';
+export {
+  applyExitActions,
+  type BarExitAction,
+  DEFAULT_PARTIAL_EXIT_POLICY,
+  type EvaluateBarExitsInput,
+  evaluateBarExits,
+  type PartialExitPolicy,
+} from './paper/exits.js';
+export {
+  DEFAULT_PAPER_FILL_CONFIG,
+  type PaperFillConfig,
+  type PaperFillResult,
+  simulatePaperFill,
+} from './paper/fill-simulator.js';
+export {
+  type ManagePaperPositionsInput,
+  type ManagePaperPositionsResult,
+  managePaperPositions,
+} from './paper/manage.js';
+export {
+  type OpenPaperPositionInput,
+  type OpenPaperPositionResult,
+  openPaperPosition,
+} from './paper/open-position.js';
+export type {
+  ExitReason,
+  PositionLifecycleEvent,
+  PositionLifecycleEventType,
+  PositionStatus,
+  TradeEvaluation,
+  TradingPosition,
+} from './paper/types.js';
 export { isReasonCode, REASON_CODES, type ReasonCode } from './reason-codes.js';
 export {
   buildEntryReferences,
