@@ -26,6 +26,33 @@ function statusTone(
   return 'neutral';
 }
 
+function isLiveOn(snapshot: LiveRuntimeSnapshot | null): boolean {
+  if (snapshot === null) {
+    return false;
+  }
+  return (
+    snapshot.desiredStatus === 'RUNNING' ||
+    snapshot.status === 'RUNNING' ||
+    snapshot.status === 'STARTING' ||
+    snapshot.status === 'DEGRADED'
+  );
+}
+
+function formatDayChangePct(value: number): string {
+  const sign = value > 0 ? '+' : '';
+  return `${sign}${value.toFixed(2)}%`;
+}
+
+function dayChangeClassName(value: number): string {
+  if (value > 0) {
+    return 'live-mode-panel__day-change live-mode-panel__day-change--up';
+  }
+  if (value < 0) {
+    return 'live-mode-panel__day-change live-mode-panel__day-change--down';
+  }
+  return 'live-mode-panel__day-change';
+}
+
 export function LiveModePanel() {
   const [snapshot, setSnapshot] = useState<LiveRuntimeSnapshot | null>(null);
   const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -51,7 +78,7 @@ export function LiveModePanel() {
     setBusy(true);
     try {
       setSnapshot(await api.startLive());
-      setFavorites(await api.listFavorites());
+      setFavorites(await api.syncFavorites());
       setError(null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to start Live');
@@ -72,18 +99,8 @@ export function LiveModePanel() {
     }
   }
 
-  async function onSyncFavorites(): Promise<void> {
-    setBusy(true);
-    try {
-      setFavorites(await api.syncFavorites());
-      setSnapshot(await api.getLive());
-      setError(null);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to sync favorites from T-Invest');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const liveOn = isLiveOn(snapshot);
+  const transitioning = snapshot?.status === 'STARTING' || snapshot?.status === 'STOPPING';
 
   return (
     <Card className="live-mode-panel">
@@ -100,38 +117,20 @@ export function LiveModePanel() {
       <CardBody>
         <p className="live-mode-panel__hint">
           Live берёт только фьючерсы из избранного T-Invest (GetFavorites). Меняйте список в
-          приложении брокера, затем синхронизируйте. Live Mode ≠ realtime графика.
+          приложении брокера — при старте Live избранное синхронизируется автоматически. Live Mode ≠
+          realtime графика.
         </p>
         <div className="live-mode-panel__actions">
-          <Button type="button" size="sm" disabled={busy} onClick={() => void onStart()}>
-            Start Live
-          </Button>
           <Button
             type="button"
             size="sm"
-            variant="secondary"
-            disabled={busy}
-            onClick={() => void onStop()}
+            variant={liveOn ? 'secondary' : 'primary'}
+            disabled={busy || transitioning}
+            onClick={() => {
+              void (liveOn ? onStop() : onStart());
+            }}
           >
-            Stop Live
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={busy}
-            onClick={() => void onSyncFavorites()}
-          >
-            Sync favorites
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            disabled={busy}
-            onClick={() => void refresh()}
-          >
-            Refresh
+            {liveOn ? 'Stop Live' : 'Start Live'}
           </Button>
         </div>
         {snapshot ? (
@@ -162,14 +161,19 @@ export function LiveModePanel() {
           </summary>
           {favorites.length === 0 ? (
             <p className="live-mode-panel__empty">
-              Нет фьючерсов в избранном брокера. Добавьте фьючерсы в приложении T-Invest, затем Sync
-              favorites.
+              Нет фьючерсов в избранном брокера. Добавьте фьючерсы в приложении T-Invest, затем
+              запустите Live.
             </p>
           ) : (
             <ul className="live-mode-panel__list">
               {favorites.map((item) => (
                 <li key={item.instrumentUid}>
                   <strong>{item.ticker}</strong>
+                  {item.dayChangePct !== null ? (
+                    <span className={dayChangeClassName(item.dayChangePct)}>
+                      {formatDayChangePct(item.dayChangePct)}
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>

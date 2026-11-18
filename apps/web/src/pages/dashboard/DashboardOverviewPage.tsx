@@ -108,7 +108,7 @@ export function DashboardOverviewPage() {
           <CardBody>
             <EmptyState
               title="Избранное из T-Invest"
-              description="Список подтягивается из брокера (GetFavorites). Меняйте его в приложении T-Invest, затем Sync в панели Live Mode."
+              description="Список подтягивается из брокера (GetFavorites). Меняйте его в приложении T-Invest — синхронизация при старте Live."
               action={
                 <Button href="/app/analytics" variant="secondary" size="sm">
                   Открыть график

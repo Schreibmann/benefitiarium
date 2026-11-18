@@ -112,6 +112,7 @@
 .live-mode-panel__list li {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   border: 1px solid color-mix(in srgb, var(--text-muted, #667085) 35%, transparent);
   border-radius: 4px;
@@ -123,6 +124,20 @@
 
 .live-mode-panel__list li strong {
   font-weight: inherit;
+}
+
+.live-mode-panel__day-change {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-regular, 400);
+}
+
+.live-mode-panel__day-change--up {
+  color: var(--success, #079455);
+}
+
+.live-mode-panel__day-change--down {
+  color: var(--danger, #b42318);
 }
 
 @media (max-width: 720px) {

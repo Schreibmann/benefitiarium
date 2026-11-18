@@ -1,5 +1,7 @@
+import type { MarketDataProvider } from '@moex/contracts';
 import type { FavoritesRepository } from '@moex/persistence';
 import type { FastifyInstance } from 'fastify';
+import { withFavoritesDayChange } from './favorites-day-change.js';
 import type { LiveRuntime } from './live-runtime.js';
 
 export async function registerLiveRoutes(
@@ -7,24 +9,35 @@ export async function registerLiveRoutes(
   deps: {
     liveRuntime: LiveRuntime;
     favorites: FavoritesRepository;
+    marketData?: MarketDataProvider;
   },
 ): Promise<void> {
+  async function listFavoritesPayload() {
+    const items = await deps.favorites.list();
+    if (deps.marketData === undefined) {
+      return {
+        items: items.map((item) => ({ ...item, lastPrice: null, dayChangePct: null })),
+        source: 'tinvest' as const,
+      };
+    }
+    return {
+      items: await withFavoritesDayChange(items, deps.marketData),
+      source: 'tinvest' as const,
+    };
+  }
+
   app.get('/api/v1/live', async () => deps.liveRuntime.getSnapshot());
 
   app.post('/api/v1/live/start', async () => deps.liveRuntime.start());
 
   app.post('/api/v1/live/stop', async () => deps.liveRuntime.stop());
 
-  app.get('/api/v1/favorites', async () => {
-    const items = await deps.favorites.list();
-    return { items, source: 'tinvest' };
-  });
+  app.get('/api/v1/favorites', async () => listFavoritesPayload());
 
   /** Re-pull broker favorites and refresh STRATEGY leases while Live is running. */
   app.post('/api/v1/favorites/sync', async () => {
     await deps.liveRuntime.resyncFavorites();
-    const items = await deps.favorites.list();
-    return { items, source: 'tinvest' };
+    return listFavoritesPayload();
   });
 
   app.post('/api/v1/favorites', async (_request, reply) =>

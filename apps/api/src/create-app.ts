@@ -44,6 +44,7 @@ export async function createApp(options: CreateAppOptions) {
     await registerLiveRoutes(app, {
       liveRuntime: options.liveRuntime,
       favorites: options.favorites,
+      ...(options.marketData !== undefined ? { marketData: options.marketData.marketData } : {}),
     });
   }
 
