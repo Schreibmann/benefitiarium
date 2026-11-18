@@ -29,6 +29,8 @@ describe('createLiveApiClient', () => {
                 ticker: 'SBER',
                 figi: 'BBG004730N88',
                 createdAt: '1970-01-01T00:00:00.000Z',
+                lastPrice: '250.5',
+                dayChangePct: 1.25,
               },
             ],
           }),
@@ -43,5 +45,7 @@ describe('createLiveApiClient', () => {
     expect(live.status).toBe('RUNNING');
     const favorites = await client.listFavorites();
     expect(favorites[0]?.ticker).toBe('SBER');
+    expect(favorites[0]?.dayChangePct).toBe(1.25);
+    expect(favorites[0]?.lastPrice).toBe('250.5');
   });
 });

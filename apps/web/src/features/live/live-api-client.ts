@@ -13,6 +13,8 @@ export type FavoriteItem = {
   ticker: string;
   figi: string | null;
   createdAt: string;
+  lastPrice: string | null;
+  dayChangePct: number | null;
 };
 
 export type LiveApiClient = {
@@ -83,11 +85,16 @@ function parseFavorite(json: unknown): FavoriteItem {
     throw new Error('Invalid favorite');
   }
   const figi = json.figi;
+  const lastPrice = json.lastPrice;
+  const dayChangePct = json.dayChangePct;
   return {
     instrumentUid: requiredString(json, 'instrumentUid'),
     ticker: requiredString(json, 'ticker'),
     figi: typeof figi === 'string' ? figi : null,
     createdAt: requiredString(json, 'createdAt'),
+    lastPrice: typeof lastPrice === 'string' ? lastPrice : null,
+    dayChangePct:
+      typeof dayChangePct === 'number' && Number.isFinite(dayChangePct) ? dayChangePct : null,
   };
 }
 
