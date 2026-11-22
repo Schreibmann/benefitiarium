@@ -1,0 +1,115 @@
+#cloud-config
+# Placeholders replaced by New-CloudInitIso.ps1 / New-BenefitiariumVm.ps1:
+#   __SSH_PUBKEY__  __REPO_URL__  __REPO_REF__  __SKIP_CLONE__
+
+hostname: benefitiarium-vm
+fqdn: benefitiarium-vm.local
+manage_etc_hosts: true
+timezone: Europe/Moscow
+
+users:
+  - name: benefitiarium
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    lock_passwd: true
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - git
+  - build-essential
+  - docker.io
+  - docker-compose-v2
+  - ufw
+  - jq
+
+write_files:
+  - path: /etc/benefitiarium/env
+    permissions: "0600"
+    owner: root:root
+    content: |
+      # Secrets are installed via Set-BenefitiariumEnv.ps1 (not baked into cloud-init).
+      NODE_ENV=development
+      APP_TIMEZONE=Europe/Moscow
+      DATABASE_URL=postgresql://postgres:postgres@localhost:5432/moex
+      PORT=3000
+      VITE_DEV_HOST=0.0.0.0
+      GLOBAL_KILL_SWITCH=true
+      LIVE_TRADING_ENABLED=false
+      TRADING_MODE=research
+      TINVEST_ENV=sandbox
+      TINVEST_BASE_URL=https://sandbox-invest-public-api.tbank.ru:443
+      SANDBOX_ADMIN_STORE=auto
+      ADMIN_API_TOKEN=
+      LOG_LEVEL=info
+
+  - path: /usr/local/sbin/benefitiarium-first-boot.sh
+    permissions: "0755"
+    owner: root:root
+    content: |
+      #!/usr/bin/env bash
+      set -euo pipefail
+      LOG=/var/log/benefitiarium-first-boot.log
+      exec > >(tee -a "$LOG") 2>&1
+      echo "[first-boot] $(date -Is) start"
+
+      export DEBIAN_FRONTEND=noninteractive
+
+      if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/^v//' | cut -d. -f1)" -lt 22 ]]; then
+        curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+        apt-get install -y nodejs
+      fi
+
+      corepack enable
+      corepack prepare pnpm@10.20.0 --activate
+
+      systemctl enable --now docker
+      usermod -aG docker benefitiarium || true
+
+      install -d -o benefitiarium -g benefitiarium -m 0755 /opt/benefitiarium
+      chown root:benefitiarium /etc/benefitiarium
+      chmod 0750 /etc/benefitiarium
+      chown root:benefitiarium /etc/benefitiarium/env
+      chmod 0640 /etc/benefitiarium/env
+
+      SKIP_CLONE="__SKIP_CLONE__"
+      REPO_URL="__REPO_URL__"
+      REPO_REF="__REPO_REF__"
+
+      if [[ "${SKIP_CLONE}" != "true" && -n "${REPO_URL}" && "${REPO_URL}" != "__REPO_URL__" ]]; then
+        if [[ ! -d /opt/benefitiarium/.git ]]; then
+          sudo -u benefitiarium git clone --branch "${REPO_REF}" --depth 1 "${REPO_URL}" /opt/benefitiarium
+        else
+          echo "[first-boot] repo already present, skip clone"
+        fi
+      else
+        echo "[first-boot] skip git clone (Deploy-ToVm.ps1 will sync the tree)"
+      fi
+
+      ufw default deny incoming
+      ufw default allow outgoing
+      ufw allow OpenSSH
+      ufw allow 5173/tcp comment 'benefitiarium-web'
+      ufw --force enable
+
+      if [[ -x /opt/benefitiarium/infra/vm/scripts/guest-bootstrap.sh ]]; then
+        /opt/benefitiarium/infra/vm/scripts/guest-bootstrap.sh
+      else
+        echo "[first-boot] guest-bootstrap.sh not found yet; run Deploy-ToVm.ps1 after sync"
+      fi
+
+      echo "[first-boot] $(date -Is) done"
+
+runcmd:
+  - [/usr/local/sbin/benefitiarium-first-boot.sh]
+
+final_message: |
+  Benefitiarium VM cloud-init finished.
+  Copy secrets with Set-BenefitiariumEnv.ps1, then open http://<vm-ip>:5173

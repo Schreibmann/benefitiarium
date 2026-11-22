@@ -2,7 +2,7 @@ import { compare } from '@moex/decimal';
 import { type DecimalString, parseDecimalString } from '@moex/domain';
 
 /** Documented T-Invest SandboxPayIn upper bound. */
-export const SANDBOX_PAYIN_MAX_RUB = parseDecimalString('30000000');
+export const SANDBOX_PAYIN_MAX_RUB: DecimalString = parseDecimalString('30000000');
 
 /** Product copy for Admin UI / API (SandboxPayIn cannot decrease balance). */
 export const SANDBOX_PAYIN_NO_WITHDRAW_WARNING =

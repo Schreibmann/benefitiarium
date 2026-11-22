@@ -1,0 +1,25 @@
+[Unit]
+Description=Benefitiarium worker-notifier (Telegram)
+Documentation=file:///opt/benefitiarium/docs/LOCAL_VM.md
+After=network-online.target docker.service benefitiarium-api.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=benefitiarium
+Group=benefitiarium
+WorkingDirectory=/opt/benefitiarium
+EnvironmentFile=/etc/benefitiarium/env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/pnpm --filter @moex/worker-notifier start
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillMode=mixed
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -195,6 +195,7 @@
 - [Futures history coverage](docs/FUTURES_HISTORY_COVERAGE.md)
 - [API contracts](docs/API_CONTRACTS.md)
 - [Security](docs/SECURITY.md)
+- [Always-on Hyper-V VM (Win 11)](docs/LOCAL_VM.md)
 - [ADR index](docs/ADR/)
 
 **EN.**
@@ -207,6 +208,7 @@
 - [Futures history coverage](docs/FUTURES_HISTORY_COVERAGE.md)
 - [API contracts](docs/API_CONTRACTS.md)
 - [Security](docs/SECURITY.md)
+- [Always-on Hyper-V VM (Win 11)](docs/LOCAL_VM.md)
 - [ADR index](docs/ADR/)
 
 ## Prerequisites / Требования
@@ -215,14 +217,14 @@
 
 - Node.js 22+ (см. `.node-version`)
 - pnpm 10.20+ (`packageManager` в корневом `package.json`)
-- Docker Desktop (локальный PostgreSQL)
+- Docker Desktop (локальный PostgreSQL) **или** Hyper-V Ubuntu VM — см. [docs/LOCAL_VM.md](docs/LOCAL_VM.md)
 - Опционально: `psql` в PATH (миграции также через `docker compose exec`)
 
 **EN.**
 
 - Node.js 22+ (see `.node-version`)
 - pnpm 10.20+ (`packageManager` in root `package.json`)
-- Docker Desktop (local PostgreSQL)
+- Docker Desktop (local PostgreSQL) **or** Hyper-V Ubuntu VM — see [docs/LOCAL_VM.md](docs/LOCAL_VM.md)
 - Optional: `psql` on PATH (migrations also work via `docker compose exec`)
 
 ## Setup / Установка
@@ -278,6 +280,12 @@ docker compose down -v
 docker compose up -d
 pnpm db:migrate
 ```
+
+### Always-on Hyper-V VM / Долгоживущая Hyper-V VM
+
+**RU.** Для 24/7 на локальном Win 11: Ubuntu guest + cloud-init + systemd. Скрипты: [`infra/vm/`](infra/vm/). Гайд: [`docs/LOCAL_VM.md`](docs/LOCAL_VM.md).
+
+**EN.** For 24/7 on a local Win 11 PC: Ubuntu guest + cloud-init + systemd. Scripts: [`infra/vm/`](infra/vm/). Guide: [`docs/LOCAL_VM.md`](docs/LOCAL_VM.md).
 
 ### Dev servers / Dev-серверы
 

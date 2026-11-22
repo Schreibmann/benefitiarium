@@ -31,6 +31,23 @@ function vendorChunk(id: string): string | undefined {
   return undefined;
 }
 
+/** Bind address for Vite when serving from a VM (e.g. VITE_DEV_HOST=0.0.0.0). */
+function resolveDevHost(): string | boolean | undefined {
+  const raw = process.env.VITE_DEV_HOST?.trim();
+  if (raw === undefined || raw.length === 0) {
+    return undefined;
+  }
+  if (raw === 'true') {
+    return true;
+  }
+  if (raw === 'false') {
+    return false;
+  }
+  return raw;
+}
+
+const devHost = resolveDevHost();
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -45,9 +62,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    ...(devHost === undefined ? {} : { host: devHost }),
     proxy: { ...apiProxy },
   },
   preview: {
+    ...(devHost === undefined ? {} : { host: devHost }),
     proxy: { ...apiProxy },
   },
 });

@@ -1,0 +1,24 @@
+[Unit]
+Description=Benefitiarium Web (Vite)
+Documentation=file:///opt/benefitiarium/docs/LOCAL_VM.md
+After=network-online.target benefitiarium-api.service
+Wants=network-online.target benefitiarium-api.service
+
+[Service]
+Type=simple
+User=benefitiarium
+Group=benefitiarium
+WorkingDirectory=/opt/benefitiarium
+EnvironmentFile=/etc/benefitiarium/env
+Environment=VITE_DEV_HOST=0.0.0.0
+ExecStart=/usr/bin/pnpm --filter @moex/web exec vite --host 0.0.0.0 --port 5173
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillMode=mixed
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
